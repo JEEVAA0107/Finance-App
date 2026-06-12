@@ -1,0 +1,161 @@
+// This is your Prisma schema file
+// Database: SQLite for dev, PostgreSQL for prod
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String
+  phone        String
+  passwordHash String
+  role         String   @default("CUSTOMER") // ADMIN | AGENT | CUSTOMER
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  customers    Customer[]
+  agentLoans   Loan[]     @relation("AgentLoans")
+  payments     Payment[]  @relation("CollectedBy")
+  auditLogs    AuditLog[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  phone       String
+  email       String?
+  address     String
+  city        String
+  idType      String   // AADHAR | PAN | VOTER | DRIVING
+  idNumber    String
+  idProofUrl  String?
+  photoUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  loans       Loan[]
+
+  @@index([phone])
+}
+
+model Loan {
+  id                String   @id @default(uuid())
+  loanNumber        String   @unique
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id])
+  agentId           String?
+  agent             User?    @relation("AgentLoans", fields: [agentId], references: [id])
+  
+  // Financial details
+  principalAmount   Float
+  interestRate      Float    // Annual rate in %
+  interestType      String   // FLAT | REDUCING
+  tenure            Int      // Number of units
+  tenureUnit        String   // DAYS | WEEKS | MONTHS
+  processingFee     Float    @default(0)
+  
+  // Calculated fields
+  totalInterest     Float
+  totalPayable      Float
+  installmentAmount Float
+  
+  // Tracking fields — interest collected separately from principal
+  interestCollected Float    @default(0)  // Total interest collected via weekly payments
+  outstandingPrincipal Float?              // Remaining principal (null means same as principalAmount)
+  
+  // Status
+  status            String   @default("ACTIVE") // ACTIVE | CLOSED | DEFAULTED | PENDING
+  disbursedAt       DateTime?
+  startDate         DateTime
+  endDate           DateTime
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  repayments        Repayment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([loanNumber])
+}
+
+model Repayment {
+  id            String   @id @default(uuid())
+  loanId        String
+  loan          Loan     @relation(fields: [loanId], references: [id])
+  installmentNo Int
+  dueDate       DateTime
+  dueAmount     Float
+  principal     Float
+  interest      Float
+  
+  // Payment
+  paidAmount    Float    @default(0)
+  paidAt        DateTime?
+  status        String   @default("PENDING") // PENDING | PAID | OVERDUE | PARTIAL
+  
+  payments      Payment[]
+
+  @@index([loanId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  repaymentId   String
+  repayment     Repayment @relation(fields: [repaymentId], references: [id])
+  collectedById String
+  collectedBy   User     @relation("CollectedBy", fields: [collectedById], references: [id])
+  amount        Float
+  paymentMode   String   @default("CASH") // CASH | UPI | BANK | CHEQUE
+  paymentType   String   @default("INTEREST") // INTEREST | PRINCIPAL — weekly = interest, lump sum = principal
+  reference     String?
+  notes         String?
+  collectedAt   DateTime @default(now())
+
+  @@index([repaymentId])
+  @@index([collectedAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entity     String
+  entityId   String?
+  details    String?  // JSON string
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}

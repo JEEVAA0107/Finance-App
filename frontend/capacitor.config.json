@@ -1,0 +1,21 @@
+{
+  "appId": "com.finance.app",
+  "appName": "LoanFlow Pro",
+  "webDir": "dist",
+  "server": {
+    "hostname": "app",
+    "androidScheme": "http",
+    "cleartext": true,
+    "allowNavigation": [
+      "10.193.223.220",
+      "10.193.223.220:5000",
+      "10.*.*.*",
+      "192.168.*.*"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}
