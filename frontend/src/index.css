@@ -1359,3 +1359,14 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   .bottom-nav-item { font-size: 9px !important; }
   .bottom-nav-item svg { width: 20px !important; height: 20px !important; }
 }
+
+/* Custom helper animation for spinning icons */
+.spin-icon {
+  animation: spin-kf 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin-kf {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

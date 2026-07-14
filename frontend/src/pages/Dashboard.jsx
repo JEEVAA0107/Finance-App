@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { dashboardAPI } from '../services/api';
-import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee } from 'lucide-react';
+import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Cloud, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { fullSync, getLastSync, getScriptUrl } from '../services/sheetsSync';
+import toast from 'react-hot-toast';
 
 function fmt(val) {
   if (!val) return '₹0';
@@ -16,6 +18,26 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState(getLastSync());
+  const scriptUrl = getScriptUrl();
+
+  const handleManualSync = async () => {
+    if (!scriptUrl) {
+      toast.error('Google Sheets Script URL not set. Please go to Settings to configure.');
+      return;
+    }
+    setSyncing(true);
+    try {
+      const payload = await fullSync();
+      setLastSync(getLastSync());
+      toast.success('Successfully synced to Google Sheets!');
+    } catch (err) {
+      toast.error(`Sync failed: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     Promise.all([dashboardAPI.summary(), dashboardAPI.agent()])
@@ -90,6 +112,34 @@ export default function Dashboard() {
         <Link to="/loans" className="btn btn-ghost" style={{ justifyContent: 'center' }}>
           <Landmark size={16} /> Loans
         </Link>
+      </div>
+
+      {/* Google Sheets Sync Card */}
+      <div className="card text-card" style={{ marginBottom: 16, background: 'var(--bg-glass)', border: '1px solid var(--border-default)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', background: scriptUrl ? 'rgba(52,168,83,0.1)' : 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 8 }}>
+              <Cloud size={20} style={{ color: scriptUrl ? '#34a853' : 'var(--text-muted)' }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Google Sheets Connection</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                {scriptUrl ? (lastSync ? `Last synced: ${lastSync}` : 'Connected (Not synced)') : 'Not configured (go to Settings)'}
+              </div>
+            </div>
+          </div>
+          {scriptUrl && (
+            <button 
+              className="btn btn-ghost btn-sm" 
+              onClick={handleManualSync} 
+              disabled={syncing}
+              style={{ padding: '6px 12px', borderRadius: 8, height: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, background: 'rgba(255,255,255,0.03)' }}
+            >
+              <RefreshCw size={12} className={syncing ? 'spin-icon' : ''} />
+              {syncing ? 'Syncing...' : 'Sync'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Today's due */}

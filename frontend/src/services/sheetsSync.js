@@ -6,7 +6,18 @@ const LAST_SYNC_KEY = 'lastSheetsSync';
 export function getScriptUrl() { return localStorage.getItem(URL_KEY) || ''; }
 export function setScriptUrl(url) { localStorage.setItem(URL_KEY, url.trim()); }
 export function getLastSync() { return localStorage.getItem(LAST_SYNC_KEY) || null; }
-export function queueSync() {} // no-op, kept for compatibility
+let debounceTimer = null;
+export function queueSync() {
+  const url = getScriptUrl();
+  if (!url) return; // Silent return if URL is not configured yet
+  
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    fullSync()
+      .then(() => console.log('✅ Auto-synced changes to Google Sheets!'))
+      .catch(err => console.warn('⚠️ Background auto-sync failed:', err.message));
+  }, 1000);
+}
 
 export async function fullSync() {
   const url = getScriptUrl();
