@@ -179,9 +179,27 @@ export const localLoans = {
     const id = uuid();
     const loanNumber = generateLoanNumber();
     const principal = parseFloat(data.principalAmount);
-    const rate = parseFloat(data.interestRate);
-    const interestPerPeriod = round2(principal * (rate / 100));
-    const batchSize = data.tenureUnit === 'WEEKS' ? 52 : data.tenureUnit === 'MONTHS' ? 12 : 365;
+    
+    const isWithoutInterest = data.interestType === 'WITHOUT_INTEREST';
+    const rate = isWithoutInterest ? 0 : parseFloat(data.interestRate);
+    const fee = parseFloat(data.processingFee || 0); // Advance Deduction
+    
+    // For WITHOUT_INTEREST, the tenure (batchSize) is custom-set. Otherwise, it is continuous/default.
+    const batchSize = isWithoutInterest 
+      ? parseInt(data.tenure || 10) 
+      : (data.tenureUnit === 'WEEKS' ? 52 : data.tenureUnit === 'MONTHS' ? 12 : 365);
+      
+    const interestPerPeriod = isWithoutInterest 
+      ? 0 
+      : round2(principal * (rate / 100));
+      
+    const installmentAmount = isWithoutInterest
+      ? round2(principal / batchSize)
+      : interestPerPeriod;
+      
+    const totalInterest = isWithoutInterest ? 0 : round2(interestPerPeriod * batchSize);
+    const totalPayable = isWithoutInterest ? principal : round2(principal + totalInterest);
+    
     const start = new Date(data.startDate);
     const end = new Date(start);
     if (data.tenureUnit === 'MONTHS') end.setMonth(end.getMonth() + batchSize);
@@ -195,15 +213,15 @@ export const localLoans = {
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?)`,
       [id, loanNumber, data.customerId, data.agentId || userId, principal, rate,
        data.interestType || 'FLAT', batchSize, data.tenureUnit,
-       parseFloat(data.processingFee || 0),
-       round2(interestPerPeriod * batchSize),
-       round2(principal + interestPerPeriod * batchSize),
-       interestPerPeriod, principal, 'ACTIVE',
+       fee, totalInterest, totalPayable, installmentAmount, principal, 'ACTIVE',
        start.toISOString(), end.toISOString()]
     );
 
     // Generate installments
-    await _generateInstallments(id, interestPerPeriod, data.tenureUnit, start, 1, batchSize);
+    const principalPerPeriod = isWithoutInterest ? installmentAmount : 0;
+    const interestAmount = isWithoutInterest ? 0 : interestPerPeriod;
+    await _generateInstallments(id, principalPerPeriod, interestAmount, data.tenureUnit, start, 1, batchSize);
+    
     queueSync('addLoan', { loanNumber });
     return this.get(id);
   },
@@ -285,7 +303,21 @@ export const localPayments = {
       'UPDATE repayments SET paidAmount=?, status=?, paidAt=? WHERE id=?',
       [totalPaid, newStatus, newStatus === 'PAID' ? new Date().toISOString() : null, data.repaymentId]
     );
-    await dbRun('UPDATE loans SET interestCollected = interestCollected + ? WHERE id=?', [amount, rep.loanId]);
+
+    const loanRows = await dbQuery('SELECT interestType, outstandingPrincipal FROM loans WHERE id = ?', [rep.loanId]);
+    if (loanRows.length) {
+      const loan = loanRows[0];
+      if (loan.interestType === 'WITHOUT_INTEREST') {
+        const newOutstanding = round2(loan.outstandingPrincipal - amount);
+        const isClosed = newOutstanding <= 0;
+        await dbRun(
+          'UPDATE loans SET outstandingPrincipal=?, status=? WHERE id=?',
+          [Math.max(0, newOutstanding), isClosed ? 'CLOSED' : 'ACTIVE', rep.loanId]
+        );
+      } else {
+        await dbRun('UPDATE loans SET interestCollected = interestCollected + ? WHERE id=?', [amount, rep.loanId]);
+      }
+    }
 
     if (newStatus === 'PAID') await _autoExtendIfNeeded(rep.loanId);
     queueSync('addPayment', { repaymentId: data.repaymentId, amount });
@@ -519,6 +551,8 @@ async function _autoExtendIfNeeded(loanId) {
   const loanRows = await dbQuery('SELECT * FROM loans WHERE id=? AND status=?', [loanId, 'ACTIVE']);
   if (!loanRows.length) return;
   const loan = loanRows[0];
+  if (loan.interestType === 'WITHOUT_INTEREST') return; // Fixed duration, no extension!
+  
   const [unpaid] = await dbQuery(
     "SELECT COUNT(*) as c FROM repayments WHERE loanId=? AND status IN ('PENDING','OVERDUE','PARTIAL')",
     [loanId]
@@ -529,19 +563,20 @@ async function _autoExtendIfNeeded(loanId) {
   const last = lastRows[0];
   const interestPerPeriod = round2(loan.principalAmount * (loan.interestRate / 100));
   const batchSize = loan.tenureUnit === 'WEEKS' ? 52 : loan.tenureUnit === 'MONTHS' ? 12 : 365;
-  await _generateInstallments(loanId, interestPerPeriod, loan.tenureUnit, new Date(last.dueDate), last.installmentNo + 1, batchSize);
+  await _generateInstallments(loanId, 0, interestPerPeriod, loan.tenureUnit, new Date(last.dueDate), last.installmentNo + 1, batchSize);
 }
 
-async function _generateInstallments(loanId, interestPerPeriod, tenureUnit, startFrom, startNo, count) {
+async function _generateInstallments(loanId, principalAmount, interestAmount, tenureUnit, startFrom, startNo, count) {
   for (let i = 0; i < count; i++) {
     const dueDate = new Date(startFrom);
     const offset = i + 1;
     if (tenureUnit === 'MONTHS') dueDate.setMonth(dueDate.getMonth() + offset);
     else if (tenureUnit === 'WEEKS') dueDate.setDate(dueDate.getDate() + offset * 7);
     else dueDate.setDate(dueDate.getDate() + offset);
+    const due = round2(principalAmount + interestAmount);
     await dbRun(
-      'INSERT INTO repayments (id, loanId, installmentNo, dueDate, dueAmount, principal, interest, status) VALUES (?,?,?,?,?,0,?,?)',
-      [uuid(), loanId, startNo + i, dueDate.toISOString(), interestPerPeriod, interestPerPeriod, 'PENDING']
+      'INSERT INTO repayments (id, loanId, installmentNo, dueDate, dueAmount, principal, interest, status) VALUES (?,?,?,?,?,?,?,?)',
+      [uuid(), loanId, startNo + i, dueDate.toISOString(), due, principalAmount, interestAmount, 'PENDING']
     );
   }
 }

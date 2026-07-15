@@ -61,11 +61,16 @@ export default function LoansPage() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>PRINCIPAL</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{loan.interestType === 'WITHOUT_INTEREST' ? 'TOTAL REPAYABLE' : 'PRINCIPAL'}</div>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{fmtAmt(loan.principalAmount)}</div>
+                  {loan.interestType === 'WITHOUT_INTEREST' && (
+                    <div style={{ fontSize: 10, color: 'var(--accent-400)', marginTop: 2 }}>
+                      Disbursed: {fmtAmt(loan.principalAmount - (loan.processingFee || 0))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>INTEREST/PERIOD</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{loan.interestType === 'WITHOUT_INTEREST' ? 'WEEKLY DUE' : 'INTEREST/PERIOD'}</div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>

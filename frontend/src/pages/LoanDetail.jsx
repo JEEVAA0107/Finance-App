@@ -53,6 +53,7 @@ export default function LoanDetail() {
   if (!loan) return <div className="card" style={{ textAlign: 'center', padding: 32 }}>Loan not found</div>;
 
   const outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
+  const isWithoutInt = loan.interestType === 'WITHOUT_INTEREST';
   const paidCount = loan.repayments?.filter(r => r.status === 'PAID').length || 0;
   const totalCount = loan.repayments?.length || 1;
   const progress = Math.round((paidCount / totalCount) * 100);
@@ -82,11 +83,11 @@ export default function LoanDetail() {
         {/* Key numbers */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Principal</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? 'Total Payable' : 'Principal'}</div>
             <div style={{ fontWeight: 800, fontSize: 15 }}>₹{(loan.principalAmount / 1000).toFixed(0)}K</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Per Period</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? 'Weekly Due' : 'Per Period'}</div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
@@ -95,11 +96,28 @@ export default function LoanDetail() {
           </div>
         </div>
 
-        {/* Interest collected */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 10 }}>
-          <span style={{ color: 'var(--text-muted)' }}>Interest Collected</span>
-          <span style={{ fontWeight: 700, color: 'var(--accent-400)' }}>₹{(loan.interestCollected || 0).toLocaleString('en-IN')}</span>
-        </div>
+        {/* Interest collected or WITHOUT_INTEREST details */}
+        {isWithoutInt ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Disbursed Amount</span>
+              <span style={{ fontWeight: 700 }}>₹{(loan.principalAmount - (loan.processingFee || 0)).toLocaleString('en-IN')}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Advance Deduction</span>
+              <span style={{ fontWeight: 700, color: 'var(--danger-400)' }}>₹{(loan.processingFee || 0).toLocaleString('en-IN')}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 10 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Total Paid So Far</span>
+              <span style={{ fontWeight: 700, color: 'var(--accent-400)' }}>₹{(loan.principalAmount - outstanding).toLocaleString('en-IN')}</span>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 10 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Interest Collected</span>
+            <span style={{ fontWeight: 700, color: 'var(--accent-400)' }}>₹{(loan.interestCollected || 0).toLocaleString('en-IN')}</span>
+          </div>
+        )}
 
         {/* Progress */}
         <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
@@ -161,7 +179,7 @@ export default function LoanDetail() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontWeight: 700 }}>Collect Interest #{payModal.installmentNo}</div>
+                <div style={{ fontWeight: 700 }}>{isWithoutInt ? 'Collect Installment' : 'Collect Interest'} #{payModal.installmentNo}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{loan.customer?.name} · {fmtDate(payModal.dueDate)}</div>
               </div>
               <button className="modal-close" onClick={() => setPayModal(null)}><X size={18} /></button>

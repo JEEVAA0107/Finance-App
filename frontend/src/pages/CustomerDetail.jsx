@@ -68,7 +68,14 @@ export default function CustomerDetail() {
                 {customer.loans.map((l) => (
                   <tr key={l.id}>
                     <td data-label="Loan #"><Link to={`/loans/${l.id}`} className="fw-600">{l.loanNumber}</Link></td>
-                    <td data-label="Principal">₹{l.principalAmount?.toLocaleString('en-IN')}</td>
+                    <td data-label="Principal">
+                      ₹{l.principalAmount?.toLocaleString('en-IN')}
+                      {l.interestType === 'WITHOUT_INTEREST' && (
+                        <div style={{ fontSize: 11, color: 'var(--accent-400)', marginTop: 2 }}>
+                          Disbursed: ₹{(l.principalAmount - (l.processingFee || 0)).toLocaleString('en-IN')}
+                        </div>
+                      )}
+                    </td>
                     <td data-label="Payable">₹{l.totalPayable?.toLocaleString('en-IN')}</td>
                     <td data-label="Tenure">{l.tenure} {l.tenureUnit?.toLowerCase()}</td>
                     <td data-label="Status"><span className={`badge ${l.status === 'ACTIVE' ? 'badge-success' : l.status === 'CLOSED' ? 'badge-muted' : 'badge-danger'}`}>{l.status}</span></td>
