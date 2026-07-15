@@ -20,7 +20,7 @@ import { useEffect } from 'react';
 import './index.css';
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
   if (!user) return <LoginPage />;
   return (
@@ -33,9 +33,9 @@ function AppRoutes() {
         <Route path="loans/create" element={<CreateLoan />} />
         <Route path="loans/:id" element={<LoanDetail />} />
         <Route path="collections" element={<CollectionPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="audit" element={<AuditPage />} />
+        <Route path="reports" element={isAdmin ? <ReportsPage /> : <Navigate to="/" replace />} />
+        <Route path="users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
+        <Route path="audit" element={isAdmin ? <AuditPage /> : <Navigate to="/" replace />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

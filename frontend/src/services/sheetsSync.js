@@ -45,8 +45,7 @@ export async function fullSync() {
   console.log('Sync payload:', JSON.stringify({ c: customers.length, l: loans.length, p: payments.length }));
 
   if (customers.length === 0 && loans.length === 0 && payments.length === 0) {
-    const { Capacitor } = await import('@capacitor/core');
-    throw new Error(`No data found. isNative=${Capacitor.isNativePlatform()} platform=${Capacitor.getPlatform()}`);
+    console.log('Syncing empty database: initializing sheet headers');
   }
 
   const res = await fetch(url, {

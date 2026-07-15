@@ -293,19 +293,12 @@ export const localPayments = {
     // Send SMS via native Android SIM (no internet needed)
     try {
       const loanRows = await dbQuery(
-        'SELECT l.*, c.name as customerName, c.phone as customerPhone, l.outstandingPrincipal, l.principalAmount FROM loans l LEFT JOIN customers c ON l.customerId = c.id WHERE l.id = ?',
+        'SELECT c.phone as customerPhone FROM loans l LEFT JOIN customers c ON l.customerId = c.id WHERE l.id = ?',
         [rep.loanId]
       );
-      if (loanRows.length) {
-        const loan = loanRows[0];
-        const nextRows = await dbQuery(
-          "SELECT dueDate FROM repayments WHERE loanId=? AND status IN ('PENDING','OVERDUE','PARTIAL') ORDER BY dueDate ASC LIMIT 1",
-          [rep.loanId]
-        );
-        const nextDue = nextRows.length ? new Date(nextRows[0].dueDate).toLocaleDateString('en-IN') : null;
-        const outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
-        const msg = buildPaymentSMS(loan.customerName, amount, nextDue, outstanding);
-        sendSMS(loan.customerPhone, msg); // fire and forget
+      if (loanRows.length && loanRows[0].customerPhone) {
+        const msg = buildPaymentSMS(amount, pId);
+        sendSMS(loanRows[0].customerPhone, msg); // fire and forget
       }
     } catch (_) { /* SMS failure never blocks payment */ }
 

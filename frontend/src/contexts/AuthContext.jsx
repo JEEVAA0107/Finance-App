@@ -10,6 +10,24 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     getDb().then(async () => {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.id) {
+            const rows = await dbQuery(
+              "SELECT id, name, email, phone, role FROM users WHERE id = ? AND isActive = 1 LIMIT 1",
+              [parsed.id]
+            );
+            if (rows.length) {
+              setUser(rows[0]);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Default fallback: auto-login the first active Admin
       const rows = await dbQuery(
         "SELECT id, name, email, phone, role FROM users WHERE role='ADMIN' AND isActive=1 LIMIT 1",
         []
@@ -18,6 +36,7 @@ export function AuthProvider({ children }) {
         setUser(rows[0]);
         try { localStorage.setItem('user', JSON.stringify(rows[0])); } catch (e) {}
       } else {
+        setUser(null);
         try { localStorage.removeItem('user'); } catch (e) {}
       }
     }).finally(() => setLoading(false));

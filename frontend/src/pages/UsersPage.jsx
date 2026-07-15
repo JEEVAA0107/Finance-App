@@ -9,6 +9,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'AGENT' });
+  const [editUser, setEditUser] = useState(null);
   const [filter, setFilter] = useState('');
 
   const load = async () => {
@@ -21,13 +22,39 @@ export default function UsersPage() {
 
   useEffect(() => { load(); }, [filter]);
 
+  const openAdd = () => {
+    setForm({ name: '', email: '', phone: '', password: '', role: 'AGENT' });
+    setEditUser(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (u) => {
+    setForm({ name: u.name, email: u.email, phone: u.phone, password: '', role: u.role });
+    setEditUser(u);
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await usersAPI.create(form);
-      toast.success('User created successfully');
+      if (editUser) {
+        await usersAPI.update(editUser.id, {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          role: form.role,
+        });
+        if (form.password.trim()) {
+          await usersAPI.changePassword(editUser.id, { password: form.password });
+        }
+        toast.success('User updated successfully');
+      } else {
+        await usersAPI.create(form);
+        toast.success('User created successfully');
+      }
       setShowModal(false);
       setForm({ name: '', email: '', phone: '', password: '', role: 'AGENT' });
+      setEditUser(null);
       load();
     } catch (err) { toast.error(err.message || 'Failed'); }
   };
@@ -56,7 +83,7 @@ export default function UsersPage() {
             <button className={`tab ${filter === 'AGENT' ? 'active' : ''}`} onClick={() => setFilter('AGENT')}>Agent</button>
             <button className={`tab ${filter === 'CUSTOMER' ? 'active' : ''}`} onClick={() => setFilter('CUSTOMER')}>Customer</button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowModal(true)} style={{ whiteSpace: 'nowrap' }}><Plus size={18} />Add User</button>
+          <button className="btn btn-primary" onClick={openAdd} style={{ whiteSpace: 'nowrap' }}><Plus size={18} />Add User</button>
         </div>
       </div>
 
@@ -86,9 +113,14 @@ export default function UsersPage() {
                 </td>
                 <td data-label="Joined" className="fs-12 color-muted">{new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
                 <td data-label="Actions">
-                  <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(u)}>
-                    {u.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} style={{ padding: '6px 8px' }} title="Edit User">
+                      <Edit2 size={14} />
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(u)}>
+                      {u.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -96,12 +128,12 @@ export default function UsersPage() {
         </table>
       </div>
 
-      {/* Add User Modal */}
+      {/* Add / Edit User Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Add New User</h3>
+              <h3>{editUser ? 'Edit User' : 'Add New User'}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -122,8 +154,15 @@ export default function UsersPage() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Password *</label>
-                    <input className="form-input" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
+                    <label className="form-label">{editUser ? 'New Password (optional)' : 'Password *'}</label>
+                    <input
+                      className="form-input"
+                      type="password"
+                      placeholder={editUser ? 'Leave blank to keep current' : 'Min 6 characters'}
+                      value={form.password}
+                      onChange={e => setForm({...form, password: e.target.value})}
+                      required={!editUser}
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Role *</label>
@@ -137,7 +176,7 @@ export default function UsersPage() {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create User</button>
+                <button type="submit" className="btn btn-primary">{editUser ? 'Save Changes' : 'Create User'}</button>
               </div>
             </form>
           </div>

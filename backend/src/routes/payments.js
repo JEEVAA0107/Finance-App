@@ -105,15 +105,7 @@ router.post('/', authenticate, async (req, res) => {
         where: { id: repayment.loanId },
         include: { customer: true },
       });
-      const nextInstallment = await prisma.repayment.findFirst({
-        where: { loanId: repayment.loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
-        orderBy: { dueDate: 'asc' },
-      });
-      let message = `Dear ${loanData.customer.name}, interest payment of Rs. ${amount} received. Principal balance: Rs. ${loanData.outstandingPrincipal || loanData.principalAmount}. Thank you.`;
-      if (nextInstallment) {
-        const nextDueDate = new Date(nextInstallment.dueDate).toLocaleDateString('en-IN');
-        message = `Dear ${loanData.customer.name}, interest payment of Rs. ${amount} received. Next due: ${nextDueDate}. Principal balance: Rs. ${loanData.outstandingPrincipal || loanData.principalAmount}. Thank you.`;
-      }
+      const message = `Received amount: Rs. ${amount}. Your payment successfully with this ID: ${payment.id}.`;
       sendSMS(loanData.customer.phone, message);
     } catch (_) { /* SMS failure should not block response */ }
 

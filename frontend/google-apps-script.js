@@ -12,7 +12,6 @@
 
 // PASTE YOUR SPREADSHEET ID HERE (from the URL of your Google Sheet)
 const SPREADSHEET_ID = '1Es6NrTp6p8OUirZn7qe3HYkX0QrDVaZ_qKneHbATwt0';
-
 function doGet(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ success: true, message: 'OK' }))
@@ -26,7 +25,7 @@ function doPost(e) {
       ? SpreadsheetApp.openById(SPREADSHEET_ID)
       : SpreadsheetApp.getActiveSpreadsheet();
 
-    writeSheet(ss, 'Customers', 
+    writeSheet(ss, 'Customers',
       ['Name', 'Phone', 'Address', 'City', 'ID Type', 'ID Number', 'Created'],
       (data.customers || []).map(c => [c.name, c.phone, c.address, c.city, c.idType, c.idNumber, c.createdAt])
     );
@@ -64,16 +63,16 @@ function writeSummarySheet(ss, data) {
 
   const totalCustomers = (data.customers || []).length;
   const totalLoans = (data.loans || []).length;
-  
-  const totalDisbursed = (data.loans || []).reduce(function(sum, l) {
+
+  const totalDisbursed = (data.loans || []).reduce(function (sum, l) {
     return sum + (Number(l.principalAmount) || 0);
   }, 0);
-  
-  const totalCollected = (data.payments || []).reduce(function(sum, p) {
+
+  const totalCollected = (data.payments || []).reduce(function (sum, p) {
     return sum + (Number(p.amount) || 0);
   }, 0);
-  
-  const totalOutstanding = (data.loans || []).reduce(function(sum, l) {
+
+  const totalOutstanding = (data.loans || []).reduce(function (sum, l) {
     var outstanding = l.outstandingPrincipal !== null && l.outstandingPrincipal !== undefined ? Number(l.outstandingPrincipal) : Number(l.principalAmount);
     return sum + (l.status === 'ACTIVE' || l.status === 'DEFAULTED' ? outstanding : 0);
   }, 0);

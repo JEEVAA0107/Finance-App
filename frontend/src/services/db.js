@@ -294,7 +294,7 @@ function createWebDb() {
         }
         return users.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       }
-      if (q.startsWith("SELECT * FROM users WHERE id=?")) {
+      if (q.includes("FROM users WHERE id = ?") || q.includes("FROM users WHERE id=?")) {
         const u = getTable('users').find(x => x.id === params[0]);
         return u ? [u] : [];
       }
@@ -323,6 +323,9 @@ function createWebDb() {
         const c = getTable('customers').find(x => x.id === params[0]);
         return c ? [c] : [];
       }
+      if (q.startsWith("SELECT * FROM customers WHERE isActive=1")) {
+        return getTable('customers').filter(c => c.isActive === 1).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      }
 
       // 4. Loans query list & detail
       if (q.startsWith("SELECT * FROM loans WHERE customerId = ? ORDER BY createdAt DESC")) {
@@ -339,6 +342,18 @@ function createWebDb() {
         const repIds = getTable('repayments').filter(r => r.loanId === loanId).map(r => r.id);
         const sum = getTable('payments').filter(p => repIds.includes(p.repaymentId) && p.paymentType === 'INTEREST').reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
         return [{ total: sum }];
+      }
+      if (q.startsWith("SELECT l.*, c.name as customerName, c.phone as customerPhone FROM loans l LEFT JOIN customers c")) {
+        const loans = getTable('loans');
+        const customers = getTable('customers');
+        return loans.map(l => {
+          const c = customers.find(x => x.id === l.customerId);
+          return {
+            ...l,
+            customerName: c ? c.name : '',
+            customerPhone: c ? c.phone : ''
+          };
+        }).sort((a,b) => b.createdAt.localeCompare(a.createdAt));
       }
       if (q.startsWith("SELECT l.*, c.name as customerName, c.phone as customerPhone, u.name as agentName FROM loans l")) {
         let loans = getTable('loans');
@@ -444,6 +459,26 @@ function createWebDb() {
         const l = getTable('loans').find(x => x.id === params[0]);
         const c = l ? getTable('customers').find(x => x.id === l.customerId) : null;
         return c ? [{ name: c.name, phone: c.phone }] : [];
+      }
+      if (q.startsWith("SELECT p.*, u.name as collectedByName, l.loanNumber, c.name as customerName, c.phone as customerPhone FROM payments p")) {
+        const payments = getTable('payments');
+        const users = getTable('users');
+        const repayments = getTable('repayments');
+        const loans = getTable('loans');
+        const customers = getTable('customers');
+        return payments.map(p => {
+          const u = users.find(x => x.id === p.collectedById);
+          const r = repayments.find(x => x.id === p.repaymentId);
+          const l = r ? loans.find(x => x.id === r.loanId) : null;
+          const c = l ? customers.find(x => x.id === l.customerId) : null;
+          return {
+            ...p,
+            collectedByName: u ? u.name : '',
+            loanNumber: l ? l.loanNumber : '',
+            customerName: c ? c.name : '',
+            customerPhone: c ? c.phone : ''
+          };
+        }).sort((a,b) => b.collectedAt.localeCompare(a.collectedAt));
       }
       if (q.startsWith("SELECT p.*, u.name as collectedByName, r.loanId, l.loanNumber, c.name as customerName, c.phone as customerPhone FROM payments p")) {
         const payments = getTable('payments');

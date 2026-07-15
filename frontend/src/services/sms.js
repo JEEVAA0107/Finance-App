@@ -46,11 +46,8 @@ function formatPhone(phone) {
 }
 
 // ─── Message builders ─────────────────────────────────────────────────────────
-export function buildPaymentSMS(customerName, amount, nextDueDate, outstandingPrincipal) {
-  if (nextDueDate) {
-    return `Dear ${customerName}, interest payment of Rs.${amount} received. Next due: ${nextDueDate}. Principal balance: Rs.${outstandingPrincipal}. -LoanFlow Pro`;
-  }
-  return `Dear ${customerName}, interest payment of Rs.${amount} received. Principal balance: Rs.${outstandingPrincipal}. Thank you. -LoanFlow Pro`;
+export function buildPaymentSMS(amount, paymentId) {
+  return `Received amount: Rs.${amount}. Your payment successfully with this ID: ${paymentId}. -LoanFlow Pro`;
 }
 
 export function buildLoanClosedSMS(customerName, amount) {
