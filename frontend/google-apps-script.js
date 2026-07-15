@@ -30,9 +30,22 @@ function doPost(e) {
       (data.customers || []).map(c => [c.name, c.phone, c.address, c.city, c.idType, c.idNumber, c.createdAt])
     );
 
-    writeSheet(ss, 'Loans',
-      ['Loan#', 'Customer', 'Phone', 'Principal', 'Interest%', 'Type', 'Status', 'Start Date'],
-      (data.loans || []).map(l => [l.loanNumber, l.customerName, l.customerPhone, l.principalAmount, l.interestRate, l.tenureUnit, l.status, l.startDate])
+    const interestLoans = (data.loans || []).filter(l => l.interestType !== 'WITHOUT_INTEREST');
+    const deductionLoans = (data.loans || []).filter(l => l.interestType === 'WITHOUT_INTEREST');
+
+    writeSheet(ss, 'Loans (Interest)',
+      ['Loan#', 'Customer', 'Phone', 'Principal', 'Interest%', 'Frequency', 'Status', 'Start Date'],
+      interestLoans.map(l => [l.loanNumber, l.customerName, l.customerPhone, l.principalAmount, l.interestRate, l.tenureUnit, l.status, l.startDate])
+    );
+
+    writeSheet(ss, 'Loans (Deduction)',
+      ['Loan#', 'Customer', 'Phone', 'Loan Amount', 'Advance Deduction', 'Disbursed Amount', 'Weeks', 'Status', 'Start Date'],
+      deductionLoans.map(l => {
+        const principal = Number(l.principalAmount) || 0;
+        const fee = Number(l.processingFee) || 0;
+        const disbursed = principal - fee;
+        return [l.loanNumber, l.customerName, l.customerPhone, principal, fee, disbursed, l.tenure, l.status, l.startDate];
+      })
     );
 
     writeSheet(ss, 'Payments',
@@ -65,7 +78,9 @@ function writeSummarySheet(ss, data) {
   const totalLoans = (data.loans || []).length;
 
   const totalDisbursed = (data.loans || []).reduce(function (sum, l) {
-    return sum + (Number(l.principalAmount) || 0);
+    const isWithoutInterest = l.interestType === 'WITHOUT_INTEREST';
+    const actualDisbursed = isWithoutInterest ? (Number(l.principalAmount) - (Number(l.processingFee) || 0)) : Number(l.principalAmount);
+    return sum + (actualDisbursed || 0);
   }, 0);
 
   const totalCollected = (data.payments || []).reduce(function (sum, p) {
