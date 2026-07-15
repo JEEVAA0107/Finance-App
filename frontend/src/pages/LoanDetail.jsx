@@ -126,7 +126,7 @@ export default function LoanDetail() {
         <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{paidCount}/{totalCount} paid</div>
 
         {/* Pay Principal button */}
-        {loan.status === 'ACTIVE' && outstanding > 0 && (
+        {!isWithoutInt && loan.status === 'ACTIVE' && outstanding > 0 && (
           <button className="btn btn-ghost" style={{ width: '100%', marginTop: 12, borderColor: 'rgba(245,158,11,0.3)', color: 'var(--warning-400)' }}
             onClick={() => { setPrincipalModal(true); setPrincipalForm({ amount: String(outstanding), paymentMode: 'CASH' }); }}>
             <Banknote size={15} /> Pay Principal ₹{outstanding.toLocaleString('en-IN')}
