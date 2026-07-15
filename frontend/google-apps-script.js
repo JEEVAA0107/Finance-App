@@ -11,7 +11,7 @@
 // ============================================================
 
 // PASTE YOUR SPREADSHEET ID HERE (from the URL of your Google Sheet)
-const SPREADSHEET_ID = '1Es6NrTp6p8OUirZn7qe3HYkX0QrDVaZ_qKneHbATwt0';
+const SPREADSHEET_ID = '';
 function doGet(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ success: true, message: 'OK' }))
