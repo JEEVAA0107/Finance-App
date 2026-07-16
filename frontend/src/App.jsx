@@ -9,33 +9,30 @@ import LoansPage from './pages/LoansPage';
 import LoanDetail from './pages/LoanDetail';
 import CreateLoan from './pages/CreateLoan';
 import CollectionPage from './pages/CollectionPage';
-import ReportsPage from './pages/ReportsPage';
 import UsersPage from './pages/UsersPage';
-import AuditPage from './pages/AuditPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
 import './index.css';
 
 function AppRoutes() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isSuperAdmin, isAdmin } = useAuth();
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
   if (!user) return <LoginPage />;
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="customers" element={<CustomersPage />} />
-        <Route path="customers/:id" element={<CustomerDetail />} />
-        <Route path="loans" element={<LoansPage />} />
-        <Route path="loans/create" element={<CreateLoan />} />
-        <Route path="loans/:id" element={<LoanDetail />} />
-        <Route path="collections" element={<CollectionPage />} />
-        <Route path="reports" element={isAdmin ? <ReportsPage /> : <Navigate to="/" replace />} />
+        <Route index element={isSuperAdmin ? <SuperAdminDashboard /> : <Dashboard />} />
+        <Route path="customers" element={isSuperAdmin ? <Navigate to="/" replace /> : <CustomersPage />} />
+        <Route path="customers/:id" element={isSuperAdmin ? <Navigate to="/" replace /> : <CustomerDetail />} />
+        <Route path="loans" element={isSuperAdmin ? <Navigate to="/" replace /> : <LoansPage />} />
+        <Route path="loans/create" element={isSuperAdmin ? <Navigate to="/" replace /> : <CreateLoan />} />
+        <Route path="loans/:id" element={isSuperAdmin ? <Navigate to="/" replace /> : <LoanDetail />} />
+        <Route path="collections" element={isSuperAdmin ? <Navigate to="/" replace /> : <CollectionPage />} />
         <Route path="users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
-        <Route path="audit" element={isAdmin ? <AuditPage /> : <Navigate to="/" replace />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -61,10 +58,11 @@ export default function App() {
           toastOptions={{
             duration: 3000,
             style: {
-              background: '#1f2937',
-              color: '#f9fafb',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: '#ffffff',
+              color: '#0f172a',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
               fontSize: '13px',
               maxWidth: '90vw',
               wordBreak: 'break-word',

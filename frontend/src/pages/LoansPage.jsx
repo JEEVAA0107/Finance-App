@@ -64,23 +64,23 @@ export default function LoansPage() {
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{loan.interestType === 'WITHOUT_INTEREST' ? 'TOTAL REPAYABLE' : 'PRINCIPAL'}</div>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{fmtAmt(loan.principalAmount)}</div>
                   {loan.interestType === 'WITHOUT_INTEREST' && (
-                    <div style={{ fontSize: 10, color: 'var(--accent-400)', marginTop: 2 }}>
+                    <div style={{ fontSize: 10, color: 'var(--accent-600)', marginTop: 2 }}>
                       Disbursed: {fmtAmt(loan.principalAmount - (loan.processingFee || 0))}
                     </div>
                   )}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{loan.interestType === 'WITHOUT_INTEREST' ? 'WEEKLY DUE' : 'INTEREST/PERIOD'}</div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{loan.interestType === 'WITHOUT_INTEREST' ? (loan.tenureUnit === 'DAYS' ? 'DAILY DUE' : 'WEEKLY DUE') : 'INTEREST/PERIOD'}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent-600)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>OUTSTANDING</div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: outstanding > 0 ? 'var(--warning-400)' : 'var(--accent-400)' }}>{fmtAmt(outstanding)}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: outstanding > 0 ? 'var(--warning-600)' : 'var(--accent-600)' }}>{fmtAmt(outstanding)}</div>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, marginBottom: 10, overflow: 'hidden' }}>
+              <div style={{ height: 4, background: 'rgba(0,0,0,0.06)', borderRadius: 2, marginBottom: 10, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? 'var(--accent-500)' : 'var(--primary-500)', borderRadius: 2 }} />
               </div>
 

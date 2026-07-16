@@ -7,12 +7,22 @@ import {
 } from 'lucide-react';
 
 export default function AppLayout() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const location = useLocation();
 
-  // Admin sees everything. Agent sees a limited, employee-focused sidebar.
-  const links = isAdmin
+  // Navigation links based on role
+  const links = isSuperAdmin
+    ? [
+        { section: 'System', items: [
+          { to: '/', icon: LayoutDashboard, label: 'Super Panel' },
+        ]},
+        { section: 'Config', items: [
+          { to: '/settings', icon: Settings, label: 'Settings & Backup' },
+        ]},
+      ]
+    : isAdmin
     ? [
         { section: 'Overview', items: [
           { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -24,11 +34,9 @@ export default function AppLayout() {
         ]},
         { section: 'Operations', items: [
           { to: '/collections', icon: HandCoins, label: 'Collections' },
-          { to: '/reports', icon: FileBarChart, label: 'Reports' },
         ]},
         { section: 'Admin', items: [
           { to: '/users', icon: UserCog, label: 'User Management' },
-          { to: '/audit', icon: Shield, label: 'Audit Logs' },
           { to: '/settings', icon: Settings, label: 'Settings & Backup' },
         ]},
       ]
@@ -45,7 +53,12 @@ export default function AppLayout() {
       ];
 
   // Bottom nav items (most used pages)
-  const bottomNavItems = isAdmin
+  const bottomNavItems = isSuperAdmin
+    ? [
+        { to: '/', icon: LayoutDashboard, label: 'Home' },
+        { to: '/settings', icon: Settings, label: 'Settings' },
+      ]
+    : isAdmin
     ? [
         { to: '/', icon: LayoutDashboard, label: 'Home' },
         { to: '/customers', icon: Users, label: 'Customers' },
@@ -70,14 +83,12 @@ export default function AppLayout() {
 
   // Get current page label for header title
   const currentPage = [
-    { to: '/', label: 'Dashboard' },
+    { to: '/', label: isSuperAdmin ? 'Super Admin Panel' : 'Dashboard' },
     { to: '/customers', label: 'Customers' },
     { to: '/loans/create', label: 'Create Loan' },
     { to: '/loans', label: 'Loans' },
     { to: '/collections', label: 'Collections' },
-    { to: '/reports', label: 'Reports' },
     { to: '/users', label: 'Users' },
-    { to: '/audit', label: 'Audit Logs' },
   ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'LoanFlow Pro';
 
   return (
@@ -91,10 +102,43 @@ export default function AppLayout() {
           <div className="mobile-header-logo">LF</div>
           <span className="mobile-header-title">{currentPage}</span>
         </div>
-        <div className="mobile-header-user">
-          <div className="sidebar-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>
+        <div className="mobile-header-user" style={{ position: 'relative' }}>
+          <div 
+            className="sidebar-avatar" 
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)} 
+            style={{ width: 32, height: 32, fontSize: 13, cursor: 'pointer' }}
+          >
             {user?.name?.charAt(0)?.toUpperCase()}
           </div>
+          {showProfileDropdown && (
+            <>
+              <div 
+                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} 
+                onClick={() => setShowProfileDropdown(false)} 
+              />
+              <div className="profile-dropdown animate-in" style={{ zIndex: 999 }}>
+                <div className="profile-dropdown-header">
+                  <strong>{user?.name}</strong>
+                  <span>{user?.email || user?.phone}</span>
+                  <div style={{ marginTop: 4 }}>
+                    <span className="badge badge-success" style={{ fontSize: '10px', padding: '2px 6px', display: 'inline-block' }}>
+                      {user?.role}
+                    </span>
+                  </div>
+                </div>
+                <div className="profile-dropdown-divider" />
+                <button 
+                  className="profile-dropdown-item text-danger" 
+                  onClick={async () => { 
+                    setShowProfileDropdown(false); 
+                    await handleLogout(); 
+                  }}
+                >
+                  <LogOut size={16} /> Switch Account
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -108,7 +152,7 @@ export default function AppLayout() {
             <div className="sidebar-brand-icon">LF</div>
             <div>
               <h1>LoanFlow Pro</h1>
-              <span>{isAdmin ? 'Admin Panel' : 'Agent Panel'}</span>
+              <span>{isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin Panel' : 'Agent Panel'}</span>
             </div>
             <button className="mobile-menu-btn" onClick={() => setSidebarOpen(false)}
               style={{ marginLeft: 'auto', display: sidebarOpen ? 'flex' : 'none' }}>

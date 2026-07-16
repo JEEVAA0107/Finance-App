@@ -12,7 +12,7 @@ export default function LoginPage() {
   useEffect(() => {
     try {
       const users = JSON.parse(localStorage.getItem('db_users') || '[]');
-      console.log('Available Login Accounts (Phone/Email & Password):', users.map(u => ({ name: u.name, phone: u.phone, email: u.email, password: u.passwordHash, role: u.role, isActive: u.isActive })));
+      console.log('Available Login Accounts (Phone/Email & Password):', users.map(u => ({ name: u.name, phone: u.phone, email: u.email, password: u.passwordHash, role: u.role, companyId: u.companyId, isActive: u.isActive })));
     } catch (e) {
       console.error('Error reading users from storage:', e);
     }
@@ -48,12 +48,11 @@ export default function LoginPage() {
             <div style={{ position: 'relative' }}>
               <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
-                className="form-input"
+                className="form-input input-with-icon-left"
                 type="text"
                 placeholder="Enter Phone Number or Email"
                 value={form.userId}
                 onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                style={{ paddingLeft: 42 }}
                 autoComplete="username"
                 required
               />
@@ -65,12 +64,11 @@ export default function LoginPage() {
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
-                className="form-input"
+                className="form-input input-with-icon-both"
                 type={showPass ? 'text' : 'password'}
                 placeholder="Enter your password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                style={{ paddingLeft: 42, paddingRight: 42 }}
                 autoComplete="current-password"
                 required
               />

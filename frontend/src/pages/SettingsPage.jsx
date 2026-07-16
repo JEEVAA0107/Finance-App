@@ -198,7 +198,7 @@ export default function SettingsPage() {
             </div>
           </div>
         ))}
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 8 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, padding: '8px 10px', background: 'var(--bg-tertiary)', borderRadius: 8 }}>
           💡 App works fully offline. Sync happens automatically when internet is available, or tap "Sync Now" manually.
         </div>
       </div>

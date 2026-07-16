@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
           const parsed = JSON.parse(stored);
           if (parsed && parsed.id) {
             const rows = await dbQuery(
-              "SELECT id, name, email, phone, role FROM users WHERE id = ? AND isActive = 1 LIMIT 1",
+              "SELECT id, name, email, phone, role, companyId FROM users WHERE id = ? AND isActive = 1 LIMIT 1",
               [parsed.id]
             );
             if (rows.length) {
@@ -27,9 +27,9 @@ export function AuthProvider({ children }) {
         } catch (e) {}
       }
 
-      // Default fallback: auto-login the first active Admin
+      // Default fallback: auto-login the first active company Admin
       const rows = await dbQuery(
-        "SELECT id, name, email, phone, role FROM users WHERE role='ADMIN' AND isActive=1 LIMIT 1",
+        "SELECT id, name, email, phone, role, companyId FROM users WHERE role='ADMIN' AND isActive=1 LIMIT 1",
         []
       );
       if (rows.length) {
@@ -42,8 +42,8 @@ export function AuthProvider({ children }) {
     }).finally(() => setLoading(false));
   }, []);
 
-  const login = async (emailOrPhone, password) => {
-    const u = await localAuth.login(emailOrPhone, password);
+  const login = async (companyCode, emailOrPhone, password) => {
+    const u = await localAuth.login(companyCode, emailOrPhone, password);
     setUser(u);
     return u;
   };
@@ -54,12 +54,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
   const isCustomer = user?.role === 'CUSTOMER';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isAgent, isCustomer }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isSuperAdmin, isAdmin, isAgent, isCustomer }}>
       {children}
     </AuthContext.Provider>
   );

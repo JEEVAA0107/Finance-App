@@ -27,15 +27,18 @@ export default function CreateLoan() {
 
     if (isWithoutInterest) {
       const deduction = parseFloat(form.advanceDeduction || 0);
-      const weeks = parseInt(form.tenure || 10);
+      const tenureVal = parseInt(form.tenure || 10);
       const disbursed = p - deduction;
-      const weeklyDue = weeks > 0 ? (p / weeks) : 0;
+      const due = tenureVal > 0 ? (p / tenureVal) : 0;
+      const isDaily = form.tenureUnit === 'DAYS';
       return {
         isWithoutInterest: true,
         disbursed: disbursed,
-        weeklyDue: weeklyDue,
-        weeks: weeks,
-        totalRepayable: p
+        due: due,
+        tenure: tenureVal,
+        totalRepayable: p,
+        unitLabel: isDaily ? 'daily' : 'weekly',
+        unitLabelPlural: isDaily ? 'days' : 'weeks'
       };
     } else {
       const r = parseFloat(form.interestRate);
@@ -64,7 +67,7 @@ export default function CreateLoan() {
         interestRate: rate,
         processingFee: fee,
         tenure: tenureVal,
-        tenureUnit: isWithoutInterest ? 'WEEKS' : form.tenureUnit,
+        tenureUnit: form.tenureUnit,
       });
       toast.success(`Loan ${res.loanNumber} created!`);
       navigate(`/loans/${res.id}`);
@@ -88,7 +91,16 @@ export default function CreateLoan() {
 
           <div className="form-group">
             <label className="form-label">Loan Type *</label>
-            <select className="form-select" value={form.interestType} onChange={e => set('interestType', e.target.value)}>
+            <select className="form-select" value={form.interestType} onChange={e => {
+              const val = e.target.value;
+              setForm(f => {
+                const next = { ...f, interestType: val };
+                if (val === 'WITHOUT_INTEREST' && f.tenureUnit === 'MONTHS') {
+                  next.tenureUnit = 'WEEKS';
+                }
+                return next;
+              });
+            }}>
               <option value="FLAT">Regular Flat Interest</option>
               <option value="WITHOUT_INTEREST">Deduction Based (Without Interest)</option>
             </select>
@@ -107,8 +119,16 @@ export default function CreateLoan() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Number of Weeks *</label>
-                <input className="form-input" type="number" min="1" placeholder="e.g. 10" value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
+                <label className="form-label">Collection Frequency *</label>
+                <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
+                  <option value="WEEKS">Weekly</option>
+                  <option value="DAYS">Daily</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">{form.tenureUnit === 'DAYS' ? 'Number of Days *' : 'Number of Weeks *'}</label>
+                <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'DAYS' ? 'e.g. 100' : 'e.g. 10'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
               </div>
             </>
           ) : (
@@ -145,12 +165,12 @@ export default function CreateLoan() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent-400)' }}>₹{preview.disbursed.toLocaleString('en-IN')}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>WEEKLY DUE</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning-400)' }}>₹{Math.round(preview.weeklyDue).toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{preview.unitLabel.toUpperCase()} DUE</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning-400)' }}>₹{Math.round(preview.due).toLocaleString('en-IN')}</div>
                 </div>
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-                Customer repays total **₹{preview.totalRepayable.toLocaleString('en-IN')}** over **{preview.weeks} weeks**
+                Customer repays total **₹{preview.totalRepayable.toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
               </div>
             </div>
           ) : (

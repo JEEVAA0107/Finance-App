@@ -73,6 +73,14 @@ function _scheduleSyncToExternal() {
 
 async function initSchema() {
   const statements = [
+    `CREATE TABLE IF NOT EXISTS companies (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      code TEXT UNIQUE NOT NULL,
+      isActive INTEGER DEFAULT 1,
+      createdAt TEXT DEFAULT (datetime('now')),
+      settings TEXT
+    )`,
     `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -81,6 +89,7 @@ async function initSchema() {
       passwordHash TEXT NOT NULL,
       role TEXT DEFAULT 'CUSTOMER',
       isActive INTEGER DEFAULT 1,
+      companyId TEXT,
       createdAt TEXT DEFAULT (datetime('now'))
     )`,
     `CREATE TABLE IF NOT EXISTS customers (
@@ -94,6 +103,8 @@ async function initSchema() {
       idType TEXT NOT NULL,
       idNumber TEXT NOT NULL,
       isActive INTEGER DEFAULT 1,
+      companyId TEXT,
+      agentId TEXT,
       createdAt TEXT DEFAULT (datetime('now'))
     )`,
     `CREATE TABLE IF NOT EXISTS loans (
@@ -115,6 +126,7 @@ async function initSchema() {
       status TEXT DEFAULT 'ACTIVE',
       startDate TEXT NOT NULL,
       endDate TEXT NOT NULL,
+      companyId TEXT,
       createdAt TEXT DEFAULT (datetime('now'))
     )`,
     `CREATE TABLE IF NOT EXISTS repayments (
@@ -149,27 +161,81 @@ async function initSchema() {
       details TEXT,
       createdAt TEXT DEFAULT (datetime('now'))
     )`,
+    `CREATE INDEX IF NOT EXISTS idx_repayments_loanId ON repayments(loanId)`,
+    `CREATE INDEX IF NOT EXISTS idx_loans_customerId ON loans(customerId)`,
+    `CREATE INDEX IF NOT EXISTS idx_repayments_status ON repayments(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_repayments_dueDate ON repayments(dueDate)`
   ];
   for (const sql of statements) await _run(sql, []);
+
+  // Safe ALTER TABLE migrations for existing schemas
+  const migrations = [
+    "ALTER TABLE users ADD COLUMN companyId TEXT",
+    "ALTER TABLE customers ADD COLUMN companyId TEXT",
+    "ALTER TABLE customers ADD COLUMN agentId TEXT",
+    "ALTER TABLE loans ADD COLUMN companyId TEXT"
+  ];
+  for (const sql of migrations) {
+    try {
+      await _run(sql, []);
+    } catch (_) {}
+  }
 }
 
 async function seedAdminUser() {
-  const result = await _query("SELECT id FROM users WHERE role='ADMIN' LIMIT 1", []);
-  if (result.length > 0) {
-    // Ensure localStorage has the user
-    if (!localStorage.getItem('user')) {
-      const u = result[0];
-      localStorage.setItem('user', JSON.stringify({ id: u.id, name: u.name, email: u.email, phone: u.phone, role: u.role }));
+  // Clear any corrupt/undefined entries from legacy mock database seed bug
+  try {
+    const compVal = localStorage.getItem('db_companies');
+    if (compVal) {
+      const list = JSON.parse(compVal).filter(c => c && c.id && c.id !== 'undefined');
+      localStorage.setItem('db_companies', JSON.stringify(list));
     }
-    return;
+    const userVal = localStorage.getItem('db_users');
+    if (userVal) {
+      const list = JSON.parse(userVal).filter(u => u && u.id && u.id !== 'undefined');
+      localStorage.setItem('db_users', JSON.stringify(list));
+    }
+  } catch (e) {
+    console.error('Error clearing legacy seed corrupt entries:', e);
   }
-  const id = _uuid();
-  await _run(
-    'INSERT INTO users (id, name, email, phone, passwordHash, role) VALUES (?, ?, ?, ?, ?, ?)',
-    [id, 'Super Admin', 'admin@loanflow.com', '6380372501', 'Admin@123456', 'ADMIN']
-  );
-  const adminUser = { id, name: 'Super Admin', email: 'admin@loanflow.com', phone: '6380372501', role: 'ADMIN' };
-  localStorage.setItem('user', JSON.stringify(adminUser));
+
+  // 1. Seed default company
+  const companyCheck = await _query("SELECT id FROM companies WHERE code='demo' LIMIT 1", []);
+  if (companyCheck.length === 0) {
+    await _run(
+      "INSERT INTO companies (id, name, code, isActive) VALUES (?, ?, ?, 1)",
+      ['demo-company-id', 'Demo Finance', 'demo']
+    );
+  }
+
+  // 2. Seed Super Admin
+  const superCheck = await _query("SELECT id FROM users WHERE role='SUPER_ADMIN' LIMIT 1", []);
+  if (superCheck.length === 0) {
+    await _run(
+      "INSERT INTO users (id, name, email, phone, passwordHash, role, companyId) VALUES (?, ?, ?, ?, ?, ?, NULL)",
+      ['super-admin-id', 'System Super Admin', 'super@loanflow.com', '9999999999', 'Admin@123456', 'SUPER_ADMIN']
+    );
+  }
+
+  // 3. Seed Company Admin (Finance Admin)
+  const adminCheck = await _query("SELECT id FROM users WHERE role='ADMIN' LIMIT 1", []);
+  if (adminCheck.length === 0) {
+    await _run(
+      "INSERT INTO users (id, name, email, phone, passwordHash, role, companyId) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      ['demo-admin-id', 'Demo Finance Admin', 'admin@loanflow.com', '6380372501', 'Admin@123456', 'ADMIN', 'demo-company-id']
+    );
+  }
+
+  // 4. Update any existing legacy data to the default tenant company
+  await _run("UPDATE customers SET companyId='demo-company-id' WHERE companyId IS NULL", []);
+  await _run("UPDATE loans SET companyId='demo-company-id' WHERE companyId IS NULL", []);
+  await _run("UPDATE users SET companyId='demo-company-id' WHERE companyId IS NULL AND role != 'SUPER_ADMIN'", []);
+
+  // Sync user in localStorage
+  if (!localStorage.getItem('user')) {
+    const adminUser = { id: 'demo-admin-id', name: 'Demo Finance Admin', email: 'admin@loanflow.com', phone: '6380372501', role: 'ADMIN', companyId: 'demo-company-id' };
+    localStorage.setItem('user', JSON.stringify(adminUser));
+  }
 }
 
 async function _query(sql, params) {
@@ -234,7 +300,106 @@ function createWebDb() {
   return {
     async _query(sql, params) {
       const q = sql.replace(/\s+/g, ' ').trim();
-      
+
+      if (q.startsWith("SELECT * FROM companies WHERE code = ?") || q.startsWith("SELECT * FROM companies WHERE code=?")) {
+        const companies = getTable('companies');
+        const c = companies.find(x => x.code === params[0]?.toLowerCase().trim());
+        return c ? [c] : [];
+      }
+      if (q.startsWith("SELECT * FROM companies")) {
+        return getTable('companies').sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+      }
+
+      // Tenancy Dashboard Metrics Support
+      if (q.startsWith("SELECT COUNT(*) as c FROM loans WHERE companyId = ?")) {
+        const companyId = params[0];
+        return [{ c: getTable('loans').filter(l => l.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT COUNT(*) as c FROM loans WHERE status='ACTIVE' AND companyId = ?")) {
+        const companyId = params[0];
+        return [{ c: getTable('loans').filter(l => l.status === 'ACTIVE' && l.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT COUNT(*) as c FROM loans WHERE status='CLOSED' AND companyId = ?")) {
+        const companyId = params[0];
+        return [{ c: getTable('loans').filter(l => l.status === 'CLOSED' && l.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT COUNT(*) as c FROM loans WHERE status='DEFAULTED' AND companyId = ?")) {
+        const companyId = params[0];
+        return [{ c: getTable('loans').filter(l => l.status === 'DEFAULTED' && l.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT COUNT(*) as c FROM customers WHERE isActive=1 AND companyId = ?")) {
+        const companyId = params[0];
+        return [{ c: getTable('customers').filter(c => c.isActive === 1 && c.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT COUNT(*) as c FROM users WHERE role='AGENT' AND isActive=1 AND companyId = ?")) {
+        const companyId = params[0];
+        return [{ c: getTable('users').filter(u => u.role === 'AGENT' && u.isActive === 1 && u.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT SUM(principalAmount) as s FROM loans WHERE companyId = ?")) {
+        const companyId = params[0];
+        const sum = getTable('loans').filter(l => l.companyId === companyId).reduce((acc, l) => acc + (parseFloat(l.principalAmount) || 0), 0);
+        return [{ s: sum }];
+      }
+      if (q.startsWith("SELECT SUM(p.amount) as s FROM payments p JOIN repayments r ON p.repaymentId = r.id JOIN loans l ON r.loanId = l.id WHERE l.companyId = ?")) {
+        const companyId = params[0];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const repayments = getTable('repayments').filter(r => loans.includes(r.loanId)).map(r => r.id);
+        const sum = getTable('payments').filter(p => repayments.includes(p.repaymentId)).reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
+        return [{ s: sum }];
+      }
+      if (q.startsWith("SELECT SUM(r.dueAmount) as s, COUNT(*) as c FROM repayments r JOIN loans l ON r.loanId = l.id WHERE r.status='OVERDUE' AND l.companyId = ?")) {
+        const companyId = params[0];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const list = getTable('repayments').filter(r => r.status === 'OVERDUE' && loans.includes(r.loanId));
+        const sum = list.reduce((acc, r) => acc + (parseFloat(r.dueAmount) || 0), 0);
+        return [{ s: sum, c: list.length }];
+      }
+      if (q.startsWith("SELECT SUM(r.dueAmount) as s FROM repayments r JOIN loans l ON r.loanId = l.id WHERE r.status IN ('PENDING','PARTIAL') AND l.companyId = ?")) {
+        const companyId = params[0];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const sum = getTable('repayments').filter(r => ['PENDING','PARTIAL'].includes(r.status) && loans.includes(r.loanId)).reduce((acc, r) => acc + (parseFloat(r.dueAmount) || 0), 0);
+        return [{ s: sum }];
+      }
+      if (q.startsWith("SELECT SUM(p.amount) as s FROM payments p JOIN repayments r ON p.repaymentId = r.id JOIN loans l ON r.loanId = l.id WHERE p.collectedAt >= ? AND l.companyId = ?")) {
+        const minDate = params[0];
+        const companyId = params[1];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const repayments = getTable('repayments').filter(r => loans.includes(r.loanId)).map(r => r.id);
+        const sum = getTable('payments').filter(p => repayments.includes(p.repaymentId) && p.collectedAt >= minDate).reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
+        return [{ s: sum }];
+      }
+      if (q.startsWith("SELECT SUM(p.amount) as s FROM payments p JOIN repayments r ON p.repaymentId = r.id JOIN loans l ON r.loanId = l.id WHERE p.paymentType='INTEREST' AND l.companyId = ?")) {
+        const companyId = params[0];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const repayments = getTable('repayments').filter(r => loans.includes(r.loanId)).map(r => r.id);
+        const sum = getTable('payments').filter(p => repayments.includes(p.repaymentId) && p.paymentType === 'INTEREST').reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
+        return [{ s: sum }];
+      }
+      if (q.startsWith("SELECT SUM(p.amount) as s FROM payments p JOIN repayments r ON p.repaymentId = r.id JOIN loans l ON r.loanId = l.id WHERE p.collectedAt >= ? AND p.collectedAt <= ? AND l.companyId = ?")) {
+        const start = params[0];
+        const end = params[1];
+        const companyId = params[2];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const repayments = getTable('repayments').filter(r => loans.includes(r.loanId)).map(r => r.id);
+        const sum = getTable('payments').filter(p => repayments.includes(p.repaymentId) && p.collectedAt >= start && p.collectedAt <= end).reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
+        return [{ s: sum }];
+      }
+      if (q.startsWith("SELECT COUNT(*) as c FROM loans WHERE status='ACTIVE' AND agentId = ? AND companyId = ?")) {
+        const agentId = params[0];
+        const companyId = params[1];
+        return [{ c: getTable('loans').filter(l => l.status === 'ACTIVE' && l.agentId === agentId && l.companyId === companyId).length }];
+      }
+      if (q.startsWith("SELECT SUM(p.amount) as s, COUNT(p.id) as c FROM payments p JOIN repayments r ON p.repaymentId = r.id JOIN loans l ON r.loanId = l.id WHERE p.collectedAt >= ? AND p.collectedById = ? AND l.companyId = ?")) {
+        const minDate = params[0];
+        const agentId = params[1];
+        const companyId = params[2];
+        const loans = getTable('loans').filter(l => l.companyId === companyId).map(l => l.id);
+        const repayments = getTable('repayments').filter(r => loans.includes(r.loanId)).map(r => r.id);
+        const list = getTable('payments').filter(p => repayments.includes(p.repaymentId) && p.collectedAt >= minDate && p.collectedById === agentId);
+        const sum = list.reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
+        return [{ s: sum, c: list.length }];
+      }
+
       // 1. Simple COUNT & SUM metrics
       if (q === 'SELECT COUNT(*) as c FROM loans') {
         return [{ c: getTable('loans').length }];
@@ -323,6 +488,10 @@ function createWebDb() {
         const c = getTable('customers').find(x => x.id === params[0]);
         return c ? [c] : [];
       }
+      if (q.includes("FROM loans") && q.includes("WHERE id") && !q.includes("LEFT JOIN")) {
+        const l = getTable('loans').find(x => x.id === params[0]);
+        return l ? [l] : [];
+      }
       if (q.startsWith("SELECT * FROM customers WHERE isActive=1")) {
         return getTable('customers').filter(c => c.isActive === 1).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       }
@@ -334,8 +503,32 @@ function createWebDb() {
       if (q.startsWith("SELECT * FROM repayments WHERE loanId = ? ORDER BY installmentNo ASC")) {
         return getTable('repayments').filter(r => r.loanId === params[0]).sort((a,b) => a.installmentNo - b.installmentNo);
       }
+      if (q.startsWith("SELECT id, loanId, status, dueAmount, paidAmount FROM repayments WHERE loanId IN")) {
+        return getTable('repayments').filter(r => params.includes(r.loanId));
+      }
       if (q.startsWith("SELECT id, status, dueAmount, paidAmount FROM repayments WHERE loanId = ?")) {
         return getTable('repayments').filter(r => r.loanId === params[0]);
+      }
+      if (q.includes("SELECT * FROM repayments WHERE loanId") && q.includes("ORDER BY installmentNo DESC")) {
+        const list = getTable('repayments').filter(r => r.loanId === params[0]);
+        list.sort((a, b) => b.installmentNo - a.installmentNo);
+        return list.slice(0, 1);
+      }
+      if (q.includes("FROM payments p JOIN repayments r ON p.repaymentId = r.id WHERE r.loanId IN")) {
+        const payments = getTable('payments');
+        const repayments = getTable('repayments');
+        const sums = {};
+        for (const p of payments) {
+          if (p.paymentType !== 'INTEREST') continue;
+          const r = repayments.find(x => x.id === p.repaymentId);
+          if (r && params.includes(r.loanId)) {
+            sums[r.loanId] = (sums[r.loanId] || 0) + p.amount;
+          }
+        }
+        return Object.keys(sums).map(loanId => ({
+          loanId,
+          total: sums[loanId]
+        }));
       }
       if (q.includes("SELECT SUM(amount) as total FROM payments WHERE repaymentId IN")) {
         const loanId = params[0];
@@ -355,21 +548,28 @@ function createWebDb() {
           };
         }).sort((a,b) => b.createdAt.localeCompare(a.createdAt));
       }
-      if (q.startsWith("SELECT l.*, c.name as customerName, c.phone as customerPhone, u.name as agentName FROM loans l")) {
+      if (q.includes("FROM loans l") && q.includes("c.name as customerName") && q.includes("u.name as agentName") && !q.includes("WHERE l.id")) {
         let loans = getTable('loans');
         if (q.includes("l.status = ?")) {
           loans = loans.filter(l => l.status === params[0]);
         }
         const customers = getTable('customers');
         const users = getTable('users');
+        const repayments = getTable('repayments');
+        const payments = getTable('payments');
         const rows = loans.map(l => {
           const c = customers.find(x => x.id === l.customerId);
           const u = users.find(x => x.id === l.agentId);
+          const loanRepIds = repayments.filter(r => r.loanId === l.id).map(r => r.id);
+          const loanPayments = payments.filter(p => loanRepIds.includes(p.repaymentId));
+          const closedAtDate = loanPayments.length ? loanPayments.reduce((max, p) => p.collectedAt > max ? p.collectedAt : max, '') : null;
+          
           return {
             ...l,
             customerName: c ? c.name : '',
             customerPhone: c ? c.phone : '',
-            agentName: u ? u.name : ''
+            agentName: u ? u.name : '',
+            closedAtDate
           };
         });
         return rows.sort((a,b) => b.createdAt.localeCompare(a.createdAt));
@@ -403,6 +603,11 @@ function createWebDb() {
         let repayments = getTable('repayments');
         if (q.includes("r.status = ?")) {
           repayments = repayments.filter(r => r.status === params[0]);
+        }
+        if (q.includes("r.dueDate >= ?") && params.length >= 2) {
+          const start = params[0];
+          const end = params[1];
+          repayments = repayments.filter(r => r.dueDate >= start && r.dueDate < end);
         }
         const loans = getTable('loans');
         const customers = getTable('customers');
@@ -439,6 +644,15 @@ function createWebDb() {
       }
       if (q.startsWith("SELECT * FROM payments WHERE repaymentId = ?")) {
         return getTable('payments').filter(p => p.repaymentId === params[0]);
+      }
+      if (q.includes("SELECT COUNT(*) as c FROM repayments WHERE loanId=?") && q.includes("status IN")) {
+        const loanId = params[0];
+        const count = getTable('repayments').filter(r => r.loanId === loanId && ['PENDING','OVERDUE','PARTIAL'].includes(r.status)).length;
+        return [{ c: count }];
+      }
+      if (q.startsWith("SELECT * FROM loans WHERE id=? AND status=?") || q.startsWith("SELECT * FROM loans WHERE id = ? AND status = ?")) {
+        const l = getTable('loans').find(x => x.id === params[0] && x.status === params[1]);
+        return l ? [l] : [];
       }
       if (q.startsWith("SELECT l.*, c.name as customerName, c.phone as customerPhone, l.outstandingPrincipal, l.principalAmount FROM loans l")) {
         const l = getTable('loans').find(x => x.id === params[0]);
@@ -608,6 +822,28 @@ function createWebDb() {
         return;
       }
 
+      if (q.startsWith("INSERT INTO companies")) {
+        const companies = getTable('companies');
+        companies.push({
+          id: params[0],
+          name: params[1],
+          code: params[2],
+          isActive: params[3] !== undefined ? params[3] : 1,
+          createdAt: new Date().toISOString()
+        });
+        saveTable('companies', companies);
+        return;
+      }
+      if (q.startsWith("UPDATE companies SET isActive = ? WHERE id = ?") || q.startsWith("UPDATE companies SET isActive=? WHERE id=?")) {
+        const companies = getTable('companies');
+        const c = companies.find(x => x.id === params[1]);
+        if (c) {
+          c.isActive = parseInt(params[0]);
+          saveTable('companies', companies);
+        }
+        return;
+      }
+
       // 2. INSERT/UPDATE users
       if (q.startsWith("INSERT INTO users")) {
         const users = getTable('users');
@@ -618,6 +854,7 @@ function createWebDb() {
           phone: params[3],
           passwordHash: params[4],
           role: params[5],
+          companyId: params[6],
           isActive: 1,
           createdAt: new Date().toISOString()
         });
@@ -660,6 +897,8 @@ function createWebDb() {
           city: params[6],
           idType: params[7],
           idNumber: params[8],
+          companyId: params[9],
+          agentId: params[10],
           isActive: 1,
           createdAt: new Date().toISOString()
         });
@@ -713,6 +952,7 @@ function createWebDb() {
           status: params[14],
           startDate: params[15],
           endDate: params[16],
+          companyId: params[17],
           createdAt: new Date().toISOString()
         });
         saveTable('loans', loans);
@@ -794,6 +1034,16 @@ function createWebDb() {
         let repayments = getTable('repayments');
         repayments = repayments.filter(r => !(r.loanId === params[0] && ['PENDING','OVERDUE'].includes(r.status) && r.paidAmount === 0));
         saveTable('repayments', repayments);
+        return;
+      }
+      if (q.startsWith("UPDATE loans SET outstandingPrincipal=?, status=? WHERE id=?") || q.startsWith("UPDATE loans SET outstandingPrincipal=?, status=? WHERE id = ?")) {
+        const loans = getTable('loans');
+        const l = loans.find(x => x.id === params[2]);
+        if (l) {
+          l.outstandingPrincipal = parseFloat(params[0]);
+          l.status = params[1];
+          saveTable('loans', loans);
+        }
         return;
       }
       if (q.startsWith("UPDATE loans SET outstandingPrincipal=? WHERE id=?")) {

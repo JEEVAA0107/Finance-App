@@ -11,7 +11,7 @@ export default function CollectionPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('today');
   const [payModal, setPayModal] = useState(null);
-  const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '' });
+  const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
 
   const load = async () => {
@@ -20,7 +20,7 @@ export default function CollectionPage() {
       await getDb();
       const data = tab === 'today'
         ? await repaymentsAPI.today()
-        : await repaymentsAPI.list({ status: tab === 'overdue' ? 'OVERDUE' : tab === 'pending' ? 'PENDING' : undefined, limit: 100 });
+        : await repaymentsAPI.list({ status: 'OVERDUE', limit: 100 });
       setRepayments(data);
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
@@ -32,7 +32,12 @@ export default function CollectionPage() {
     e.preventDefault();
     setPaying(true);
     try {
-      await paymentsAPI.collect({ repaymentId: payModal.id, ...payForm, amount: parseFloat(payForm.amount) });
+      await paymentsAPI.collect({ 
+        repaymentId: payModal.id, 
+        ...payForm, 
+        amount: parseFloat(payForm.amount),
+        penaltyAmount: parseFloat(payForm.penaltyAmount) || 0
+      });
       toast.success('✓ Payment collected!');
       setPayModal(null);
       load();
@@ -42,7 +47,7 @@ export default function CollectionPage() {
 
   const openPay = (r) => {
     setPayModal(r);
-    setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '' });
+    setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   };
 
   return (
@@ -53,7 +58,7 @@ export default function CollectionPage() {
 
       {/* Tabs */}
       <div className="tabs">
-        {[['today', "Today"], ['overdue', 'Overdue'], ['pending', 'Upcoming'], ['all', 'All']].map(([val, label]) => (
+        {[['today', "Today"], ['overdue', 'Overdue']].map(([val, label]) => (
           <button key={val} className={`tab ${tab === val ? 'active' : ''}`} onClick={() => setTab(val)}>{label}</button>
         ))}
       </div>
@@ -143,6 +148,13 @@ export default function CollectionPage() {
                   <input className="form-input" type="number" step="0.01" value={payForm.amount}
                     onChange={e => setPayForm({ ...payForm, amount: e.target.value })} required />
                 </div>
+                {payModal.status === 'OVERDUE' && (
+                  <div className="form-group">
+                    <label className="form-label">Penalty Amount (₹) - optional</label>
+                    <input className="form-input" type="number" min="0" placeholder="e.g. 100" value={payForm.penaltyAmount}
+                      onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })} />
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Payment Mode</label>
                   <select className="form-select" value={payForm.paymentMode}
@@ -162,7 +174,7 @@ export default function CollectionPage() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setPayModal(null)}>Cancel</button>
                 <button type="submit" className="btn btn-success" disabled={paying}>
-                  {paying ? 'Processing...' : `Collect ₹${payForm.amount || '0'}`}
+                  {paying ? 'Processing...' : `Collect ₹${(parseFloat(payForm.amount || 0) + parseFloat(payForm.penaltyAmount || 0)).toLocaleString('en-IN')}`}
                 </button>
               </div>
             </form>

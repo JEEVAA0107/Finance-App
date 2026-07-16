@@ -87,7 +87,7 @@ export default function LoanDetail() {
             <div style={{ fontWeight: 800, fontSize: 15 }}>₹{(loan.principalAmount / 1000).toFixed(0)}K</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? 'Weekly Due' : 'Per Period'}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? (loan.tenureUnit === 'DAYS' ? 'Daily Due' : 'Weekly Due') : 'Per Period'}</div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
@@ -109,25 +109,25 @@ export default function LoanDetail() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 10 }}>
               <span style={{ color: 'var(--text-muted)' }}>Total Paid So Far</span>
-              <span style={{ fontWeight: 700, color: 'var(--accent-400)' }}>₹{(loan.principalAmount - outstanding).toLocaleString('en-IN')}</span>
+              <span style={{ fontWeight: 700, color: 'var(--accent-600)' }}>₹{(loan.principalAmount - outstanding).toLocaleString('en-IN')}</span>
             </div>
           </>
         ) : (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 10 }}>
             <span style={{ color: 'var(--text-muted)' }}>Interest Collected</span>
-            <span style={{ fontWeight: 700, color: 'var(--accent-400)' }}>₹{(loan.interestCollected || 0).toLocaleString('en-IN')}</span>
+            <span style={{ fontWeight: 700, color: 'var(--accent-600)' }}>₹{(loan.interestCollected || 0).toLocaleString('en-IN')}</span>
           </div>
         )}
 
         {/* Progress */}
-        <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
+        <div style={{ height: 6, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
           <div style={{ height: '100%', width: `${progress}%`, background: 'var(--primary-500)', borderRadius: 3 }} />
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{paidCount}/{totalCount} paid</div>
 
         {/* Pay Principal button */}
         {!isWithoutInt && loan.status === 'ACTIVE' && outstanding > 0 && (
-          <button className="btn btn-ghost" style={{ width: '100%', marginTop: 12, borderColor: 'rgba(245,158,11,0.3)', color: 'var(--warning-400)' }}
+          <button className="btn btn-ghost" style={{ width: '100%', marginTop: 12, borderColor: 'rgba(245,158,11,0.3)', color: 'var(--warning-600)' }}
             onClick={() => { setPrincipalModal(true); setPrincipalForm({ amount: String(outstanding), paymentMode: 'CASH' }); }}>
             <Banknote size={15} /> Pay Principal ₹{outstanding.toLocaleString('en-IN')}
           </button>
@@ -144,12 +144,12 @@ export default function LoanDetail() {
         {displayList.map(r => (
           <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: r.status === 'PAID' ? 'rgba(16,185,129,0.15)' : r.status === 'OVERDUE' ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.06)' }}>
-                {r.status === 'PAID' ? <CheckCircle size={14} style={{ color: 'var(--accent-400)' }} /> : r.status === 'OVERDUE' ? <AlertTriangle size={14} style={{ color: 'var(--danger-400)' }} /> : <Clock size={14} style={{ color: 'var(--text-muted)' }} />}
+              <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyItems: 'center', background: r.status === 'PAID' ? 'rgba(16,185,129,0.15)' : r.status === 'OVERDUE' ? 'rgba(244,63,94,0.15)' : 'rgba(0,0,0,0.05)' }}>
+                {r.status === 'PAID' ? <CheckCircle size={14} style={{ color: 'var(--accent-600)' }} /> : r.status === 'OVERDUE' ? <AlertTriangle size={14} style={{ color: 'var(--danger-600)' }} /> : <Clock size={14} style={{ color: 'var(--text-muted)' }} />}
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>#{r.installmentNo} · {fmtShort(r.dueDate)}</div>
-                {r.paidAmount > 0 && r.status !== 'PAID' && <div style={{ fontSize: 11, color: 'var(--accent-400)' }}>Partial: ₹{r.paidAmount?.toLocaleString('en-IN')}</div>}
+                {r.paidAmount > 0 && r.status !== 'PAID' && <div style={{ fontSize: 11, color: 'var(--accent-600)' }}>Partial: ₹{r.paidAmount?.toLocaleString('en-IN')}</div>}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -231,7 +231,7 @@ export default function LoanDetail() {
             </div>
             <form onSubmit={handlePrincipalPay}>
               <div className="modal-body">
-                <div style={{ padding: '10px 14px', background: 'rgba(245,158,11,0.1)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.2)', marginBottom: 14, fontSize: 12, color: 'var(--warning-400)' }}>
+                <div style={{ padding: '10px 14px', background: 'var(--warning-50)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.2)', marginBottom: 14, fontSize: 12, color: 'var(--warning-600)' }}>
                   ⚠️ Full payment will CLOSE the loan automatically.
                 </div>
                 <div className="form-group">

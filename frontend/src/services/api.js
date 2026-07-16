@@ -4,7 +4,7 @@
  */
 import {
   localAuth, localUsers, localCustomers, localLoans,
-  localRepayments, localPayments, localDashboard, localReports, localAudit,
+  localRepayments, localPayments, localDashboard, localReports, localAudit, localCompanies
 } from './localDb';
 import { getDb, dbQuery } from './db';
 
@@ -94,6 +94,13 @@ export const reportsAPI = {
 // ─── Audit ────────────────────────────────────────────────────────────────────
 export const auditAPI = {
   list: (params) => localAudit.list(params),
+};
+
+// ─── Companies ────────────────────────────────────────────────────────────────
+export const companiesAPI = {
+  list: () => localCompanies.list(),
+  create: (data) => localCompanies.create(data.name, data.code),
+  toggleActive: (id, isActive) => localCompanies.toggleActive(id, isActive),
 };
 
 export default {};
