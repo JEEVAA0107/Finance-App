@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -61,6 +61,8 @@ model Customer {
   loans       Loan[]
 
   @@index([phone])
+  @@index([name])
+  @@index([idNumber])
 }
 
 model Loan {

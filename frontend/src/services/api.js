@@ -1,108 +1,101 @@
-/**
- * api.js — All calls now go to local SQLite on the device.
- * No network, no backend server needed. Works 100% offline.
- */
-import {
-  localAuth, localUsers, localCustomers, localLoans,
-  localRepayments, localPayments, localDashboard, localReports, localAudit, localCompanies
-} from './localDb';
-import { getDb, dbQuery } from './db';
+import axios from 'axios';
 
-function getUser() {
-  try {
-    const u = JSON.parse(localStorage.getItem('user'));
-    if (u && u.id) return u;
-  } catch (_) {}
-  return null;
-}
+// Using localtunnel for temporary testing
+const API_URL = 'https://salty-moments-visit.loca.lt/api';
 
-// Safe userId — waits for DB ready, then reads from localStorage or DB directly
-async function getUserId() {
-  await getDb(); // ensure DB is initialized and admin is seeded
-  // Try localStorage first (fastest)
-  const u = getUser();
-  if (u && u.id) return u.id;
-  // Fallback: query DB directly
-  const rows = await dbQuery("SELECT id FROM users WHERE role='ADMIN' AND isActive=1 LIMIT 1", []);
-  if (rows.length) {
-    localStorage.setItem('user', JSON.stringify(rows[0]));
-    return rows[0].id;
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+// Interceptor to add JWT token and tunnel bypass header
+api.interceptors.request.use((config) => {
+  config.headers['Bypass-Tunnel-Reminder'] = 'true'; // Bypass localtunnel splash screen
+  
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  throw new Error('No admin user found. Please reinstall the app.');
-}
+  return config;
+}, (error) => Promise.reject(error));
+
+// Generic response data extractor
+const extractData = (res) => {
+  if (res.data && res.data.success && res.data.data !== undefined) {
+    return res.data.data;
+  }
+  return res.data;
+};
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
-  login: (data) => localAuth.login(data.email, data.password),
-  logout: () => localAuth.logout(),
-  me: () => localAuth.me(),
+  login: (data) => api.post('/auth/login', data).then(extractData),
+  me: () => api.get('/auth/me').then(extractData),
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return Promise.resolve();
+  },
 };
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 export const usersAPI = {
-  list: (params) => localUsers.list(params),
-  create: (data) => localUsers.create(data),
-  update: (id, data) => localUsers.update(id, data),
-  changePassword: (id, data) => localUsers.changePassword(id, data.password),
+  list: (params) => api.get('/users', { params }).then(extractData),
+  create: (data) => api.post('/users', data).then(extractData),
+  update: (id, data) => api.patch(`/users/${id}`, data).then(extractData),
+  changePassword: (id, data) => api.patch(`/users/${id}/password`, data).then(extractData),
 };
 
 // ─── Customers ────────────────────────────────────────────────────────────────
 export const customersAPI = {
-  list: (params) => localCustomers.list(params),
-  get: (id) => localCustomers.get(id),
-  create: (data) => localCustomers.create(data),
-  update: (id, data) => localCustomers.update(id, data),
-  delete: (id) => localCustomers.delete(id),
+  list: (params) => api.get('/customers', { params }).then(extractData),
+  get: (id) => api.get(`/customers/${id}`).then(extractData),
+  create: (data) => api.post('/customers', data).then(extractData),
+  update: (id, data) => api.put(`/customers/${id}`, data).then(extractData),
+  delete: (id) => api.delete(`/customers/${id}`).then(extractData),
 };
 
 // ─── Loans ────────────────────────────────────────────────────────────────────
 export const loansAPI = {
-  list: (params) => localLoans.list(params),
-  get: (id) => localLoans.get(id),
-  create: async (data) => localLoans.create(data, await getUserId()),
-  updateStatus: (id, data) => localLoans.updateStatus(id, data.status),
-  delete: (id) => localLoans.delete(id),
-  downloadReport: () => Promise.resolve({ data: 'Report not available offline' }),
+  list: (params) => api.get('/loans', { params }).then(extractData),
+  get: (id) => api.get(`/loans/${id}`).then(extractData),
+  create: (data) => api.post('/loans', data).then(extractData),
+  updateStatus: (id, data) => api.patch(`/loans/${id}/status`, data).then(extractData),
+  delete: (id) => api.delete(`/loans/${id}`).then(extractData),
+  downloadReport: () => Promise.resolve({ data: 'Report available via backend only' }),
 };
 
 // ─── Repayments ───────────────────────────────────────────────────────────────
 export const repaymentsAPI = {
-  list: (params) => localRepayments.list(params),
-  today: () => localRepayments.today(),
+  list: (params) => api.get('/repayments', { params }).then(extractData),
+  today: () => api.get('/repayments/today').then(extractData),
 };
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsAPI = {
-  collect: async (data) => localPayments.collect(data, await getUserId()),
-  collectPrincipal: async (data) => localPayments.collectPrincipal(data, await getUserId()),
-  list: (params) => localPayments.list(params),
+  collect: (data) => api.post('/payments/collect', data).then(extractData),
+  collectPrincipal: (data) => api.post('/payments/collect-principal', data).then(extractData),
+  list: (params) => api.get('/payments', { params }).then(extractData),
 };
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export const dashboardAPI = {
-  summary: () => localDashboard.summary(),
-  agent: () => localDashboard.agent(getUser()?.id),
+  summary: () => api.get('/dashboard/summary').then(extractData),
+  agent: (id) => api.get(`/dashboard/agent/${id || ''}`).then(extractData),
 };
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
 export const reportsAPI = {
-  defaulters: () => localReports.defaulters(),
-  dailyCollection: (params) => localReports.dailyCollection(params?.date),
-  customer: (id) => localCustomers.get(id),
+  defaulters: () => api.get('/reports/defaulters').then(extractData),
+  dailyCollection: (params) => api.get('/reports/daily-collection', { params }).then(extractData),
+  customer: (id) => api.get(`/customers/${id}`).then(extractData),
 };
 
 // ─── Audit ────────────────────────────────────────────────────────────────────
 export const auditAPI = {
-  list: (params) => localAudit.list(params),
+  list: (params) => api.get('/audit', { params }).then(extractData),
 };
 
-// ─── Companies ────────────────────────────────────────────────────────────────
-export const companiesAPI = {
-  list: () => localCompanies.list(),
-  create: (data) => localCompanies.create(data.name, data.code),
-  toggleActive: (id, isActive) => localCompanies.toggleActive(id, isActive),
+export default api;
+export const updateApiBaseUrl = (url) => {
+  api.defaults.baseURL = url;
 };
-
-export default {};
-
-export const updateApiBaseUrl = () => {}; // no-op in offline mode

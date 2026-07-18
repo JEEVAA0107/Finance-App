@@ -10,15 +10,14 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const { search, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search } },
-            { phone: { contains: search } },
-            { idNumber: { contains: search } },
-          ],
-        }
-      : {};
+    const where = { isActive: true };
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { phone: { contains: search } },
+        { idNumber: { contains: search } },
+      ];
+    }
 
     // Agents can see all active customers to create new loans
     if (req.user.role === 'CUSTOMER') {

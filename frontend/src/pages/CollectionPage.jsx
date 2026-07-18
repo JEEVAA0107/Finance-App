@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { repaymentsAPI, paymentsAPI } from '../services/api';
-import { getDb } from '../services/db';
 import toast from 'react-hot-toast';
 import { HandCoins, CheckCircle, AlertTriangle, Clock, X, Phone } from 'lucide-react';
 
@@ -17,7 +16,6 @@ export default function CollectionPage() {
   const load = async () => {
     setLoading(true);
     try {
-      await getDb();
       const data = tab === 'today'
         ? await repaymentsAPI.today()
         : await repaymentsAPI.list({ status: 'OVERDUE', limit: 100 });

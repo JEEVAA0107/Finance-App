@@ -9,14 +9,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    try {
-      const users = JSON.parse(localStorage.getItem('db_users') || '[]');
-      console.log('Available Login Accounts (Phone/Email & Password):', users.map(u => ({ name: u.name, phone: u.phone, email: u.email, password: u.passwordHash, role: u.role, companyId: u.companyId, isActive: u.isActive })));
-    } catch (e) {
-      console.error('Error reading users from storage:', e);
-    }
-  }, []);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

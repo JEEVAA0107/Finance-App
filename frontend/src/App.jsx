@@ -12,26 +12,25 @@ import CollectionPage from './pages/CollectionPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
 import './index.css';
 
 function AppRoutes() {
-  const { user, loading, isSuperAdmin, isAdmin } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
   if (!user) return <LoginPage />;
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        <Route index element={isSuperAdmin ? <SuperAdminDashboard /> : <Dashboard />} />
-        <Route path="customers" element={isSuperAdmin ? <Navigate to="/" replace /> : <CustomersPage />} />
-        <Route path="customers/:id" element={isSuperAdmin ? <Navigate to="/" replace /> : <CustomerDetail />} />
-        <Route path="loans" element={isSuperAdmin ? <Navigate to="/" replace /> : <LoansPage />} />
-        <Route path="loans/create" element={isSuperAdmin ? <Navigate to="/" replace /> : <CreateLoan />} />
-        <Route path="loans/:id" element={isSuperAdmin ? <Navigate to="/" replace /> : <LoanDetail />} />
-        <Route path="collections" element={isSuperAdmin ? <Navigate to="/" replace /> : <CollectionPage />} />
+        <Route index element={<Dashboard />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/:id" element={<CustomerDetail />} />
+        <Route path="loans" element={<LoansPage />} />
+        <Route path="loans/create" element={<CreateLoan />} />
+        <Route path="loans/:id" element={<LoanDetail />} />
+        <Route path="collections" element={<CollectionPage />} />
         <Route path="users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

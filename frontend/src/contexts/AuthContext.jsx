@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getDb, dbQuery } from '../services/db';
-import { localAuth } from '../services/localDb';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -9,48 +8,43 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDb().then(async () => {
-      const stored = localStorage.getItem('user');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.id) {
-            const rows = await dbQuery(
-              "SELECT id, name, email, phone, role, companyId FROM users WHERE id = ? AND isActive = 1 LIMIT 1",
-              [parsed.id]
-            );
-            if (rows.length) {
-              setUser(rows[0]);
-              return;
-            }
-          }
-        } catch (e) {}
-      }
-
-      // Default fallback: auto-login the first active company Admin
-      const rows = await dbQuery(
-        "SELECT id, name, email, phone, role, companyId FROM users WHERE role='ADMIN' AND isActive=1 LIMIT 1",
-        []
-      );
-      if (rows.length) {
-        setUser(rows[0]);
-        try { localStorage.setItem('user', JSON.stringify(rows[0])); } catch (e) {}
-      } else {
-        setUser(null);
-        try { localStorage.removeItem('user'); } catch (e) {}
-      }
-    }).finally(() => setLoading(false));
+    const token = localStorage.getItem('token');
+    if (token) {
+      authAPI.me()
+        .then(data => {
+          setUser(data.user || data);
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const login = async (companyCode, emailOrPhone, password) => {
-    const u = await localAuth.login(companyCode, emailOrPhone, password);
-    setUser(u);
-    return u;
+  const login = async (emailOrPhone, password) => {
+    // Note: old localDb login expected 3 args (companyCode, emailOrPhone, password).
+    // Express API expects { email: emailOrPhone, password }
+    const response = await authAPI.login({ email: emailOrPhone, password });
+    if (response.accessToken) {
+      localStorage.setItem('token', response.accessToken);
+    }
+    if (response.user) {
+      localStorage.setItem('user', JSON.stringify(response.user));
+      setUser(response.user);
+    }
+    return response.user;
   };
 
-  const logout = () => {
-    try { localStorage.removeItem('user'); } catch (e) {}
-    localAuth.logout();
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (e) {}
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
