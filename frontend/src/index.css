@@ -260,6 +260,107 @@ input, select, textarea, button { font-family: inherit; }
   box-sizing: border-box;
 }
 
+.desktop-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+/* ─── Notifications Dropdown ─────────────────────────────────────────────────── */
+.notification-dropdown {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+}
+
+.notification-dropdown-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-glass);
+}
+
+.notification-dropdown-header strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.notification-dropdown-header span {
+  font-size: 11px;
+  color: var(--primary-600);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.notification-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.notification-item:hover {
+  background: var(--bg-glass-hover);
+}
+
+.notification-item.unread {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.notification-message {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.notification-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  margin-top: 4px;
+}
+
+.notification-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* ─── Mobile Header ────────────────────────────────────────────────────────── */
 .mobile-header {
   display: none;
@@ -401,6 +502,7 @@ input, select, textarea, button { font-family: inherit; }
   .sidebar-overlay.open { display: block; }
   .mobile-header { display: flex; }
   .bottom-nav { display: block; }
+  .desktop-header-actions { display: none; }
   .main-content {
     margin-left: 0;
     padding: calc(56px + env(safe-area-inset-top) + 24px) 16px calc(58px + env(safe-area-inset-bottom) + 24px);

@@ -8,17 +8,23 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'BOTH' });
 
   const load = async () => {
-    try { setCustomers(await customersAPI.list({ search, limit: 100 })); }
+    try { setCustomers(await customersAPI.list({ search: debouncedSearch, limit: 100 })); }
     catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [search]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => { load(); }, [debouncedSearch]);
 
   const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'BOTH' }); setEditCustomer(null); setShowModal(true); };
   const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, notificationPref: c.notificationPref || 'BOTH' }); setShowModal(true); };
@@ -38,8 +44,6 @@ export default function CustomersPage() {
     catch { toast.error('Failed'); }
   };
 
-  if (loading) return <div className="loading-page"><div className="spinner" /></div>;
-
   return (
     <div className="animate-in">
       {/* Header */}
@@ -55,7 +59,11 @@ export default function CustomersPage() {
       </div>
 
       {/* List */}
-      {customers.length === 0 ? (
+      {loading ? (
+        <div style={{ padding: '40px 0', display: 'flex', justifyContent: 'center' }}>
+          <div className="spinner" />
+        </div>
+      ) : customers.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '32px 16px' }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>No customers yet</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Tap Add to create your first customer</div>

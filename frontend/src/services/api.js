@@ -122,8 +122,8 @@ export const repaymentsAPI = {
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsAPI = {
-  collect: (data) => api.post('/payments/collect', data).then(extractData),
-  collectPrincipal: (data) => api.post('/payments/collect-principal', data).then(extractData),
+  collect: (data) => api.post('/payments', data).then(extractData),
+  collectPrincipal: (data) => api.post('/payments/principal', data).then(extractData),
   list: (params) => api.get('/payments', { params }).then(extractData),
 };
 

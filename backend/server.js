@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config(); // trigger restart
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -25,6 +25,7 @@ function getLocalIpAddress() {
 const localIp = getLocalIpAddress();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
+
 app.use(helmet());
 
 // Allow all origins for local development to prevent network errors across multiple network interfaces

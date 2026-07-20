@@ -107,13 +107,23 @@ async function autoExtendIfNeeded(loanId) {
 // GET /api/loans
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { status, customerId, agentId, page = 1, limit = 20 } = req.query;
+    const { status, customerId, agentId, search, tenureUnit, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = {};
 
     if (status) where.status = status;
     if (customerId) where.customerId = customerId;
     if (agentId) where.agentId = agentId;
+    if (tenureUnit) where.tenureUnit = tenureUnit;
+    
+    if (search) {
+      where.OR = [
+        { loanNumber: { contains: search, mode: 'insensitive' } },
+        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { customer: { phone: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    
     // if (req.user.role === 'AGENT') where.agentId = req.user.id; // Removed so all agents see all loans
     if (req.user.role === 'CUSTOMER') {
       const customer = await prisma.customer.findUnique({ where: { userId: req.user.id } });

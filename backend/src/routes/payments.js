@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
 const { sendSMS } = require('../utils/sms');
+const { sendWhatsAppMessage } = require('../services/whatsappClient');
 const prisma = new PrismaClient();
 
 // round2 MUST be defined before any route that uses it
@@ -109,15 +110,29 @@ router.post('/', authenticate, async (req, res) => {
 
     await auditLog(req.user.id, 'COLLECT_INTEREST', 'Payment', payment.id, { amount, paymentMode, type: 'INTEREST' }, req);
 
-    // SMS notification (async, non-blocking)
+    // SMS and WhatsApp notification (async, non-blocking)
     try {
       const loanData = await prisma.loan.findUnique({
         where: { id: repayment.loanId },
         include: { customer: true },
       });
-      const message = `Received amount: Rs. ${amount}. Your payment successfully with this ID: ${payment.id}.`;
-      sendSMS(loanData.customer.phone, message);
-    } catch (_) { /* SMS failure should not block response */ }
+      
+      const smsMessage = `Received amount: Rs. ${amount}. Your payment successfully with this ID: ${payment.id}.`;
+      sendSMS(loanData.customer.phone, smsMessage);
+
+      // WhatsApp Message
+      const waMessage = `✅ *Payment Successful!*
+      
+Hello ${loanData.customer.name},
+We have received your payment of *₹${amount}* for your loan (*${loanData.loanNumber}*).
+
+*Installment:* #${repayment.installmentNo}
+*Mode:* ${paymentMode}
+
+Thank you for choosing LoanFlow Pro!`;
+      
+      sendWhatsAppMessage(loanData.customer.phone, waMessage);
+    } catch (_) { /* SMS/WA failure should not block response */ }
 
     res.status(201).json({ success: true, data: payment });
   } catch (error) {
@@ -173,9 +188,24 @@ router.post('/principal', authenticate, async (req, res) => {
 
     if (newOutstanding <= 0) {
       updateData.status = 'CLOSED';
-      await prisma.repayment.deleteMany({
+      
+      const repaymentsToDelete = await prisma.repayment.findMany({
         where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, paidAmount: 0 },
+        select: { id: true }
       });
+      
+      if (repaymentsToDelete.length > 0) {
+        const ids = repaymentsToDelete.map(r => r.id);
+        await prisma.notificationLog.deleteMany({
+          where: { repaymentId: { in: ids } }
+        });
+        await prisma.payment.deleteMany({
+          where: { repaymentId: { in: ids } }
+        });
+        await prisma.repayment.deleteMany({
+          where: { id: { in: ids } }
+        });
+      }
       await prisma.repayment.updateMany({
         where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
         data: { status: 'PAID', paidAt: new Date() },

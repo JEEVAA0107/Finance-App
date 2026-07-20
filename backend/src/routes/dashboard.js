@@ -8,31 +8,76 @@ const prisma = new PrismaClient();
 router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
     const now = new Date();
+    
+    // Start of current day
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    // Start of current month
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Next 7 days
+    const next7Days = new Date(startOfToday);
+    next7Days.setDate(next7Days.getDate() + 7);
+
+    // Update overdues first (important for correct states)
+    await prisma.repayment.updateMany({
+      where: { status: 'PENDING', dueDate: { lt: startOfToday } },
+      data: { status: 'OVERDUE' },
+    });
 
     const [
-      totalLoans,
       activeLoans,
-      closedLoans,
-      defaultedLoans,
-      totalCustomers,
-      totalAgents,
+      activeCustomers
     ] = await Promise.all([
-      prisma.loan.count(),
       prisma.loan.count({ where: { status: 'ACTIVE' } }),
-      prisma.loan.count({ where: { status: 'CLOSED' } }),
-      prisma.loan.count({ where: { status: 'DEFAULTED' } }),
       prisma.customer.count({ where: { isActive: true } }),
-      prisma.user.count({ where: { role: 'AGENT', isActive: true } }),
     ]);
 
-    // Financial aggregates
+    // Financial aggregates (Overall)
     const loanAgg = await prisma.loan.aggregate({
+      where: { status: { in: ['ACTIVE', 'CLOSED', 'DEFAULTED'] } },
       _sum: { principalAmount: true, totalPayable: true, totalInterest: true },
     });
 
+    // Payments aggregate
     const paymentAgg = await prisma.payment.aggregate({
       _sum: { amount: true },
+    });
+
+    // Today's Collection
+    const todaysPayments = await prisma.payment.aggregate({
+      where: { collectedAt: { gte: startOfToday, lte: endOfToday } },
+      _sum: { amount: true },
+    });
+
+    // Today's Dues
+    const todaysDues = await prisma.repayment.aggregate({
+      where: { dueDate: { gte: startOfToday, lte: endOfToday } },
+      _sum: { dueAmount: true, paidAmount: true },
+    });
+
+    // Pending Collections overall (Pending + Overdue)
+    const pendingDues = await prisma.repayment.aggregate({
+      where: { status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] } },
+      _sum: { dueAmount: true, paidAmount: true },
+    });
+
+    // Overdue Loans Count (Distinct loans with overdue)
+    const overdueLoans = await prisma.repayment.groupBy({
+      by: ['loanId'],
+      where: { status: 'OVERDUE' },
+    });
+
+    const overdueAgg = await prisma.repayment.aggregate({
+      where: { status: 'OVERDUE' },
+      _sum: { dueAmount: true, paidAmount: true },
+    });
+
+    // Monthly Aggregates
+    const monthlyLoans = await prisma.loan.aggregate({
+      where: { createdAt: { gte: startOfMonth } },
+      _sum: { principalAmount: true, totalInterest: true },
     });
 
     const monthlyPayments = await prisma.payment.aggregate({
@@ -40,56 +85,74 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       _sum: { amount: true },
     });
 
-    // Overdue count
-    await prisma.repayment.updateMany({
-      where: { status: 'PENDING', dueDate: { lt: new Date() } },
-      data: { status: 'OVERDUE' },
+    // Upcoming Dues (Next 7 days)
+    const upcomingDues = await prisma.repayment.findMany({
+      where: { 
+        dueDate: { gt: endOfToday, lte: next7Days },
+        status: { in: ['PENDING', 'PARTIAL'] }
+      },
+      include: { loan: { include: { customer: { select: { name: true, phone: true } } } } },
+      orderBy: { dueDate: 'asc' },
+      take: 10,
     });
 
-    const overdueAgg = await prisma.repayment.aggregate({
-      where: { status: 'OVERDUE' },
-      _sum: { dueAmount: true },
-      _count: true,
+    // Recent Collections (Last 5)
+    const recentCollections = await prisma.payment.findMany({
+      include: { 
+        repayment: { include: { loan: { include: { customer: { select: { name: true } } } } } },
+        collectedBy: { select: { name: true } }
+      },
+      orderBy: { collectedAt: 'desc' },
+      take: 5,
     });
 
-    const pendingAgg = await prisma.repayment.aggregate({
-      where: { status: { in: ['PENDING', 'PARTIAL'] } },
-      _sum: { dueAmount: true },
-    });
-
-    // Monthly collection trend (last 6 months)
+    // Monthly Chart Data (Last 6 months)
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-      const agg = await prisma.payment.aggregate({
-        where: { collectedAt: { gte: start, lte: end } },
-        _sum: { amount: true },
-      });
+      
+      const [mPay, mLoan] = await Promise.all([
+        prisma.payment.aggregate({ where: { collectedAt: { gte: start, lte: end } }, _sum: { amount: true } }),
+        prisma.loan.aggregate({ where: { createdAt: { gte: start, lte: end } }, _sum: { principalAmount: true, totalInterest: true } })
+      ]);
+      
       months.push({
-        month: start.toLocaleString('default', { month: 'short' }),
-        year: start.getFullYear(),
-        amount: agg._sum.amount || 0,
+        name: start.toLocaleString('default', { month: 'short' }),
+        disbursed: mLoan._sum.principalAmount || 0,
+        collected: mPay._sum.amount || 0,
+        interest: mLoan._sum.totalInterest || 0,
+        profit: mLoan._sum.totalInterest || 0,
       });
     }
+
+    const todayDueAmt = todaysDues._sum.dueAmount || 0;
+    const todayPaidAmt = todaysDues._sum.paidAmount || 0;
 
     res.json({
       success: true,
       data: {
-        loans: { total: totalLoans, active: activeLoans, closed: closedLoans, defaulted: defaultedLoans },
-        customers: totalCustomers,
-        agents: totalAgents,
-        financials: {
-          totalDisbursed: loanAgg._sum.principalAmount || 0,
-          totalPayable: loanAgg._sum.totalPayable || 0,
-          totalInterest: loanAgg._sum.totalInterest || 0,
-          totalCollected: paymentAgg._sum.amount || 0,
-          monthlyCollected: monthlyPayments._sum.amount || 0,
-          pendingDues: pendingAgg._sum.dueAmount || 0,
-          overdueAmount: overdueAgg._sum.dueAmount || 0,
-          overdueCount: overdueAgg._count || 0,
+        outstandingAmount: Math.max(0, (loanAgg._sum.totalPayable || 0) - (paymentAgg._sum.amount || 0)),
+        totalDisbursed: loanAgg._sum.principalAmount || 0,
+        totalCollected: paymentAgg._sum.amount || 0,
+        totalInterestCollected: loanAgg._sum.totalInterest || 0, // Expected profit
+        activeCustomers,
+        activeLoans,
+        todayCollection: todaysPayments._sum.amount || 0,
+        todayDueAmount: todayDueAmt,
+        remainingToday: Math.max(0, todayDueAmt - todayPaidAmt), // Rough approximation
+        pendingCollections: (pendingDues._sum.dueAmount || 0) - (pendingDues._sum.paidAmount || 0),
+        overdueLoansCount: overdueLoans.length,
+        totalOverdueAmount: (overdueAgg._sum.dueAmount || 0) - (overdueAgg._sum.paidAmount || 0),
+        upcomingDues,
+        recentCollections,
+        monthly: {
+          disbursed: monthlyLoans._sum.principalAmount || 0,
+          collection: monthlyPayments._sum.amount || 0,
+          interestIncome: monthlyLoans._sum.totalInterest || 0,
+          profit: monthlyLoans._sum.totalInterest || 0,
         },
         monthlyTrend: months,
       },

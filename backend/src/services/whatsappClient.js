@@ -40,26 +40,28 @@ client.initialize();
  * @param {string} message - Message to send
  * @returns {Promise<boolean>}
  */
+const fs = require('fs');
+
 async function sendWhatsAppMessage(phone, message) {
   if (!isClientReady) {
+    fs.appendFileSync('wa-error.log', `[${new Date().toISOString()}] Client not ready. Phone: ${phone}\n`);
     console.error(`WhatsApp Client not ready. Failed to send message to ${phone}`);
     return false;
   }
 
   try {
-    // Sanitize phone number (remove spaces, +, -, etc)
     let cleanPhone = phone.replace(/\D/g, '');
-    
-    // If it's a 10 digit number, prepend 91
     if (cleanPhone.length === 10) {
       cleanPhone = `91${cleanPhone}`;
     }
     
     const formattedPhone = `${cleanPhone}@c.us`;
     await client.sendMessage(formattedPhone, message);
+    fs.appendFileSync('wa-error.log', `[${new Date().toISOString()}] Success sent to ${formattedPhone}\n`);
     console.log(`WhatsApp message sent successfully to ${phone}`);
     return true;
   } catch (error) {
+    fs.appendFileSync('wa-error.log', `[${new Date().toISOString()}] Failed sending to ${phone}: ${error.message}\n${error.stack}\n`);
     console.error(`Failed to send WhatsApp message to ${phone}:`, error);
     return false;
   }

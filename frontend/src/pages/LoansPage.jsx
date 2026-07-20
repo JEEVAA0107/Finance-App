@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { loansAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Eye, Landmark } from 'lucide-react';
+import { Plus, Eye, Landmark, Search, ChevronDown } from 'lucide-react';
 
 const fmtAmt = (v) => v >= 100000 ? `₹${(v/100000).toFixed(1)}L` : `₹${v?.toLocaleString('en-IN')}`;
 
@@ -10,22 +10,70 @@ export default function LoansPage() {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ACTIVE');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [tenureFilter, setTenureFilter] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     setLoading(true);
-    loansAPI.list({ status: filter || undefined, limit: 100 })
+    loansAPI.list({ status: filter || undefined, search: debouncedSearch || undefined, tenureUnit: tenureFilter || undefined, limit: 100 })
       .then(r => setLoans(r))
       .catch(() => toast.error('Failed to load loans'))
       .finally(() => setLoading(false));
-  }, [filter]);
-
-  if (loading) return <div className="loading-page"><div className="spinner" /></div>;
+  }, [filter, debouncedSearch, tenureFilter]);
 
   return (
     <div className="animate-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ fontSize: 20, fontWeight: 800 }}>Loans <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 400 }}>({loans.length})</span></div>
         <Link to="/loans/create" className="btn btn-primary btn-sm"><Plus size={15} /> New</Link>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+        {/* Search */}
+        <div className="search-bar" style={{ flex: 1, margin: 0, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+          <Search size={16} color="var(--text-muted)" />
+          <input placeholder="Search name, phone, loan ID..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        
+        {/* Tenure Filter */}
+        <div style={{ position: 'relative' }}>
+          <select 
+            style={{ 
+              height: '42px', 
+              padding: '0 36px 0 16px', 
+              borderRadius: '12px', 
+              border: '1px solid var(--border-subtle)', 
+              background: 'var(--bg-card)', 
+              color: 'var(--text-secondary)',
+              fontSize: '14px',
+              fontWeight: 500,
+              outline: 'none',
+              boxShadow: 'var(--shadow-sm)',
+              cursor: 'pointer',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              minWidth: '130px'
+            }} 
+            value={tenureFilter} 
+            onChange={e => setTenureFilter(e.target.value)}
+          >
+            <option value="">All Types</option>
+            <option value="DAYS">Daily Loans</option>
+            <option value="WEEKS">Weekly Loans</option>
+            <option value="MONTHS">Monthly Loans</option>
+          </select>
+          <ChevronDown 
+            size={16} 
+            color="var(--text-muted)" 
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} 
+          />
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -35,8 +83,12 @@ export default function LoansPage() {
         ))}
       </div>
 
-      {loans.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '32px 16px' }}>
+      {loading ? (
+        <div style={{ padding: '40px 0', display: 'flex', justifyContent: 'center' }}>
+          <div className="spinner" />
+        </div>
+      ) : loans.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '40px 16px' }}>
           <Landmark size={36} style={{ opacity: 0.3, marginBottom: 8 }} />
           <div style={{ fontWeight: 600 }}>No loans found</div>
         </div>

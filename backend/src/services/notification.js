@@ -24,18 +24,7 @@ async function dispatchNotification(customerId, repaymentId, message) {
       });
     }
 
-    // 2. In-App Notification
-    if (pref === 'APP' || pref === 'BOTH') {
-      await prisma.notificationLog.create({
-        data: {
-          customerId,
-          repaymentId,
-          type: 'APP',
-          status: 'SENT', // App notifications are always successful to the DB
-          message
-        }
-      });
-    }
+    // App notifications are completely removed as per user request
   } catch (error) {
     console.error('[NotificationService] Error dispatching:', error);
   }

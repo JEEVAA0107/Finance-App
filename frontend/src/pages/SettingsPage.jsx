@@ -31,10 +31,6 @@ export default function SettingsPage() {
             <span style={{ color: 'var(--text-muted)' }}>Phone</span>
             <span style={{ fontWeight: 600 }}>{user?.phone || 'N/A'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <span style={{ color: 'var(--text-muted)' }}>User ID</span>
-            <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{user?.id?.substring(0, 8)}...</span>
-          </div>
         </div>
       </div>
 
