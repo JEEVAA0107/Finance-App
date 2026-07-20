@@ -28,13 +28,15 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Already fully paid' });
     }
 
+    const paymentType = (repayment.principal > 0 && repayment.interest > 0) ? 'EMI' : (repayment.principal > 0 ? 'PRINCIPAL' : 'INTEREST');
+
     const payment = await prisma.payment.create({
       data: {
         repaymentId,
         collectedById: req.user.id,
         amount: parseFloat(amount),
         paymentMode,
-        paymentType: 'INTEREST',
+        paymentType,
         reference,
         notes,
       },
@@ -48,9 +50,17 @@ router.post('/', authenticate, async (req, res) => {
       data: { paidAmount: totalPaid, paidAt: newStatus === 'PAID' ? new Date() : null, status: newStatus },
     });
 
+    const amt = parseFloat(amount);
+    const dueAmt = repayment.dueAmount || 1;
+    const principalPaid = amt * (repayment.principal / dueAmt);
+    const interestPaid = amt * (repayment.interest / dueAmt);
+
     await prisma.loan.update({
       where: { id: repayment.loanId },
-      data: { interestCollected: { increment: parseFloat(amount) } },
+      data: { 
+        interestCollected: { increment: round2(interestPaid) },
+        outstandingPrincipal: { decrement: round2(principalPaid) }
+      },
     });
 
     // Auto-extend installments if running low

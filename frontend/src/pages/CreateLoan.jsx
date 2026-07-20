@@ -22,6 +22,7 @@ export default function CreateLoan() {
 
   const preview = (() => {
     const isWithoutInterest = form.interestType === 'WITHOUT_INTEREST';
+    const isEMI = form.interestType === 'EMI';
     const p = parseFloat(form.principalAmount);
     if (!p) return null;
 
@@ -40,11 +41,30 @@ export default function CreateLoan() {
         unitLabel: isDaily ? 'daily' : 'weekly',
         unitLabelPlural: isDaily ? 'days' : 'weeks'
       };
+    } else if (form.interestType === 'FIXED_FLAT') {
+      const r_flat = parseFloat(form.interestRate);
+      const tenureVal = parseInt(form.tenure || 12);
+      if (isNaN(r_flat)) return null;
+      
+      const totalInterest = p * (r_flat / 100);
+      const totalPayable = p + totalInterest;
+      const installmentDue = tenureVal > 0 ? totalPayable / tenureVal : 0;
+      
+      return {
+        isFixedFlat: true,
+        installmentDue: installmentDue,
+        totalPayable: totalPayable,
+        totalInterest: totalInterest,
+        tenure: tenureVal,
+        unitLabel: form.tenureUnit === 'MONTHS' ? 'monthly' : form.tenureUnit === 'WEEKS' ? 'weekly' : 'daily',
+        unitLabelPlural: form.tenureUnit.toLowerCase()
+      };
     } else {
       const r = parseFloat(form.interestRate);
       if (!r) return null;
       return {
         isWithoutInterest: false,
+        isEMI: false,
         interest: (p * r / 100).toFixed(0),
         period: form.tenureUnit === 'MONTHS' ? 'month' : form.tenureUnit === 'WEEKS' ? 'week' : 'day'
       };
@@ -56,10 +76,11 @@ export default function CreateLoan() {
     setLoading(true);
     try {
       const isWithoutInterest = form.interestType === 'WITHOUT_INTEREST';
+      const isFixedFlat = form.interestType === 'FIXED_FLAT';
       const principal = parseFloat(form.principalAmount);
       const fee = isWithoutInterest ? parseFloat(form.advanceDeduction || 0) : 0;
       const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate);
-      const tenureVal = isWithoutInterest ? parseInt(form.tenure) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
+      const tenureVal = (isWithoutInterest || isFixedFlat) ? parseInt(form.tenure) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
 
       const res = await loansAPI.create({
         ...form,
@@ -98,11 +119,15 @@ export default function CreateLoan() {
                 if (val === 'WITHOUT_INTEREST' && f.tenureUnit === 'MONTHS') {
                   next.tenureUnit = 'WEEKS';
                 }
+                if (val === 'FIXED_FLAT' && f.tenureUnit === 'DAYS') {
+                  next.tenureUnit = 'MONTHS';
+                }
                 return next;
               });
             }}>
               <option value="FLAT">Regular Flat Interest</option>
               <option value="WITHOUT_INTEREST">Deduction Based (Without Interest)</option>
+              <option value="FIXED_FLAT">Fixed Interest with Reducing Principal</option>
             </select>
           </div>
 
@@ -129,6 +154,27 @@ export default function CreateLoan() {
               <div className="form-group">
                 <label className="form-label">{form.tenureUnit === 'DAYS' ? 'Number of Days *' : 'Number of Weeks *'}</label>
                 <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'DAYS' ? 'e.g. 100' : 'e.g. 10'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
+              </div>
+            </>
+          ) : form.interestType === 'FIXED_FLAT' ? (
+            <>
+              <div className="form-group">
+                <label className="form-label">Interest Rate (% flat total) *</label>
+                <input className="form-input" type="number" step="0.1" min="0" placeholder="e.g. 10" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Collection Frequency *</label>
+                <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
+                  <option value="MONTHS">Monthly</option>
+                  <option value="WEEKS">Weekly</option>
+                  <option value="DAYS">Daily</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Number of {form.tenureUnit.charAt(0) + form.tenureUnit.slice(1).toLowerCase()} *</label>
+                <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'MONTHS' ? 'e.g. 12' : 'e.g. 52'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
               </div>
             </>
           ) : (
@@ -171,6 +217,22 @@ export default function CreateLoan() {
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
                 Customer repays total **₹{preview.totalRepayable.toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
+              </div>
+            </div>
+          ) : preview.isFixedFlat ? (
+            <div className="card" style={{ marginTop: 12, background: 'rgba(139,92,246,0.08)', borderColor: 'rgba(139,92,246,0.2)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{preview.unitLabel.toUpperCase()} DUE</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--primary-400)' }}>₹{Math.round(preview.installmentDue).toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>FIXED TOTAL INTEREST</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning-400)' }}>₹{Math.round(preview.totalInterest).toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+                Customer repays total **₹{Math.round(preview.totalPayable).toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
               </div>
             </div>
           ) : (

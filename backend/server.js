@@ -26,22 +26,10 @@ const localIp = getLocalIpAddress();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
 app.use(helmet());
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'capacitor://localhost',
-  'http://localhost',
-  `http://${localIp}:5173`, // Local dev IP
-  `http://${localIp}:5000`,
-];
 
+// Allow all origins for local development to prevent network errors across multiple network interfaces
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
+  origin: '*'
 }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));

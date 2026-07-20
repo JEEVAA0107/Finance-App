@@ -27,8 +27,9 @@ function getBatchSize(tenureUnit) {
  * @param {number} startNo - installment number to start from
  * @param {number} count - how many installments to generate
  */
-function generateInstallments(loanId, interestPerPeriod, tenureUnit, startFrom, startNo, count) {
+function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, tenureUnit, startFrom, startNo, count) {
   const installments = [];
+
   for (let i = 0; i < count; i++) {
     const dueDate = new Date(startFrom);
     const offset = i + 1; // offset from startFrom
@@ -36,13 +37,17 @@ function generateInstallments(loanId, interestPerPeriod, tenureUnit, startFrom, 
     else if (tenureUnit === 'WEEKS') dueDate.setDate(dueDate.getDate() + offset * 7);
     else dueDate.setDate(dueDate.getDate() + offset);
 
+    let prin = round2(principalPerPeriod);
+    let intst = round2(interestPerPeriod);
+    let due = round2(prin + intst);
+
     installments.push({
       loanId,
       installmentNo: startNo + i,
       dueDate,
-      dueAmount: round2(interestPerPeriod),
-      principal: 0,
-      interest: round2(interestPerPeriod),
+      dueAmount: due,
+      principal: prin,
+      interest: intst,
       status: 'PENDING',
     });
   }
@@ -56,6 +61,7 @@ function generateInstallments(loanId, interestPerPeriod, tenureUnit, startFrom, 
 async function autoExtendIfNeeded(loanId) {
   const loan = await prisma.loan.findUnique({ where: { id: loanId } });
   if (!loan || loan.status !== 'ACTIVE') return;
+  if (loan.interestType === 'WITHOUT_INTEREST' || loan.interestType === 'FIXED_FLAT') return; // Fixed tenure, no auto-extend
 
   // Count unpaid installments
   const unpaidCount = await prisma.repayment.count({
@@ -80,7 +86,7 @@ async function autoExtendIfNeeded(loanId) {
   const startFrom = new Date(lastInstallment.dueDate);
 
   const newInstallments = generateInstallments(
-    loanId, interestPerPeriod, loan.tenureUnit, startFrom, startNo, batchSize
+    loanId, 0, interestPerPeriod, loan.tenureUnit, startFrom, startNo, batchSize
   );
 
   await prisma.repayment.createMany({ data: newInstallments });
@@ -166,24 +172,48 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
   try {
     const {
       customerId, agentId, principalAmount, interestRate,
-      interestType = 'FLAT', tenureUnit = 'MONTHS',
+      interestType = 'FLAT', tenure, tenureUnit = 'MONTHS',
       processingFee = 0, startDate,
     } = req.body;
 
-    if (!customerId || !principalAmount || !interestRate || !startDate) {
+    if (!customerId || !principalAmount || interestRate === undefined || !startDate) {
       return res.status(400).json({ success: false, message: 'Missing required loan fields' });
     }
 
     const start = new Date(startDate);
-    const interestPerPeriod = round2(parseFloat(principalAmount) * (parseFloat(interestRate) / 100));
+    
+    let batchSize, interestPerPeriod, principalPerPeriod, installmentAmount, totalPayable, totalInterest;
 
-    // Generate initial batch of installments (1 year worth)
-    const batchSize = getBatchSize(tenureUnit);
+    if (interestType === 'WITHOUT_INTEREST') {
+      batchSize = tenure ? parseInt(tenure) : getBatchSize(tenureUnit);
+      interestPerPeriod = 0;
+      principalPerPeriod = parseFloat(principalAmount) / batchSize;
+      installmentAmount = principalPerPeriod;
+      totalPayable = parseFloat(principalAmount);
+      totalInterest = 0;
+    } else if (interestType === 'FIXED_FLAT') {
+      batchSize = tenure ? parseInt(tenure) : getBatchSize(tenureUnit);
+      const r_flat = parseFloat(interestRate);
+      
+      totalInterest = parseFloat(principalAmount) * (r_flat / 100);
+      totalPayable = parseFloat(principalAmount) + totalInterest;
+      installmentAmount = batchSize > 0 ? totalPayable / batchSize : 0;
+      
+      principalPerPeriod = batchSize > 0 ? parseFloat(principalAmount) / batchSize : 0;
+      interestPerPeriod = batchSize > 0 ? totalInterest / batchSize : 0;
+    } else {
+      batchSize = getBatchSize(tenureUnit);
+      interestPerPeriod = parseFloat(principalAmount) * (parseFloat(interestRate) / 100);
+      principalPerPeriod = 0;
+      installmentAmount = interestPerPeriod;
+      totalPayable = parseFloat(principalAmount) + (interestPerPeriod * batchSize);
+      totalInterest = interestPerPeriod * batchSize;
+    }
 
     const calc = {
-      totalInterest: round2(interestPerPeriod * batchSize),
-      totalPayable: round2(parseFloat(principalAmount) + interestPerPeriod * batchSize),
-      installmentAmount: round2(interestPerPeriod),
+      totalInterest: round2(totalInterest),
+      totalPayable: round2(totalPayable),
+      installmentAmount: round2(installmentAmount),
     };
 
     // End date = last installment of initial batch (will auto-extend)
@@ -217,7 +247,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 
     // Generate initial installment batch
     const installments = generateInstallments(
-      loan.id, interestPerPeriod, tenureUnit, start, 1, batchSize
+      loan.id, principalPerPeriod, interestPerPeriod, tenureUnit, start, 1, batchSize
     );
     await prisma.repayment.createMany({ data: installments });
 

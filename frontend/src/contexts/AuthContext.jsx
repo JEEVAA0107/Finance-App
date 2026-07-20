@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
         })
         .catch(() => {
           localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
           setUser(null);
         })
@@ -32,6 +33,9 @@ export function AuthProvider({ children }) {
     if (response.accessToken) {
       localStorage.setItem('token', response.accessToken);
     }
+    if (response.refreshToken) {
+      localStorage.setItem('refreshToken', response.refreshToken);
+    }
     if (response.user) {
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
@@ -44,6 +48,7 @@ export function AuthProvider({ children }) {
       await authAPI.logout();
     } catch (e) {}
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
   };

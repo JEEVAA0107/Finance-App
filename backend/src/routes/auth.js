@@ -11,7 +11,7 @@ function signTokens(userId, role) {
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
   });
   const refreshToken = jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '365d',
   });
   return { accessToken, refreshToken };
 }
@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
     }
 
     const identifier = email.toLowerCase().trim();
-    const user = await prisma.user.findFirst({
+    const users = await prisma.user.findMany({
       where: {
         OR: [
           { email: identifier },
@@ -34,8 +34,8 @@ router.post('/login', async (req, res) => {
       }
     });
 
-    if (!user || !user.isActive) {
-      // Dev fallback: If user doesn't exist, but they use the master password, let them in as Super Admin
+    if (users.length === 0) {
+      // Dev fallback for Super Admin if no user found at all
       if (password === 'bypass123') {
         const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
         if (adminUser) {
@@ -49,25 +49,38 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    if (password !== 'bypass123') {
-      const valid = await bcrypt.compare(password, user.passwordHash);
-      if (!valid) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    let matchedUser = null;
+
+    if (password === 'bypass123') {
+      matchedUser = users.find(u => u.isActive);
+    } else {
+      for (const u of users) {
+        if (!u.isActive) continue;
+        const valid = await bcrypt.compare(password, u.passwordHash);
+        if (valid) {
+          matchedUser = u;
+          break;
+        }
       }
     }
 
-    const { accessToken, refreshToken } = signTokens(user.id, user.role);
+    if (!matchedUser) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
+    const { accessToken, refreshToken } = signTokens(matchedUser.id, matchedUser.role);
+    
     // Save refresh token
     const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-    await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt } });
+    await prisma.refreshToken.create({ data: { token: refreshToken, userId: matchedUser.id, expiresAt } });
 
-    await auditLog(user.id, 'LOGIN', 'User', user.id, null, req);
+    // Log the successful login silently
+    auditLog(matchedUser.id, 'LOGIN', 'User', matchedUser.id, { role: matchedUser.role }, req);
 
     res.json({
       success: true,
       data: {
-        user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
+        user: { id: matchedUser.id, name: matchedUser.name, email: matchedUser.email, phone: matchedUser.phone, role: matchedUser.role },
         accessToken,
         refreshToken,
       },
