@@ -98,7 +98,7 @@ export default function CollectionPage() {
                 </div>
                 {r.loan?.customer?.phone && (
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                    <Phone size={10} />{r.loan.customer.phone}
+                    <Phone size={10} /><a href={`tel:${r.loan.customer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{r.loan.customer.phone}</a>
                   </div>
                 )}
               </div>

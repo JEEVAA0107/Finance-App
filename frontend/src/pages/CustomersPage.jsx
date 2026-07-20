@@ -10,7 +10,7 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'BOTH' });
 
   const load = async () => {
     try { setCustomers(await customersAPI.list({ search, limit: 100 })); }
@@ -20,8 +20,8 @@ export default function CustomersPage() {
 
   useEffect(() => { load(); }, [search]);
 
-  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '' }); setEditCustomer(null); setShowModal(true); };
-  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber }); setShowModal(true); };
+  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'BOTH' }); setEditCustomer(null); setShowModal(true); };
+  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, notificationPref: c.notificationPref || 'BOTH' }); setShowModal(true); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,12 +62,17 @@ export default function CustomersPage() {
         </div>
       ) : (
         customers.map(c => (
-          <div key={c.id} className="collection-card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div key={c.id} className="collection-card flex items-center gap-16">
             <div className="sidebar-avatar" style={{ width: 40, height: 40, fontSize: 16, flexShrink: 0 }}>{c.name?.charAt(0)}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Phone size={10} />{c.phone} · {c.city}
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 6px', marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Phone size={10} />
+                  <a href={`tel:${c.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{c.phone}</a>
+                </div>
+                <span>·</span>
+                <span>{c.city}</span>
               </div>
               {(c.loans?.length > 0 || c.activeLoans > 0) && (
                 <span className="badge badge-info" style={{ marginTop: 4, fontSize: 10 }}>{c.loans?.length || c.activeLoans} loan{(c.loans?.length || c.activeLoans) > 1 ? 's' : ''}</span>
@@ -122,6 +127,15 @@ export default function CustomersPage() {
                     <label className="form-label">ID Number *</label>
                     <input className="form-input" value={form.idNumber} onChange={e => setForm({ ...form, idNumber: e.target.value })} required />
                   </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Notification Preferences</label>
+                  <select className="form-select" value={form.notificationPref} onChange={e => setForm({ ...form, notificationPref: e.target.value })}>
+                    <option value="BOTH">WhatsApp & In-App</option>
+                    <option value="WHATSAPP">WhatsApp Only</option>
+                    <option value="APP">In-App Only</option>
+                    <option value="NONE">Do Not Send</option>
+                  </select>
                 </div>
               </div>
               <div className="modal-footer">

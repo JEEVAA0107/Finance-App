@@ -102,7 +102,7 @@ export default function UsersPage() {
                   </div>
                 </td>
                 <td data-label="Email"><Mail size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{u.email}</td>
-                <td data-label="Phone"><Phone size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{u.phone}</td>
+                <td data-label="Phone"><Phone size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /><a href={`tel:${u.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{u.phone}</a></td>
                 <td data-label="Role">
                   <span className={`badge ${u.role === 'ADMIN' ? 'badge-danger' : u.role === 'AGENT' ? 'badge-info' : 'badge-success'}`}>
                     <Shield size={10} />{u.role}

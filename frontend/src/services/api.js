@@ -142,7 +142,17 @@ export const reportsAPI = {
 
 // ─── Audit ────────────────────────────────────────────────────────────────────
 export const auditAPI = {
-  list: (params) => api.get('/audit', { params }).then(extractData),
+  list: (params) => api.get('/audit', { params }).then(res => res.data.data),
+};
+
+export const notificationsAPI = {
+  getDashboard: () => api.get('/notifications/dashboard').then(res => res.data.data),
+  getSettings: () => api.get('/notifications/settings').then(res => res.data.data),
+  updateSettings: (data) => api.put('/notifications/settings', data).then(res => res.data.data),
+  getHistory: (limit) => api.get('/notifications/history', { params: { limit } }).then(res => res.data.data),
+  triggerCron: () => api.post('/notifications/trigger').then(res => res.data),
+  getInApp: () => api.get('/notifications/in-app').then(res => res.data.data),
+  markRead: (id) => api.put(`/notifications/${id}/read`).then(res => res.data)
 };
 
 export default api;

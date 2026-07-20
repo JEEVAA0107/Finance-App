@@ -257,6 +257,7 @@ input, select, textarea, button { font-family: inherit; }
   margin-left: 260px;
   padding: 32px;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 /* ─── Mobile Header ────────────────────────────────────────────────────────── */
@@ -264,20 +265,16 @@ input, select, textarea, button { font-family: inherit; }
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 16px 0 16px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 0 8px 0 4px;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   z-index: 99;
-  width: 100%;
   box-sizing: border-box;
-  /* Notch / status bar support */
-  padding-top: env(safe-area-inset-top);
-  height: calc(56px + env(safe-area-inset-top));
 }
 
 .mobile-header-brand {
@@ -322,10 +319,10 @@ input, select, textarea, button { font-family: inherit; }
   border: none;
   color: var(--text-primary);
   cursor: pointer;
-  padding: 6px;
+  padding: 4px;
   border-radius: var(--radius-sm);
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 36px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -406,7 +403,7 @@ input, select, textarea, button { font-family: inherit; }
   .bottom-nav { display: block; }
   .main-content {
     margin-left: 0;
-    padding: calc(56px + env(safe-area-inset-top) + 8px) 12px calc(58px + env(safe-area-inset-bottom) + 8px);
+    padding: calc(56px + env(safe-area-inset-top) + 24px) 16px calc(58px + env(safe-area-inset-bottom) + 24px);
   }
 }
 
@@ -547,8 +544,10 @@ input, select, textarea, button { font-family: inherit; }
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 0 16px;
+  min-height: 40px;
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
@@ -556,6 +555,7 @@ input, select, textarea, button { font-family: inherit; }
   border: 1px solid transparent;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .btn:disabled {
@@ -605,14 +605,17 @@ input, select, textarea, button { font-family: inherit; }
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 0 12px;
   font-size: 12px;
   border-radius: 6px;
+  min-height: 32px;
+  gap: 6px;
 }
 
 .btn-lg {
-  padding: 14px 28px;
+  padding: 0 24px;
   font-size: 16px;
+  min-height: 48px;
 }
 
 /* ─── Form Elements ─────────────────────────────────────────────────────────── */
@@ -632,7 +635,7 @@ input, select, textarea, button { font-family: inherit; }
 
 .form-input, .form-select {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -640,6 +643,8 @@ input, select, textarea, button { font-family: inherit; }
   font-size: 14px;
   transition: all var(--transition-fast);
   outline: none;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .form-input:focus, .form-select:focus {
@@ -787,6 +792,7 @@ input, select, textarea, button { font-family: inherit; }
 /* ─── Login Page ────────────────────────────────────────────────────────────── */
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -966,6 +972,8 @@ input.form-input.input-with-icon-both {
   font-size: 14px;
   outline: none;
   transition: all var(--transition-fast);
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .search-bar input:focus {
@@ -1008,9 +1016,10 @@ input.form-input.input-with-icon-both {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 16px;
   margin-bottom: 12px;
   transition: all var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .collection-card:hover {

@@ -54,6 +54,7 @@ app.use('/api/payments',   require('./src/routes/payments'));
 app.use('/api/dashboard',  require('./src/routes/dashboard'));
 app.use('/api/reports',    require('./src/routes/reports'));
 app.use('/api/audit',      require('./src/routes/audit'));
+app.use('/api/notifications', require('./src/routes/notifications'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', app: process.env.APP_NAME }));
@@ -75,6 +76,7 @@ app.use((req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 const { seedAdmin } = require('./src/utils/seed');
+const { startCronJobs } = require('./src/jobs/cron');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -83,6 +85,7 @@ async function start() {
     await prisma.$connect();
     console.log('✅ Database connected');
     await seedAdmin();
+    startCronJobs();
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 LoanFlow Pro API running on http://0.0.0.0:${PORT}`);
       console.log(`📡 Accessible on your network at http://${localIp}:${PORT}`);

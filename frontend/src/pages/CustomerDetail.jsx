@@ -27,7 +27,7 @@ export default function CustomerDetail() {
           <div style={{ display: 'grid', gap: 16 }}>
             <div><span className="color-muted fs-12">NAME</span><div className="fw-600">{customer.name}</div></div>
             <div className="form-row">
-              <div><span className="color-muted fs-12">PHONE</span><div><Phone size={14} style={{verticalAlign:'middle',marginRight:4}} />{customer.phone}</div></div>
+              <div><span className="color-muted fs-12">PHONE</span><div><Phone size={14} style={{verticalAlign:'middle',marginRight:4}} /><a href={`tel:${customer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{customer.phone}</a></div></div>
               <div><span className="color-muted fs-12">EMAIL</span><div>{customer.email || '-'}</div></div>
             </div>
             <div><span className="color-muted fs-12">ADDRESS</span><div><MapPin size={14} style={{verticalAlign:'middle',marginRight:4}} />{customer.address}, {customer.city}</div></div>

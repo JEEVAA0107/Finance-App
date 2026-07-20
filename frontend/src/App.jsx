@@ -12,9 +12,11 @@ import CollectionPage from './pages/CollectionPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
+import NotificationsDashboard from './pages/NotificationsDashboard';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
+import ScrollToTop from './components/ScrollToTop';
 import './index.css';
 
 function AppRoutes() {
@@ -31,6 +33,7 @@ function AppRoutes() {
         <Route path="loans/create" element={<CreateLoan />} />
         <Route path="loans/:id" element={<LoanDetail />} />
         <Route path="collections" element={<CollectionPage />} />
+        <Route path="notifications" element={<NotificationsDashboard />} />
         <Route path="users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
@@ -52,6 +55,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ScrollToTop />
         <Toaster
           position="top-center"
           toastOptions={{

@@ -57,8 +57,10 @@ model Customer {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  notificationPref String @default("BOTH") // WHATSAPP | APP | BOTH | NONE
 
   loans       Loan[]
+  notificationLogs NotificationLog[]
 
   @@index([phone])
   @@index([name])
@@ -122,6 +124,7 @@ model Repayment {
   status        String   @default("PENDING") // PENDING | PAID | OVERDUE | PARTIAL
   
   payments      Payment[]
+  notificationLogs NotificationLog[]
 
   @@index([loanId])
   @@index([dueDate])
@@ -159,5 +162,29 @@ model AuditLog {
 
   @@index([userId])
   @@index([entity])
+  @@index([createdAt])
+}
+
+model ReminderSetting {
+  id            String   @id @default("default")
+  enabled       Boolean  @default(true)
+  daysBeforeDue String   @default("[0, 1]") // JSON array, 0 = same day
+  updatedAt     DateTime @updatedAt
+}
+
+model NotificationLog {
+  id          String    @id @default(uuid())
+  repaymentId String
+  repayment   Repayment @relation(fields: [repaymentId], references: [id])
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  type        String    // WHATSAPP | APP
+  status      String    @default("PENDING") // PENDING | SENT | FAILED
+  message     String
+  readAt      DateTime? // For APP notifications
+  createdAt   DateTime  @default(now())
+  
+  @@index([customerId])
+  @@index([status])
   @@index([createdAt])
 }
