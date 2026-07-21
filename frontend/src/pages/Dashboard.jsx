@@ -136,58 +136,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Upcoming Dues & Recent Collections Grid */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card">
-              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12 }}>
-                <div className="card-title">Recent Collections</div>
-                <Link to="/collections" style={{ fontSize: 12, fontWeight: 600, color: 'var(--primary-500)', textDecoration: 'none' }}>View All</Link>
-              </div>
-              {s?.recentCollections?.length > 0 ? (
-                s.recentCollections.map(item => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="sidebar-avatar" style={{ width: 34, height: 34, fontSize: 13, background: 'var(--accent-50)', color: 'var(--accent-600)' }}>
-                        <HandCoins size={16} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>{item.repayment?.loan?.customer?.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>By {item.collectedBy?.name}</div>
-                      </div>
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent-600)' }}>+₹{item.amount?.toLocaleString('en-IN')}</div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>No recent collections</div>
-              )}
-            </div>
-
-            <div className="card">
-              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12 }}>
-                <div className="card-title">Upcoming Dues (7 Days)</div>
-              </div>
-              {s?.upcomingDues?.length > 0 ? (
-                s.upcomingDues.map(item => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="sidebar-avatar" style={{ width: 34, height: 34, fontSize: 13 }}>{item.loan?.customer?.name?.charAt(0)}</div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>{item.loan?.customer?.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(item.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>₹{item.dueAmount?.toLocaleString('en-IN')}</div>
-                      <span className="badge badge-info" style={{ fontSize: 9 }}>UPCOMING</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>No upcoming dues in next 7 days</div>
-              )}
-            </div>
-          </div>
         </>
       ) : (
         <>

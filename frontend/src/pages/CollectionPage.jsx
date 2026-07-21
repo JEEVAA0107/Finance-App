@@ -12,6 +12,14 @@ export default function CollectionPage() {
   const [payModal, setPayModal] = useState(null);
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
+  const [search, setSearch] = useState('');
+  const [loanType, setLoanType] = useState('ALL');
+
+  const filteredRepayments = repayments.filter(r => {
+    if (loanType !== 'ALL' && r.loan?.interestType !== loanType) return false;
+    if (search && !r.loan?.customer?.name?.toLowerCase().includes(search.toLowerCase()) && !r.loan?.loanNumber?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
 
   const load = async () => {
     setLoading(true);
@@ -61,16 +69,38 @@ export default function CollectionPage() {
         ))}
       </div>
 
+      <div style={{ marginBottom: 16, display: 'flex', gap: 10 }}>
+        <input 
+          type="text" 
+          placeholder="Search by name or loan number..." 
+          className="form-input" 
+          style={{ flex: 1 }}
+          value={search} 
+          onChange={e => setSearch(e.target.value)} 
+        />
+        <select 
+          className="form-select" 
+          style={{ width: 'auto' }}
+          value={loanType} 
+          onChange={e => setLoanType(e.target.value)}
+        >
+          <option value="ALL">All Loan Types</option>
+          <option value="FLAT">Regular Interest</option>
+          <option value="WITHOUT_INTEREST">Deduction Based</option>
+          <option value="FIXED_FLAT">Reducing Principal</option>
+        </select>
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
-      ) : repayments.length === 0 ? (
+      ) : filteredRepayments.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '32px 16px' }}>
           <CheckCircle size={40} style={{ color: 'var(--accent-400)', opacity: 0.5, marginBottom: 8 }} />
           <div style={{ fontWeight: 600 }}>All clear!</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No collections {tab === 'today' ? 'for today' : 'found'}</div>
         </div>
       ) : (
-        repayments.map((r) => (
+        filteredRepayments.map((r) => (
           <div key={r.id} className="collection-card">
             {/* Top row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -94,7 +124,11 @@ export default function CollectionPage() {
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Due {fmtDate(r.dueDate)}</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: r.status === 'PAID' ? 'var(--accent-400)' : 'var(--text-primary)' }}>
-                  ₹{(r.dueAmount - r.paidAmount).toLocaleString('en-IN')}
+                  {r.status === 'PAID' || (r.dueAmount - r.paidAmount) <= 0 ? (
+                    <span style={{ color: 'var(--success-500)' }}>₹{r.paidAmount.toLocaleString('en-IN')} <span style={{ fontSize: 12, fontWeight: 600 }}>Collected</span></span>
+                  ) : (
+                    `₹${(r.dueAmount - r.paidAmount).toLocaleString('en-IN')}`
+                  )}
                 </div>
                 {r.loan?.customer?.phone && (
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>

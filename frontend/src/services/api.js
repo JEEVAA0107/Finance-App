@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Point to the local backend dynamically based on the current IP
-const API_URL = `http://${window.location.hostname}:5000/api`;
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000/api`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -130,7 +130,7 @@ export const paymentsAPI = {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export const dashboardAPI = {
   summary: () => api.get('/dashboard/summary').then(extractData),
-  agent: (id) => api.get(`/dashboard/agent/${id || ''}`).then(extractData),
+  agent: (id) => api.get('/dashboard/agent', { params: { agentId: id } }).then(extractData),
 };
 
 // ─── Reports ──────────────────────────────────────────────────────────────────

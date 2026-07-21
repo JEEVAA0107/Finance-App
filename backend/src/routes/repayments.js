@@ -104,7 +104,7 @@ router.get('/', authenticate, async (req, res) => {
         skip,
         take: parseInt(limit),
         include: {
-          loan: { select: { loanNumber: true, customer: { select: { name: true, phone: true } } } },
+          loan: { select: { loanNumber: true, interestType: true, customer: { select: { name: true, phone: true } } } },
           payments: { include: { collectedBy: { select: { name: true } } } },
         },
         orderBy: { dueDate: 'asc' },
@@ -141,6 +141,7 @@ router.get('/today', authenticate, async (req, res) => {
         loan: {
           select: {
             loanNumber: true,
+            interestType: true,
             agentId: true,
             customer: { select: { name: true, phone: true, address: true } },
           },
