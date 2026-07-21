@@ -22,7 +22,10 @@ let isClientReady = false;
 client.on('qr', (qr) => {
   // Generate and scan this code with your phone
   console.log('\n=========================================');
-  console.log('SCAN THIS QR CODE WITH WHATSAPP TO LINK:');
+  console.log('WhatsApp QR Code is ready!');
+  console.log('Because terminal QR codes can be broken on some servers, please click the link below to view the QR code clearly:');
+  console.log('\n👉 https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(qr) + ' 👈\n');
+  console.log('SCAN THE QR CODE FROM THE LINK ABOVE WITH WHATSAPP TO LINK YOUR ACCOUNT.');
   console.log('=========================================\n');
   qrcode.generate(qr, { small: true });
 });
