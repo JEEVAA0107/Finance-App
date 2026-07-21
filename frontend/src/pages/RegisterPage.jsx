@@ -30,10 +30,10 @@ export default function RegisterPage() {
   return (
     <div className="login-page">
       <div className="login-card animate-in">
-        <div className="login-logo">
-          <div className="login-logo-icon"><Landmark size={28} /></div>
-          <h2>Create Account</h2>
-          <p>Join LoanFlow Pro</p>
+        <div className="login-logo" style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <img src="/logo-icon.png" alt="Finova Logo" style={{ width: '64px', height: '64px', borderRadius: '14px', objectFit: 'contain', margin: '0 auto 10px auto', display: 'block' }} />
+          <h2 style={{ fontSize: '24px', fontWeight: '800', margin: 0 }}>Create Account</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '2px' }}>Join Finova</p>
         </div>
         {error && <div className="login-error">{error}</div>}
         <form onSubmit={handleSubmit}>

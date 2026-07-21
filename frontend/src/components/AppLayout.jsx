@@ -107,7 +107,7 @@ export default function AppLayout() {
     { to: '/loans', label: 'Loans' },
     { to: '/collections', label: 'Collections' },
     { to: '/users', label: 'Users' },
-  ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'LoanFlow Pro';
+  ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'Finova';
 
   return (
     <>
@@ -117,7 +117,7 @@ export default function AppLayout() {
           <Menu size={20} />
         </button>
         <div className="mobile-header-brand">
-          <div className="mobile-header-logo">LF</div>
+          <img src="/logo-icon.png" alt="Finova" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain' }} />
           <span className="mobile-header-title">{currentPage}</span>
         </div>
         <div className="mobile-header-user" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -168,9 +168,9 @@ export default function AppLayout() {
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-brand">
-            <div className="sidebar-brand-icon">LF</div>
+            <img src="/logo-icon.png" alt="Finova" style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'contain' }} />
             <div>
-              <h1>LoanFlow Pro</h1>
+              <h1>Finova</h1>
               <span>{isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin Panel' : 'Agent Panel'}</span>
             </div>
             <button className="mobile-menu-btn" onClick={() => setSidebarOpen(false)}

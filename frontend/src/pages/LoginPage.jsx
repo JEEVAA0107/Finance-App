@@ -27,10 +27,10 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card animate-in">
-        <div className="login-logo">
-          <div className="login-logo-icon"><Landmark size={28} /></div>
-          <h2>LoanFlow Pro</h2>
-          <p>Sign in to continue</p>
+        <div className="login-logo" style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <img src="/logo-icon.png" alt="Finova Logo" style={{ width: '72px', height: '72px', borderRadius: '16px', objectFit: 'contain', margin: '0 auto 12px auto', display: 'block' }} />
+          <h2 style={{ fontSize: '26px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>Finova</h2>
+          <p style={{ color: 'var(--accent-500)', fontSize: '13px', fontWeight: '600', margin: '4px 0 0 0', letterSpacing: '0.3px' }}>Smart Money. Better Future.</p>
         </div>
 
         {error && <div className="login-error">{error}</div>}

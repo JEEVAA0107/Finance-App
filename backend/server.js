@@ -94,7 +94,7 @@ async function start() {
     await seedAdmin();
     startCronJobs();
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 LoanFlow Pro API running on http://0.0.0.0:${PORT}`);
+      console.log(`🚀 Finova API running on http://0.0.0.0:${PORT}`);
       console.log(`📡 Accessible on your network at http://${localIp}:${PORT}`);
     });
   } catch (error) {
