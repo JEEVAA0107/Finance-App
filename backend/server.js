@@ -26,6 +26,9 @@ const localIp = getLocalIpAddress();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
+// Trust reverse proxy (Render, Vercel, Railway, Nginx) for accurate client IP rate limiting
+app.set('trust proxy', 1);
+
 app.use(helmet());
 
 // Allow all origins for local development to prevent network errors across multiple network interfaces
@@ -40,8 +43,11 @@ app.use(morgan('dev'));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
+  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true',
 });
 app.use('/api/', limiter);
 
