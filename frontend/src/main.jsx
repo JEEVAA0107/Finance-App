@@ -8,10 +8,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-// Register service worker for PWA functionality
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Register service worker for PWA functionality with auto-update
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
+      registration.update();
       console.log('PWA ServiceWorker registered with scope:', registration.scope);
     }).catch((error) => {
       console.error('PWA ServiceWorker registration failed:', error);

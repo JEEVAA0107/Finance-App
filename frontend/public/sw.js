@@ -1,30 +1,18 @@
-const CACHE_NAME = 'loanflow-pro-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/apple-touch-icon.png'
-];
+const CACHE_NAME = 'finova-v3';
 
-// Install event - cache static assets
+// Install event - force immediate activation
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - purge all old caches (loanflow-pro-v1, finova-v1, etc.)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', cache);
             return caches.delete(cache);
           }
         })
@@ -34,51 +22,34 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event handler
+// Fetch event handler - Network-First for fresh UI updates
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and API calls for cache
+  // Skip non-GET requests and API calls
   if (request.method !== 'GET' || url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Handle page navigation requests (HTML)
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => {
-        return caches.match('/index.html') || caches.match('/');
-      })
-    );
-    return;
-  }
-
-  // Network first with cache fallback for static resources
+  // Network First, fallback to cache (guarantees latest UI code on load)
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached and update in background
-        fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
-          }
-        }).catch(() => {/* Ignore network errors offline */});
-        return cachedResponse;
-      }
-
-      return fetch(request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+    fetch(request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
         }
-
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseToCache);
-        });
-
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => {
+        // Return cached version if offline
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (request.mode === 'navigate') {
+            return caches.match('/index.html') || caches.match('/');
+          }
+        });
+      })
   );
 });
