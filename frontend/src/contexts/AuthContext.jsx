@@ -9,18 +9,34 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
+    const storedUser = localStorage.getItem('user');
+
+    if (token && storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse stored user:', e);
+      }
+      setLoading(false);
+
+      // Verify and sync user details in the background
       authAPI.me()
         .then(data => {
-          setUser(data.user || data);
+          if (data) {
+            const updatedUser = data.user || data;
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }
         })
-        .catch(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
+        .catch((err) => {
+          // ONLY clear session if server explicitly rejects token with HTTP 401
+          if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        });
     } else {
       setLoading(false);
     }

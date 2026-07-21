@@ -16,6 +16,20 @@ function signTokens(userId, role) {
   return { accessToken, refreshToken };
 }
 
+const { authenticate } = require('../middleware/auth');
+
+// GET /api/auth/me - Return current user details
+router.get('/me', authenticate, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: req.user
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
