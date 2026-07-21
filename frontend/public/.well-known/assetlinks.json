@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "app.vercel.finance_app_seven_ashy.twa",
-    "sha256_cert_fingerprints": ["D0:30:F8:E6:D9:A3:3F:C1:2D:43:7E:B2:20:0F:DA:EB:C9:54:58:C8:CE:63:15:0E:5E:80:E8:C2:7A:D3:27:EC"]
+    "sha256_cert_fingerprints": [
+      "90:F1:18:9E:C2:24:B9:6B:26:D2:B5:AA:05:03:9E:C0:55:4C:13:A3:85:87:E4:8E:D0:43:79:45:F4:93:43:44",
+      "D0:30:F8:E6:D9:A3:3F:C1:2D:43:7E:B2:20:0F:DA:EB:C9:54:58:C8:CE:63:15:0E:5E:80:E8:C2:7A:D3:27:EC"
+    ]
   }
 }]

@@ -144,7 +144,7 @@ export default function LoanDetail() {
         {displayList.map(r => (
           <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyItems: 'center', background: r.status === 'PAID' ? 'rgba(16,185,129,0.15)' : r.status === 'OVERDUE' ? 'rgba(244,63,94,0.15)' : 'rgba(0,0,0,0.05)' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: r.status === 'PAID' ? 'rgba(16,185,129,0.15)' : r.status === 'OVERDUE' ? 'rgba(244,63,94,0.15)' : 'rgba(0,0,0,0.05)' }}>
                 {r.status === 'PAID' ? <CheckCircle size={14} style={{ color: 'var(--accent-600)' }} /> : r.status === 'OVERDUE' ? <AlertTriangle size={14} style={{ color: 'var(--danger-600)' }} /> : <Clock size={14} style={{ color: 'var(--text-muted)' }} />}
               </div>
               <div>
