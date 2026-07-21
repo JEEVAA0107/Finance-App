@@ -588,58 +588,68 @@ input, select, textarea, button { font-family: inherit; }
 
 .stat-card {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  padding: 18px 16px;
   position: relative;
   overflow: hidden;
-  transition: all var(--transition-normal);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-default);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.07), 0 4px 8px rgba(0, 0, 0, 0.03);
 }
 
 .stat-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
+  height: 4px;
+  border-radius: 16px 16px 0 0;
 }
 
-.stat-card.blue::before { background: linear-gradient(90deg, var(--primary-500), var(--primary-300)); }
-.stat-card.green::before { background: linear-gradient(90deg, var(--accent-500), var(--accent-400)); }
-.stat-card.yellow::before { background: linear-gradient(90deg, var(--warning-500), var(--warning-400)); }
-.stat-card.red::before { background: linear-gradient(90deg, var(--danger-500), var(--danger-400)); }
-.stat-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.stat-card.blue { background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); border-color: rgba(59, 130, 246, 0.25); }
+.stat-card.green { background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border-color: rgba(22, 163, 74, 0.25); }
+.stat-card.yellow { background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%); border-color: rgba(217, 119, 6, 0.25); }
+.stat-card.red { background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border-color: rgba(220, 38, 38, 0.25); }
+.stat-card.purple { background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%); border-color: rgba(147, 51, 234, 0.25); }
+
+.stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+.stat-card.green::before { background: linear-gradient(90deg, #16a34a, #15803d); }
+.stat-card.yellow::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.stat-card.red::before { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+.stat-card.purple::before { background: linear-gradient(90deg, #9333ea, #7e22ce); }
 
 .stat-icon {
-  width: 44px; height: 44px;
-  border-radius: var(--radius-md);
+  width: 38px; height: 38px;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
-.stat-icon.blue { background: rgba(59, 130, 246, 0.1); color: var(--primary-600); }
-.stat-icon.green { background: rgba(16, 185, 129, 0.1); color: var(--accent-600); }
-.stat-icon.yellow { background: rgba(245, 158, 11, 0.1); color: var(--warning-600); }
-.stat-icon.red { background: rgba(244, 63, 94, 0.1); color: var(--danger-600); }
-.stat-icon.purple { background: rgba(139, 92, 246, 0.1); color: #7c3aed; }
+.stat-icon.blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
+.stat-icon.green { background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; }
+.stat-icon.yellow { background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; }
+.stat-icon.red { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #ffffff; }
+.stat-icon.purple { background: linear-gradient(135deg, #9333ea, #7e22ce); color: #ffffff; }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 1.35rem;
   font-weight: 800;
-  letter-spacing: -1px;
-  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+  margin-bottom: 2px;
+  color: #0f172a;
 }
 
 .stat-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
 }
 
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
