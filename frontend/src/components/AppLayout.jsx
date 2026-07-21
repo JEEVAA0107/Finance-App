@@ -117,7 +117,6 @@ export default function AppLayout() {
           <Menu size={20} />
         </button>
         <div className="mobile-header-brand">
-          <img src="/logo-icon.png" alt="Finova" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain' }} />
           <span className="mobile-header-title">{currentPage}</span>
         </div>
         <div className="mobile-header-user" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
