@@ -1,0 +1,15 @@
+name: Keep Render Backend Alive 24/7
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend Health Endpoint
+        run: |
+          curl -s -f https://finance-app-awae.onrender.com/health || echo "Backend pinged"
