@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// Point to the local backend dynamically based on the current IP
-const API_URL = import.meta.env.MODE === 'production' 
-  ? 'https://finance-app-awae.onrender.com/api' 
-  : `http://${window.location.hostname}:5000/api`;
+// Hardcoding the production URL directly to avoid any environment variable issues
+const API_URL = 'https://finance-app-awae.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
