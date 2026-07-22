@@ -38,10 +38,22 @@ export default function CustomersPage() {
     } catch (err) { toast.error(err.message || 'Failed'); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Remove this customer?')) return;
-    try { await customersAPI.delete(id); toast.success('Removed'); load(); }
-    catch { toast.error('Failed'); }
+  const handleDelete = async (c) => {
+    const hasActiveLoans = (c.loans && c.loans.length > 0) || (c.activeLoans && c.activeLoans > 0);
+    if (hasActiveLoans) {
+      toast.error('Currently an active loan is running for this customer, so cannot delete.');
+      return;
+    }
+
+    if (!confirm(`Remove customer "${c.name}"?`)) return;
+
+    try {
+      await customersAPI.delete(c.id);
+      toast.success('Removed');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Currently an active loan is running for this customer, so cannot delete.');
+    }
   };
 
   return (
@@ -89,7 +101,7 @@ export default function CustomersPage() {
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <Link to={`/customers/${c.id}`} className="btn btn-ghost btn-sm" style={{ padding: '6px 8px' }}><Eye size={14} /></Link>
               <button className="btn btn-ghost btn-sm" style={{ padding: '6px 8px' }} onClick={() => openEdit(c)}><Edit2 size={14} /></button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 8px', color: 'var(--danger-400)' }} onClick={() => handleDelete(c.id)}><Trash2 size={14} /></button>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 8px', color: 'var(--danger-400)' }} onClick={() => handleDelete(c)}><Trash2 size={14} /></button>
             </div>
           </div>
         ))

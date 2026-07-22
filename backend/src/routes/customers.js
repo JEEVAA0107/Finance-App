@@ -122,6 +122,20 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
 // DELETE /api/customers/:id
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
+    const activeLoans = await prisma.loan.findMany({
+      where: {
+        customerId: req.params.id,
+        status: { in: ['ACTIVE', 'PENDING', 'DEFAULTED'] },
+      },
+    });
+
+    if (activeLoans.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Currently an active loan is running for this customer, so cannot delete.',
+      });
+    }
+
     await prisma.customer.update({ where: { id: req.params.id }, data: { isActive: false } });
     await auditLog(req.user.id, 'DELETE_CUSTOMER', 'Customer', req.params.id, {}, req);
     res.json({ success: true, message: 'Customer deactivated' });
