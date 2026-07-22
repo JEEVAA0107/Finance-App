@@ -1,30 +1,56 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { dashboardAPI } from '../services/api';
-import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Calendar, Clock, BarChart3, ChevronRight, PieChart } from 'lucide-react';
+import { dashboardAPI, loansAPI } from '../services/api';
+import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Calendar, Clock, BarChart3, ChevronRight, PieChart, X, Search, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Legend } from 'recharts';
 
 function fmt(val) {
-  if (!val) return '₹0';
+  if (!val && val !== 0) return '₹0';
   if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`;
   if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
   if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
   return `₹${val.toLocaleString('en-IN')}`;
 }
 
-const StatCard = ({ icon: Icon, label, value, color, to }) => (
-  <Link to={to} className={`stat-card ${color}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', padding: '16px', height: '100%' }}>
-    <div className={`stat-icon ${color}`} style={{ marginBottom: '12px' }}><Icon size={18} /></div>
-    <div className="stat-value" style={{ fontSize: '1.25rem' }}>{value}</div>
-    <div className="stat-label" style={{ marginTop: 'auto' }}>{label}</div>
-  </Link>
-);
+const StatCard = ({ icon: Icon, label, value, color, to, onClick }) => {
+  const content = (
+    <>
+      <div className={`stat-icon ${color}`} style={{ marginBottom: '12px' }}><Icon size={18} /></div>
+      <div className="stat-value" style={{ fontSize: '1.25rem' }}>{value}</div>
+      <div className="stat-label" style={{ marginTop: 'auto' }}>{label}</div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <div 
+        onClick={onClick} 
+        className={`stat-card ${color}`} 
+        style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', padding: '16px', height: '100%' }}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link to={to} className={`stat-card ${color}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', padding: '16px', height: '100%' }}>
+      {content}
+    </Link>
+  );
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Breakdown modal states
+  const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
+  const [breakdownLoans, setBreakdownLoans] = useState([]);
+  const [loadingLoans, setLoadingLoans] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = () => {
     Promise.all([dashboardAPI.summary(), dashboardAPI.agent()])
@@ -39,11 +65,35 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  const openBreakdownModal = (type) => {
+    setActiveModal(type);
+    setSearchQuery('');
+    setLoadingLoans(true);
+    
+    // Fetch all relevant loans for breakdown
+    const params = type === 'OUTSTANDING' ? { status: 'ACTIVE', limit: 200 } : { limit: 200 };
+    loansAPI.list(params)
+      .then(res => {
+        setBreakdownLoans(res || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingLoans(false));
+  };
+
   if (loading && !data) return <div className="loading-page"><div className="spinner" /></div>;
 
   const s = data?.summary;
   const a = data?.agent;
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+
+  // Filter breakdown loans by search
+  const filteredLoans = breakdownLoans.filter(l => {
+    const q = searchQuery.toLowerCase();
+    const name = l.customer?.name?.toLowerCase() || '';
+    const phone = l.customer?.phone || '';
+    const num = l.loanNumber?.toLowerCase() || '';
+    return name.includes(q) || phone.includes(q) || num.includes(q);
+  });
 
   return (
     <div className="animate-in" style={{ paddingBottom: '40px' }}>
@@ -77,8 +127,8 @@ export default function Dashboard() {
           {/* Section 1: Overall Financials */}
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Overall Financials</div>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-            <StatCard to="/loans?status=ACTIVE" icon={Landmark} label="Total Outstanding" value={fmt(s?.outstandingAmount)} color="blue" />
-            <StatCard to="/loans" icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding" value={fmt(s?.outstandingAmount)} color="blue" />
+            <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/collections" icon={HandCoins} label="Total Collected" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/reports" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
@@ -186,7 +236,132 @@ export default function Dashboard() {
           )}
         </>
       )}
+
+      {/* Breakdown Modal (Disbursed & Outstanding) */}
+      {activeModal && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal modal-lg animate-in" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>
+                  {activeModal === 'DISBURSED' ? 'Total Disbursed Breakdown (விநியோக விவரங்கள்)' : 'Total Outstanding Dues (நிலுவைத் தொகை விவரங்கள்)'}
+                </h3>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {activeModal === 'DISBURSED' 
+                    ? `Total: ${fmt(s?.totalDisbursed)} (யார் யாருக்கு எவ்வளவு கடன் கொடுக்கப்பட்டது)` 
+                    : `Total: ${fmt(s?.outstandingAmount)} (யார் யாருக்கு எவ்வளவு நிலுவை உள்ளது)`}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setActiveModal(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Search Bar */}
+              <div className="search-bar" style={{ marginBottom: 16, maxWidth: '100%' }}>
+                <Search size={16} />
+                <input 
+                  type="text" 
+                  placeholder="Search customer name, phone, or loan number..." 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {loadingLoans ? (
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading breakdown data...</div>
+                </div>
+              ) : filteredLoans.length === 0 ? (
+                <div className="empty-state">
+                  <FileText size={40} />
+                  <h3>No records found</h3>
+                  <p style={{ fontSize: 12 }}>No matching customer loans for this breakdown.</p>
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Loan No</th>
+                        <th>Date</th>
+                        {activeModal === 'DISBURSED' ? (
+                          <th>Disbursed Principal</th>
+                        ) : (
+                          <>
+                            <th>Disbursed</th>
+                            <th>Collected</th>
+                            <th>Outstanding Balance</th>
+                          </>
+                        )}
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredLoans.map(loan => {
+                        const totalCollected = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+                        const outstandingAmt = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
+
+                        return (
+                          <tr key={loan.id}>
+                            <td data-label="Customer">
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{loan.customer?.name}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{loan.customer?.phone}</div>
+                            </td>
+                            <td data-label="Loan No">
+                              <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{loan.loanNumber}</span>
+                            </td>
+                            <td data-label="Date">
+                              {new Date(loan.startDate || loan.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </td>
+                            {activeModal === 'DISBURSED' ? (
+                              <td data-label="Disbursed Principal">
+                                <span style={{ fontWeight: 800, color: 'var(--accent-600)', fontSize: 15 }}>
+                                  ₹{loan.principalAmount?.toLocaleString('en-IN')}
+                                </span>
+                              </td>
+                            ) : (
+                              <>
+                                <td data-label="Disbursed">
+                                  ₹{loan.principalAmount?.toLocaleString('en-IN')}
+                                </td>
+                                <td data-label="Collected">
+                                  ₹{totalCollected?.toLocaleString('en-IN')}
+                                </td>
+                                <td data-label="Outstanding Balance">
+                                  <span style={{ fontWeight: 800, color: 'var(--primary-600)', fontSize: 15 }}>
+                                    ₹{outstandingAmt?.toLocaleString('en-IN')}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                            <td data-label="Status">
+                              <span className={`badge ${loan.status === 'ACTIVE' ? 'badge-info' : loan.status === 'CLOSED' ? 'badge-success' : 'badge-danger'}`}>
+                                {loan.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setActiveModal(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
