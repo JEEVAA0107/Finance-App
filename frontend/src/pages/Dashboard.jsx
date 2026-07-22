@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { dashboardAPI, loansAPI } from '../services/api';
 import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Calendar, Clock, BarChart3, ChevronRight, PieChart, X, Search, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Legend } from 'recharts';
+import { ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Legend } from 'recharts';
 
 function fmt(val) {
   if (!val && val !== 0) return '₹0';
@@ -45,6 +45,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chartView, setChartView] = useState('BAR'); // 'BAR' | 'AREA'
 
   // Breakdown modal states
   const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
@@ -149,39 +150,107 @@ export default function Dashboard() {
           </div>
 
           {/* Monthly Analytics Chart */}
-          <div className="card" style={{ padding: '16px', marginBottom: 24 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Monthly Analytics (Last 6 Months)</div>
-            <div style={{ width: '100%', height: 250 }}>
+          <div className="card" style={{ padding: '20px', marginBottom: 24, borderRadius: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <TrendingUp size={18} style={{ color: 'var(--primary-400)' }} /> Monthly Business Analytics
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Last 6 Months performance (மாதாந்திர வளர்ச்சி)</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, background: 'var(--bg-subtle, rgba(0,0,0,0.04))', padding: 4, borderRadius: 10 }}>
+                <button 
+                  type="button"
+                  className={`btn btn-sm ${chartView === 'BAR' ? 'btn-primary' : 'btn-ghost'}`} 
+                  style={{ padding: '4px 10px', fontSize: 12, borderRadius: 8 }}
+                  onClick={() => setChartView('BAR')}
+                >
+                  <BarChart3 size={13} style={{ marginRight: 4 }} /> Bar
+                </button>
+                <button 
+                  type="button"
+                  className={`btn btn-sm ${chartView === 'AREA' ? 'btn-primary' : 'btn-ghost'}`} 
+                  style={{ padding: '4px 10px', fontSize: 12, borderRadius: 8 }}
+                  onClick={() => setChartView('AREA')}
+                >
+                  <TrendingUp size={13} style={{ marginRight: 4 }} /> Trend
+                </button>
+              </div>
+            </div>
+
+            <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend].reverse() : []} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} tickFormatter={(v) => `₹${v/1000}k`} />
-                  <Tooltip cursor={{ fill: 'rgba(0,0,0,0.03)' }} formatter={(value) => `₹${value.toLocaleString('en-IN')}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: 'var(--shadow-md)' }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="disbursed" name="Disbursed" fill="var(--primary-500)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Bar dataKey="collected" name="Collected" fill="var(--accent-500)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Line type="monotone" dataKey="profit" name="Profit" stroke="var(--warning-500)" strokeWidth={3} dot={{ r: 4 }} />
+                <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorDisbursed" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.15} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-muted)' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(0,0,0,0.04)' }} 
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 20px rgba(0,0,0,0.12)', fontSize: '12px' }}>
+                            <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>🗓️ {label}</div>
+                            {payload.map((entry, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
+                                <span style={{ color: entry.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color, display: 'inline-block' }} />
+                                  {entry.name}:
+                                </span>
+                                <span style={{ fontWeight: 700 }}>₹{entry.value?.toLocaleString('en-IN')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                  
+                  {chartView === 'BAR' ? (
+                    <>
+                      <Bar dataKey="disbursed" name="Disbursed (வழங்கியது)" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                      <Bar dataKey="collected" name="Collected (வசூலானது)" fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                    </>
+                  ) : (
+                    <>
+                      <Area type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorDisbursed)" />
+                      <Area type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorCollected)" />
+                    </>
+                  )}
+                  <Line type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B' }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>This Month Disbursed</div>
-                <div style={{ fontWeight: 700 }}>{fmt(s?.monthly?.disbursed)}</div>
+            {/* KPI Summary Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginTop: 18, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
+              <div style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Disbursed</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>{fmt(s?.monthly?.disbursed)}</div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>This Month Collected</div>
-                <div style={{ fontWeight: 700 }}>{fmt(s?.monthly?.collection)}</div>
+              <div style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Collected</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>{fmt(s?.monthly?.collection)}</div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>This Month Interest</div>
-                <div style={{ fontWeight: 700 }}>{fmt(s?.monthly?.interestIncome)}</div>
+              <div style={{ background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Interest</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#7C3AED', marginTop: 2 }}>{fmt(s?.monthly?.interestIncome)}</div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>This Month Profit</div>
-                <div style={{ fontWeight: 700 }}>{fmt(s?.monthly?.profit)}</div>
+              <div style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Profit</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#D97706', marginTop: 2 }}>{fmt(s?.monthly?.profit)}</div>
               </div>
             </div>
           </div>
