@@ -4,18 +4,20 @@
   "webDir": "dist",
   "server": {
     "hostname": "app",
-    "androidScheme": "http",
-    "cleartext": true,
-    "allowNavigation": [
-      "10.193.223.220",
-      "10.193.223.220:5000",
-      "10.*.*.*",
-      "192.168.*.*"
-    ]
+    "androidScheme": "https",
+    "cleartext": true
   },
   "android": {
     "allowMixedContent": true,
     "captureInput": true,
-    "webContentsDebuggingEnabled": true
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "DARK",
+      "backgroundColor": "#0f172a"
+    }
   }
 }
+
