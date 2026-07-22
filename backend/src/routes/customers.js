@@ -73,7 +73,7 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/customers
 router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
-    const { name, phone, email, address, city, idType, idNumber, notificationPref } = req.body;
+    const { name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref } = req.body;
 
     // Create or find user account for customer (allow sharing User profile if same phone)
     let user = await prisma.user.findFirst({ where: { phone } });
@@ -94,7 +94,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     }
 
     const customer = await prisma.customer.create({
-      data: { userId: user.id, name, phone, email, address, city, idType, idNumber, notificationPref: notificationPref || 'WHATSAPP' },
+      data: { userId: user.id, name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref: notificationPref || 'WHATSAPP' },
     });
 
     await auditLog(req.user.id, 'CREATE_CUSTOMER', 'Customer', customer.id, { name, phone }, req);
@@ -107,10 +107,10 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 // PUT /api/customers/:id
 router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
-    const { name, phone, email, address, city, idType, idNumber, notificationPref } = req.body;
+    const { name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref } = req.body;
     const customer = await prisma.customer.update({
       where: { id: req.params.id },
-      data: { name, phone, email, address, city, idType, idNumber, notificationPref },
+      data: { name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref },
     });
     await auditLog(req.user.id, 'UPDATE_CUSTOMER', 'Customer', customer.id, {}, req);
     res.json({ success: true, data: customer });

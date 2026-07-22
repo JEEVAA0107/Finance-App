@@ -35,6 +35,20 @@ export default function CustomerDetail() {
               <div><span className="color-muted fs-12">ID PROOF</span><div><CreditCard size={14} style={{verticalAlign:'middle',marginRight:4}} /><span className="badge badge-info">{customer.idType}</span> {customer.idNumber}</div></div>
               <div><span className="color-muted fs-12">SINCE</span><div>{formatDate(customer.createdAt)}</div></div>
             </div>
+            {customer.idProofUrl && (
+              <div style={{ marginTop: 8 }}>
+                <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6 }}>ATTACHED ID PROOF DOCUMENT</span>
+                <img 
+                  src={customer.idProofUrl} 
+                  alt={`${customer.idType} Proof`} 
+                  style={{ width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)', cursor: 'pointer' }} 
+                  onClick={() => {
+                    const w = window.open('');
+                    w.document.write(`<img src="${customer.idProofUrl}" style="max-width:100%;height:auto;" />`);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 

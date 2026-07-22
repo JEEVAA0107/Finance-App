@@ -11,7 +11,7 @@ export default function CustomersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'WHATSAPP' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP' });
 
   const load = async () => {
     try { setCustomers(await customersAPI.list({ search: debouncedSearch, limit: 100 })); }
@@ -26,11 +26,29 @@ export default function CustomersPage() {
 
   useEffect(() => { load(); }, [debouncedSearch]);
 
-  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'WHATSAPP' }); setEditCustomer(null); setShowModal(true); };
-  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP' }); setShowModal(true); };
+  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP' }); setEditCustomer(null); setShowModal(true); };
+  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, idProofUrl: c.idProofUrl || '', notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP' }); setShowModal(true); };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm(prev => ({ ...prev, idProofUrl: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!editCustomer && !form.idProofUrl) {
+      toast.error('Please upload an ID proof image (Aadhar / PAN / Driving License)');
+      return;
+    }
     try {
       editCustomer ? await customersAPI.update(editCustomer.id, form) : await customersAPI.create(form);
       toast.success(editCustomer ? 'Updated!' : 'Customer added!');
@@ -147,6 +165,34 @@ export default function CustomersPage() {
                     <label className="form-label">ID Number *</label>
                     <input className="form-input" value={form.idNumber} onChange={e => setForm({ ...form, idNumber: e.target.value })} required />
                   </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    ID Proof Image (Aadhar / PAN / Driving License) {!editCustomer && <span style={{ color: 'var(--danger-400)' }}>*</span>}
+                  </label>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="form-input" 
+                    onChange={handleImageUpload} 
+                  />
+                  {form.idProofUrl && (
+                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <img 
+                        src={form.idProofUrl} 
+                        alt="ID Proof Document" 
+                        style={{ width: 90, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-subtle)' }} 
+                      />
+                      <button 
+                        type="button" 
+                        className="btn btn-ghost btn-sm" 
+                        style={{ color: 'var(--danger-400)', fontSize: 12 }} 
+                        onClick={() => setForm({ ...form, idProofUrl: '' })}
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Notification Preferences</label>
