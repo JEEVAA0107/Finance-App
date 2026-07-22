@@ -11,7 +11,7 @@ export default function CustomersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'BOTH' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'WHATSAPP' });
 
   const load = async () => {
     try { setCustomers(await customersAPI.list({ search: debouncedSearch, limit: 100 })); }
@@ -26,8 +26,8 @@ export default function CustomersPage() {
 
   useEffect(() => { load(); }, [debouncedSearch]);
 
-  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'BOTH' }); setEditCustomer(null); setShowModal(true); };
-  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, notificationPref: c.notificationPref || 'BOTH' }); setShowModal(true); };
+  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', notificationPref: 'WHATSAPP' }); setEditCustomer(null); setShowModal(true); };
+  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP' }); setShowModal(true); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -151,9 +151,7 @@ export default function CustomersPage() {
                 <div className="form-group">
                   <label className="form-label">Notification Preferences</label>
                   <select className="form-select" value={form.notificationPref} onChange={e => setForm({ ...form, notificationPref: e.target.value })}>
-                    <option value="BOTH">WhatsApp & In-App</option>
                     <option value="WHATSAPP">WhatsApp Only</option>
-                    <option value="APP">In-App Only</option>
                     <option value="NONE">Do Not Send</option>
                   </select>
                 </div>

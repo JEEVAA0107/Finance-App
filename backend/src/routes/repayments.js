@@ -136,7 +136,13 @@ router.get('/today', authenticate, async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const repayments = await prisma.repayment.findMany({
-      where: { dueDate: { gte: today, lt: tomorrow } },
+      where: {
+        OR: [
+          { dueDate: { gte: today, lt: tomorrow } },
+          { payments: { some: { collectedAt: { gte: today, lt: tomorrow } } } },
+          { paidAt: { gte: today, lt: tomorrow } },
+        ]
+      },
       include: {
         loan: {
           select: {
