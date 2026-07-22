@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finova-v6';
+const CACHE_NAME = 'finova-v7';
 
 // Install event - force immediate activation
 self.addEventListener('install', (event) => {
