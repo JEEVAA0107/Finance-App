@@ -134,6 +134,7 @@ router.get('/today', authenticate, async (req, res) => {
       where: {
         OR: [
           { dueDate: { gte: today, lt: tomorrow } },
+          { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
           { payments: { some: { collectedAt: { gte: today, lt: tomorrow } } } },
           { paidAt: { gte: today, lt: tomorrow } },
         ]
