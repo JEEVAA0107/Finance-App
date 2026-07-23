@@ -279,4 +279,21 @@ router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res)
   }
 });
 
+// POST /api/dashboard/reset-all-data — Reset production database
+router.post('/reset-all-data', authenticate, authorize('ADMIN'), async (req, res) => {
+  try {
+    try { await prisma.notificationLog.deleteMany({}); } catch (e) {}
+    await prisma.payment.deleteMany({});
+    try { await prisma.auditLog.deleteMany({}); } catch (e) {}
+    await prisma.repayment.deleteMany({});
+    await prisma.loan.deleteMany({});
+    await prisma.customer.deleteMany({});
+    await prisma.user.deleteMany({ where: { role: 'CUSTOMER' } });
+
+    res.json({ success: true, message: 'All test data reset successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

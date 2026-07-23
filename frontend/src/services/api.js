@@ -131,6 +131,7 @@ export const paymentsAPI = {
 export const dashboardAPI = {
   summary: () => api.get('/dashboard/summary').then(extractData),
   agent: (id) => api.get('/dashboard/agent', { params: { agentId: id } }).then(extractData),
+  resetAllData: () => api.post('/dashboard/reset-all-data').then(extractData),
 };
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
