@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
+const { syncOverdueStatus } = require('../utils/loanCalc');
 const prisma = new PrismaClient();
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -89,11 +90,8 @@ router.get('/', authenticate, async (req, res) => {
       if (to) where.dueDate.lte = new Date(to);
     }
 
-    // Auto-mark overdue (fast single query)
-    await prisma.repayment.updateMany({
-      where: { status: 'PENDING', dueDate: { lt: new Date() } },
-      data: { status: 'OVERDUE' },
-    });
+    // Auto-mark overdue (only starting day after due date)
+    await syncOverdueStatus(prisma);
 
     // Auto-extend runs in background — does NOT block the response
     autoExtendActiveLoans().catch(err => console.error('autoExtend error:', err));
@@ -121,11 +119,8 @@ router.get('/', authenticate, async (req, res) => {
 // GET /api/repayments/today — Today's collections
 router.get('/today', authenticate, async (req, res) => {
   try {
-    // Auto-mark overdue first (fast)
-    await prisma.repayment.updateMany({
-      where: { status: 'PENDING', dueDate: { lt: new Date() } },
-      data: { status: 'OVERDUE' },
-    });
+    // Auto-mark overdue first (only starting day after due date)
+    await syncOverdueStatus(prisma);
 
     // Auto-extend in background — does NOT block response
     autoExtendActiveLoans().catch(err => console.error('autoExtend error:', err));

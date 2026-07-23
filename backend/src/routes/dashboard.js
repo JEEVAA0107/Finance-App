@@ -4,6 +4,8 @@ const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const prisma = new PrismaClient();
 
+const { syncOverdueStatus } = require('../utils/loanCalc');
+
 // GET /api/dashboard/summary
 router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
@@ -20,11 +22,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const next7Days = new Date(startOfToday);
     next7Days.setDate(next7Days.getDate() + 7);
 
-    // Update overdues first (important for correct states)
-    await prisma.repayment.updateMany({
-      where: { status: 'PENDING', dueDate: { lt: startOfToday } },
-      data: { status: 'OVERDUE' },
-    });
+    // Update overdues (only starting day after due date)
+    await syncOverdueStatus(prisma);
 
     const [
       activeLoans,
@@ -202,10 +201,7 @@ router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res)
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    await prisma.repayment.updateMany({
-      where: { status: 'PENDING', dueDate: { lt: new Date() } },
-      data: { status: 'OVERDUE' },
-    });
+    await syncOverdueStatus(prisma);
 
     // Build filters — if no agentId (admin with no filter), show all
     const loanWhere = { status: 'ACTIVE' };

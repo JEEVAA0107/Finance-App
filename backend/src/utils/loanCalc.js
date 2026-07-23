@@ -85,9 +85,38 @@ function generateLoanNumber() {
   return `LN${year}${month}${random}`;
 }
 
+/**
+ * Update repayment status to OVERDUE ONLY IF the due date has passed (i.e. starting the day AFTER the due date).
+ * On the due date itself, if not paid, status remains PENDING/PARTIAL (Due Today).
+ * Also fixes any records prematurely marked OVERDUE for today or future dates.
+ */
+async function syncOverdueStatus(prisma) {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  // 1. Revert any repayments due TODAY or FUTURE that were incorrectly marked OVERDUE
+  await prisma.repayment.updateMany({
+    where: {
+      status: 'OVERDUE',
+      dueDate: { gte: startOfToday },
+    },
+    data: { status: 'PENDING' },
+  });
+
+  // 2. Mark repayments as OVERDUE ONLY IF due date is strictly BEFORE start of today (i.e. yesterday or earlier)
+  await prisma.repayment.updateMany({
+    where: {
+      status: { in: ['PENDING', 'PARTIAL'] },
+      dueDate: { lt: startOfToday },
+    },
+    data: { status: 'OVERDUE' },
+  });
+}
+
 module.exports = {
   calculateFlatInterest,
   calculateReducingInterest,
   generateSchedule,
   generateLoanNumber,
+  syncOverdueStatus,
 };

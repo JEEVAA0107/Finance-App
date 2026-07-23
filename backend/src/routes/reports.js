@@ -2,15 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
+const { syncOverdueStatus } = require('../utils/loanCalc');
 const prisma = new PrismaClient();
 
 // GET /api/reports/defaulters
 router.get('/defaulters', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
-    await prisma.repayment.updateMany({
-      where: { status: 'PENDING', dueDate: { lt: new Date() } },
-      data: { status: 'OVERDUE' },
-    });
+    await syncOverdueStatus(prisma);
 
     const defaulters = await prisma.repayment.findMany({
       where: { status: 'OVERDUE' },
