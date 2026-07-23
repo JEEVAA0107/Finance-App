@@ -56,9 +56,16 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       _sum: { dueAmount: true, paidAmount: true },
     });
 
-    // Pending Collections overall (Pending + Overdue)
+    // Pending Collections = ONLY already-due amounts (OVERDUE + PARTIAL)
+    // PENDING status = future installments not yet due — DO NOT include those!
     const pendingDues = await prisma.repayment.aggregate({
-      where: { status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] } },
+      where: {
+        OR: [
+          { status: 'OVERDUE' },
+          { status: 'PARTIAL' },
+          { status: 'PENDING', dueDate: { lte: endOfToday } }, // Today's pending only
+        ]
+      },
       _sum: { dueAmount: true, paidAmount: true },
     });
 
