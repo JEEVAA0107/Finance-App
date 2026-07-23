@@ -362,4 +362,171 @@ router.post('/reset-all-data', authenticate, authorize('ADMIN'), async (req, res
   }
 });
 
+
+// GET /api/dashboard/profit — Detailed Profit Breakdown with filters
+router.get('/profit', authenticate, authorize('ADMIN'), async (req, res) => {
+  try {
+    const { loanType, dateFrom, dateTo, period } = req.query;
+
+    // Build date range
+    const now = new Date();
+    let startDate, endDate;
+    if (dateFrom && dateTo) {
+      startDate = new Date(dateFrom);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (period === 'THIS_WEEK') {
+      const day = now.getDay();
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - day);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (period === 'THIS_MONTH') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (period === 'LAST_MONTH') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    } else if (period === 'THIS_YEAR') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      // Default: All time
+      startDate = new Date('2020-01-01');
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    // Build loan type filter
+    const loanTypeFilter = loanType && loanType !== 'ALL' ? { interestType: loanType } : {};
+
+    // Fetch all payments in date range with loan info
+    const payments = await prisma.payment.findMany({
+      where: {
+        collectedAt: { gte: startDate, lte: endDate },
+        repayment: { loan: { ...loanTypeFilter } }
+      },
+      include: {
+        repayment: {
+          include: {
+            loan: {
+              select: {
+                id: true,
+                loanNumber: true,
+                interestType: true,
+                principalAmount: true,
+                totalPayable: true,
+                totalInterest: true,
+                disbursedAt: true,
+                customer: { select: { name: true, phone: true } }
+              }
+            }
+          }
+        },
+        collectedBy: { select: { name: true } }
+      },
+      orderBy: { collectedAt: 'desc' }
+    });
+
+    // Deduction loans created in date range (interest realized at disbursement)
+    const deductionLoans = await prisma.loan.findMany({
+      where: {
+        disbursedAt: { gte: startDate, lte: endDate },
+        interestType: 'WITHOUT_INTEREST',
+        ...loanTypeFilter
+      },
+      select: {
+        id: true,
+        loanNumber: true,
+        interestType: true,
+        principalAmount: true,
+        totalInterest: true,
+        processingFee: true,
+        disbursedAt: true,
+        customer: { select: { name: true, phone: true } }
+      }
+    });
+
+    // Build profit entries
+    const profitEntries = [];
+    let totalProfit = 0;
+
+    // FLAT & FIXED_FLAT: profit comes from payments
+    const byLoan = {};
+    payments.forEach(p => {
+      const loan = p.repayment?.loan;
+      if (!loan) return;
+      const type = loan.interestType || 'FLAT';
+      let profit = 0;
+      if (type === 'FLAT') {
+        profit = p.amount || 0;
+      } else if (type === 'FIXED_FLAT') {
+        const ratio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
+        profit = (p.amount || 0) * ratio;
+      } else {
+        return; // WITHOUT_INTEREST handled separately
+      }
+      const key = loan.id;
+      if (!byLoan[key]) {
+        byLoan[key] = {
+          loanId: loan.id,
+          loanNumber: loan.loanNumber,
+          customerName: loan.customer?.name || '-',
+          customerPhone: loan.customer?.phone || '-',
+          loanType: type,
+          principalAmount: loan.principalAmount,
+          totalExpectedInterest: loan.totalInterest,
+          collectedInterest: 0,
+          lastCollected: p.collectedAt
+        };
+      }
+      byLoan[key].collectedInterest = Math.round((byLoan[key].collectedInterest + profit) * 100) / 100;
+      totalProfit += profit;
+    });
+
+    Object.values(byLoan).forEach(e => profitEntries.push(e));
+
+    // WITHOUT_INTEREST: profit realized at disbursement
+    deductionLoans.forEach(l => {
+      const profit = l.totalInterest || l.processingFee || 0;
+      profitEntries.push({
+        loanId: l.id,
+        loanNumber: l.loanNumber,
+        customerName: l.customer?.name || '-',
+        customerPhone: l.customer?.phone || '-',
+        loanType: 'WITHOUT_INTEREST',
+        principalAmount: l.principalAmount,
+        totalExpectedInterest: profit,
+        collectedInterest: profit,
+        lastCollected: l.disbursedAt
+      });
+      totalProfit += profit;
+    });
+
+    totalProfit = Math.round(totalProfit * 100) / 100;
+
+    // Summary by loan type
+    const byType = { FLAT: 0, FIXED_FLAT: 0, WITHOUT_INTEREST: 0 };
+    profitEntries.forEach(e => {
+      byType[e.loanType] = Math.round(((byType[e.loanType] || 0) + e.collectedInterest) * 100) / 100;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalProfit,
+        byType,
+        entries: profitEntries.sort((a, b) => new Date(b.lastCollected) - new Date(a.lastCollected)),
+        dateRange: { from: startDate, to: endDate }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

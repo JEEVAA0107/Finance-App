@@ -135,7 +135,7 @@ export default function Dashboard() {
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
             <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/collections" icon={HandCoins} label="Total Collected" value={fmt(s?.totalCollected)} color="purple" />
-            <StatCard to="/reports" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
+            <StatCard to="/profit" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
 
           {/* Section 2: Today's Metrics */}
