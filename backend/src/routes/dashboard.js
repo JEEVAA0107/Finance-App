@@ -84,6 +84,43 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       _sum: { amount: true },
     });
 
+    // Calculate actual realized monthly interest & profit
+    const monthlyPaymentRecords = await prisma.payment.findMany({
+      where: { collectedAt: { gte: startOfMonth } },
+      include: {
+        repayment: {
+          include: { loan: { select: { interestType: true, principalAmount: true, totalPayable: true, totalInterest: true } } }
+        }
+      }
+    });
+
+    let monthlyInterestIncome = 0;
+    monthlyPaymentRecords.forEach(p => {
+      const loan = p.repayment?.loan;
+      if (!loan) return;
+      const type = loan.interestType || 'FLAT';
+      if (type === 'FLAT') {
+        monthlyInterestIncome += (p.amount || 0);
+      } else if (type === 'FIXED_FLAT') {
+        const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
+        monthlyInterestIncome += (p.amount || 0) * interestRatio;
+      }
+    });
+
+    const monthlyDeductionLoans = await prisma.loan.findMany({
+      where: {
+        createdAt: { gte: startOfMonth },
+        interestType: 'WITHOUT_INTEREST'
+      },
+      select: { totalInterest: true, processingFee: true }
+    });
+
+    monthlyDeductionLoans.forEach(l => {
+      monthlyInterestIncome += (l.totalInterest || l.processingFee || 0);
+    });
+
+    monthlyInterestIncome = Math.round(monthlyInterestIncome * 100) / 100;
+
     // Upcoming Dues (Next 7 days)
     const upcomingDues = await prisma.repayment.findMany({
       where: { 
@@ -117,15 +154,44 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         prisma.payment.aggregate({ where: { collectedAt: { gte: start, lte: end } }, _sum: { amount: true } }),
         prisma.loan.aggregate({ where: { createdAt: { gte: start, lte: end } }, _sum: { principalAmount: true, totalInterest: true } })
       ]);
+
+      // Actual interest collected in this specific month
+      const mPayRecords = await prisma.payment.findMany({
+        where: { collectedAt: { gte: start, lte: end } },
+        include: {
+          repayment: {
+            include: { loan: { select: { interestType: true, totalPayable: true, totalInterest: true } } }
+          }
+        }
+      });
+      let mInterest = 0;
+      mPayRecords.forEach(p => {
+        const loan = p.repayment?.loan;
+        if (!loan) return;
+        const type = loan.interestType || 'FLAT';
+        if (type === 'FLAT') {
+          mInterest += (p.amount || 0);
+        } else if (type === 'FIXED_FLAT') {
+          const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
+          mInterest += (p.amount || 0) * interestRatio;
+        }
+      });
+      const mDeductionLoans = await prisma.loan.findMany({
+        where: { createdAt: { gte: start, lte: end }, interestType: 'WITHOUT_INTEREST' },
+        select: { totalInterest: true, processingFee: true }
+      });
+      mDeductionLoans.forEach(l => { mInterest += (l.totalInterest || l.processingFee || 0); });
+      mInterest = Math.round(mInterest * 100) / 100;
       
       months.push({
         name: start.toLocaleString('default', { month: 'short' }),
         disbursed: mLoan._sum.principalAmount || 0,
         collected: mPay._sum.amount || 0,
-        interest: mLoan._sum.totalInterest || 0,
-        profit: mLoan._sum.totalInterest || 0,
+        interest: mInterest,
+        profit: mInterest,
       });
     }
+
 
     // Outstanding separated by Loan Types and Principal vs Interest
     const activeLoanRecords = await prisma.loan.findMany({
@@ -216,8 +282,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         monthly: {
           disbursed: monthlyLoans._sum.principalAmount || 0,
           collection: monthlyPayments._sum.amount || 0,
-          interestIncome: monthlyLoans._sum.totalInterest || 0,
-          profit: monthlyLoans._sum.totalInterest || 0,
+          interestIncome: monthlyInterestIncome,
+          profit: monthlyInterestIncome,
         },
         monthlyTrend: months,
       },
