@@ -121,6 +121,39 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     monthlyInterestIncome = Math.round(monthlyInterestIncome * 100) / 100;
 
+    // === All-Time Actual Profit (what was really collected, not expected) ===
+    const allPaymentRecords = await prisma.payment.findMany({
+      include: {
+        repayment: {
+          include: { loan: { select: { interestType: true, totalPayable: true, totalInterest: true } } }
+        }
+      }
+    });
+
+    let totalActualProfit = 0;
+    allPaymentRecords.forEach(p => {
+      const loan = p.repayment?.loan;
+      if (!loan) return;
+      const type = loan.interestType || 'FLAT';
+      if (type === 'FLAT') {
+        totalActualProfit += (p.amount || 0);
+      } else if (type === 'FIXED_FLAT') {
+        const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
+        totalActualProfit += (p.amount || 0) * interestRatio;
+      }
+    });
+
+    // All deduction-based loans: interest was realized at disbursement
+    const allDeductionLoans = await prisma.loan.findMany({
+      where: { interestType: 'WITHOUT_INTEREST' },
+      select: { totalInterest: true, processingFee: true }
+    });
+    allDeductionLoans.forEach(l => {
+      totalActualProfit += (l.totalInterest || l.processingFee || 0);
+    });
+    totalActualProfit = Math.round(totalActualProfit * 100) / 100;
+
+
     // Upcoming Dues (Next 7 days)
     const upcomingDues = await prisma.repayment.findMany({
       where: { 
@@ -267,7 +300,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         outstandingInterest: totalOutstandingInterest,
         totalDisbursed: loanAgg._sum.principalAmount || 0,
         totalCollected: paymentAgg._sum.amount || 0,
-        totalInterestCollected: loanAgg._sum.totalInterest || 0, // Expected profit
+        totalInterestCollected: totalActualProfit, // Actual profit collected so far
         activeCustomers,
         activeLoans,
         todayCollection: todaysPayments._sum.amount || 0,
