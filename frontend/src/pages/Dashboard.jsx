@@ -139,72 +139,6 @@ export default function Dashboard() {
             <StatCard to="/reports" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
 
-          {/* Outstanding Breakdown by Loan Types */}
-          <div className="card" style={{ padding: '16px', marginBottom: 20, borderRadius: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <PieChart size={16} style={{ color: 'var(--primary-500)' }} /> Outstanding Dues by Loan Type (வகை வாரியாக நிலுவை)
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tap card to view list</span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              <div 
-                onClick={() => openBreakdownModal('OUTSTANDING', 'FLAT')}
-                style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
-              >
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வார வட்டி)</div>
-                <div style={{ fontWeight: 800, fontSize: 17, color: '#2563EB', marginTop: 4 }}>
-                  {fmt(s?.outstandingByLoanType?.FLAT?.amount)}
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(59, 130, 246, 0.2)', fontSize: 10, color: 'var(--text-secondary)' }}>
-                  <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FLAT?.principal)}</b></div>
-                  <div>·</div>
-                  <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FLAT?.interest)}</b></div>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {s?.outstandingByLoanType?.FLAT?.count || 0} active loans
-                </div>
-              </div>
-
-              <div 
-                onClick={() => openBreakdownModal('OUTSTANDING', 'WITHOUT_INTEREST')}
-                style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
-              >
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து தருவது)</div>
-                <div style={{ fontWeight: 800, fontSize: 17, color: '#059669', marginTop: 4 }}>
-                  {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.amount)}
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(16, 185, 129, 0.2)', fontSize: 10, color: 'var(--text-secondary)' }}>
-                  <div>Principal: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.principal)}</b></div>
-                  <div>·</div>
-                  <div>Interest: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.interest)}</b></div>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {s?.outstandingByLoanType?.WITHOUT_INTEREST?.count || 0} active loans
-                </div>
-              </div>
-
-              <div 
-                onClick={() => openBreakdownModal('OUTSTANDING', 'FIXED_FLAT')}
-                style={{ background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
-              >
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு தவணை)</div>
-                <div style={{ fontWeight: 800, fontSize: 17, color: '#7C3AED', marginTop: 4 }}>
-                  {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(139, 92, 246, 0.2)', fontSize: 10, color: 'var(--text-secondary)' }}>
-                  <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</b></div>
-                  <div>·</div>
-                  <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</b></div>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {s?.outstandingByLoanType?.FIXED_FLAT?.count || 0} active loans
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Section 2: Today's Metrics */}
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Today's Performance</div>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
@@ -402,7 +336,7 @@ export default function Dashboard() {
               <div className="tabs" style={{ marginBottom: 14 }}>
                 {[
                   ['ALL', 'All Types'],
-                  ['FLAT', 'Regular Interest (வார வட்டி)'],
+                  ['FLAT', 'Regular Interest (வட்டி)'],
                   ['WITHOUT_INTEREST', 'Deduction Based (கழித்து)'],
                   ['FIXED_FLAT', 'Reducing Principal (அசலோடு)']
                 ].map(([val, label]) => (
@@ -416,6 +350,74 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
+
+              {/* Loan Type Breakdown Cards inside Modal */}
+              {activeModal === 'OUTSTANDING' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
+                  <div 
+                    onClick={() => setModalLoanType('FLAT')}
+                    style={{ 
+                      background: modalLoanType === 'FLAT' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.05)', 
+                      border: modalLoanType === 'FLAT' ? '2px solid #2563EB' : '1px solid rgba(59, 130, 246, 0.18)', 
+                      padding: '10px 12px', 
+                      borderRadius: 12, 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வட்டி)</div>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>
+                      {fmt(s?.outstandingByLoanType?.FLAT?.amount)}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
+                      <span>Principal: {fmt(s?.outstandingByLoanType?.FLAT?.principal)}</span>
+                      <span>·</span>
+                      <span>Interest: {fmt(s?.outstandingByLoanType?.FLAT?.interest)}</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setModalLoanType('WITHOUT_INTEREST')}
+                    style={{ 
+                      background: modalLoanType === 'WITHOUT_INTEREST' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.05)', 
+                      border: modalLoanType === 'WITHOUT_INTEREST' ? '2px solid #059669' : '1px solid rgba(16, 185, 129, 0.18)', 
+                      padding: '10px 12px', 
+                      borderRadius: 12, 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து)</div>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>
+                      {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.amount)}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
+                      <span>Principal: {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.principal)}</span>
+                      <span>·</span>
+                      <span>Interest: {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.interest)}</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setModalLoanType('FIXED_FLAT')}
+                    style={{ 
+                      background: modalLoanType === 'FIXED_FLAT' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.05)', 
+                      border: modalLoanType === 'FIXED_FLAT' ? '2px solid #7C3AED' : '1px solid rgba(139, 92, 246, 0.18)', 
+                      padding: '10px 12px', 
+                      borderRadius: 12, 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு)</div>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: '#7C3AED', marginTop: 2 }}>
+                      {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
+                      <span>Principal: {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</span>
+                      <span>·</span>
+                      <span>Interest: {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Search Bar */}
               <div className="search-bar" style={{ marginBottom: 16, maxWidth: '100%' }}>
