@@ -13,6 +13,7 @@ export default function LoansPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loanTypeFilter, setLoanTypeFilter] = useState('ALL');
+  const [tenureFilter, setTenureFilter] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
