@@ -214,10 +214,6 @@ export default function AppLayout() {
 
         {/* Main */}
         <main className="main-content">
-          {/* Desktop Header Actions (Top Right) */}
-          <div className="desktop-header-actions" style={{ minHeight: '40px' }}>
-          </div>
-
           <Outlet />
         </main>
       </div>
