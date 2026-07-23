@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { repaymentsAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { HandCoins, CheckCircle, AlertTriangle, Clock, X, Phone } from 'lucide-react';
+import { HandCoins, CheckCircle, AlertTriangle, Clock, X, Phone, Lock } from 'lucide-react';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-';
 
@@ -15,11 +15,36 @@ export default function CollectionPage() {
   const [search, setSearch] = useState('');
   const [loanType, setLoanType] = useState('ALL');
 
+  // Group repayments by loanId to detect blocked installments
+  // A repayment is BLOCKED if any earlier installmentNo for same loan is not PAID
+  const getBlockedMap = (list) => {
+    // For each loanId, find the lowest unpaid installmentNo
+    const lowestUnpaid = {};
+    list.forEach(r => {
+      if (r.status !== 'PAID') {
+        if (lowestUnpaid[r.loan?.id] === undefined || r.installmentNo < lowestUnpaid[r.loan?.id]) {
+          lowestUnpaid[r.loan?.id] = r.installmentNo;
+        }
+      }
+    });
+    // A repayment is blocked if its installmentNo > lowestUnpaid for that loan
+    const blocked = {};
+    list.forEach(r => {
+      const loanId = r.loan?.id;
+      if (r.status !== 'PAID' && lowestUnpaid[loanId] !== undefined && r.installmentNo > lowestUnpaid[loanId]) {
+        blocked[r.id] = lowestUnpaid[loanId]; // value = the blocking installmentNo
+      }
+    });
+    return blocked;
+  };
+
   const filteredRepayments = repayments.filter(r => {
     if (loanType !== 'ALL' && r.loan?.interestType !== loanType) return false;
     if (search && !r.loan?.customer?.name?.toLowerCase().includes(search.toLowerCase()) && !r.loan?.loanNumber?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const blockedMap = getBlockedMap(repayments);
 
   const load = async () => {
     setLoading(true);
@@ -100,50 +125,84 @@ export default function CollectionPage() {
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No collections {tab === 'today' ? 'for today' : 'found'}</div>
         </div>
       ) : (
-        filteredRepayments.map((r) => (
-          <div key={r.id} className="collection-card">
-            {/* Top row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>
-                  {r.loan?.customer?.name?.charAt(0) || '?'}
+        filteredRepayments.map((r) => {
+          const isBlocked = !!blockedMap[r.id];
+          const blockingInstNo = blockedMap[r.id];
+          return (
+            <div
+              key={r.id}
+              className="collection-card"
+              style={isBlocked ? { opacity: 0.6, background: 'var(--bg-glass, rgba(0,0,0,0.03))', border: '1.5px solid var(--border-subtle)' } : {}}
+            >
+              {/* Blocked banner */}
+              {isBlocked && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(244,63,94,0.07)',
+                  border: '1px solid rgba(244,63,94,0.18)',
+                  borderRadius: 8, padding: '6px 10px', marginBottom: 10,
+                  fontSize: 11, color: '#e11d48', fontWeight: 600,
+                }}>
+                  <Lock size={11} />
+                  முதலில் Installment #{blockingInstNo} collect செய்யுங்கள்
                 </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{r.loan?.customer?.name || 'N/A'}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.loan?.loanNumber} · #{r.installmentNo}</div>
-                </div>
-              </div>
-              <span className={`badge ${r.status === 'PAID' ? 'badge-success' : r.status === 'OVERDUE' ? 'badge-danger' : r.status === 'PARTIAL' ? 'badge-warning' : 'badge-muted'}`}>
-                {r.status === 'PAID' ? <CheckCircle size={9} /> : r.status === 'OVERDUE' ? <AlertTriangle size={9} /> : <Clock size={9} />}
-                {r.status}
-              </span>
-            </div>
+              )}
 
-            {/* Amount row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Due {fmtDate(r.dueDate)}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: r.status === 'PAID' ? 'var(--accent-400)' : 'var(--text-primary)' }}>
-                  {r.status === 'PAID' || (r.dueAmount - r.paidAmount) <= 0 ? (
-                    <span style={{ color: 'var(--success-500)' }}>₹{r.paidAmount.toLocaleString('en-IN')} <span style={{ fontSize: 12, fontWeight: 600 }}>Collected</span></span>
-                  ) : (
-                    `₹${(r.dueAmount - r.paidAmount).toLocaleString('en-IN')}`
+              {/* Top row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>
+                    {r.loan?.customer?.name?.charAt(0) || '?'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{r.loan?.customer?.name || 'N/A'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.loan?.loanNumber} · #{r.installmentNo}</div>
+                  </div>
+                </div>
+                <span className={`badge ${r.status === 'PAID' ? 'badge-success' : r.status === 'OVERDUE' ? 'badge-danger' : r.status === 'PARTIAL' ? 'badge-warning' : 'badge-muted'}`}>
+                  {r.status === 'PAID' ? <CheckCircle size={9} /> : r.status === 'OVERDUE' ? <AlertTriangle size={9} /> : <Clock size={9} />}
+                  {r.status}
+                </span>
+              </div>
+
+              {/* Amount row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Due {fmtDate(r.dueDate)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: r.status === 'PAID' ? 'var(--accent-400)' : 'var(--text-primary)' }}>
+                    {r.status === 'PAID' || (r.dueAmount - r.paidAmount) <= 0 ? (
+                      <span style={{ color: 'var(--success-500)' }}>₹{r.paidAmount.toLocaleString('en-IN')} <span style={{ fontSize: 12, fontWeight: 600 }}>Collected</span></span>
+                    ) : (
+                      `₹${(r.dueAmount - r.paidAmount).toLocaleString('en-IN')}`
+                    )}
+                  </div>
+                  {r.loan?.customer?.phone && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Phone size={10} /><a href={`tel:${r.loan.customer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{r.loan.customer.phone}</a>
+                    </div>
                   )}
                 </div>
-                {r.loan?.customer?.phone && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                    <Phone size={10} /><a href={`tel:${r.loan.customer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{r.loan.customer.phone}</a>
-                  </div>
+                {r.status !== 'PAID' && (
+                  isBlocked ? (
+                    // Locked button — cannot collect out of order
+                    <button
+                      className="btn btn-ghost"
+                      style={{ minWidth: 90, cursor: 'not-allowed', opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}
+                      disabled
+                      title={`முதலில் Installment #${blockingInstNo} collect செய்யுங்கள்`}
+                    >
+                      <Lock size={14} /> Locked
+                    </button>
+                  ) : (
+                    <button className="btn btn-success" style={{ minWidth: 90 }} onClick={() => openPay(r)}>
+                      <HandCoins size={15} /> Collect
+                    </button>
+                  )
                 )}
               </div>
-              {r.status !== 'PAID' && (
-                <button className="btn btn-success" style={{ minWidth: 90 }} onClick={() => openPay(r)}>
-                  <HandCoins size={15} /> Collect
-                </button>
-              )}
             </div>
-          </div>
-        ))
+          );
+        })
       )}
 
       {/* Payment Modal */}

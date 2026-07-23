@@ -29,6 +29,27 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Already fully paid' });
     }
 
+    // ── Sequential Order Enforcement ──────────────────────────────────────────
+    // Cannot collect installment #N if any earlier installment (#1 to #N-1) is not PAID
+    if (repayment.installmentNo > 1) {
+      const unpaidPrevious = await prisma.repayment.findFirst({
+        where: {
+          loanId: repayment.loanId,
+          installmentNo: { lt: repayment.installmentNo },
+          status: { not: 'PAID' },
+        },
+        orderBy: { installmentNo: 'asc' },
+      });
+      if (unpaidPrevious) {
+        return res.status(400).json({
+          success: false,
+          message: `முதலில் Installment #${unpaidPrevious.installmentNo} (₹${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect செய்யுங்கள்.`
+        });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+
     const paymentType = (repayment.principal > 0 && repayment.interest > 0) ? 'EMI' : (repayment.principal > 0 ? 'PRINCIPAL' : 'INTEREST');
 
     const payment = await prisma.payment.create({
