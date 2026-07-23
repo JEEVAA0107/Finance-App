@@ -49,6 +49,7 @@ export default function Dashboard() {
 
   // Breakdown modal states
   const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
+  const [modalLoanType, setModalLoanType] = useState('ALL'); // 'ALL' | 'FLAT' | 'WITHOUT_INTEREST' | 'FIXED_FLAT'
   const [breakdownLoans, setBreakdownLoans] = useState([]);
   const [loadingLoans, setLoadingLoans] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,8 +67,9 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const openBreakdownModal = (type) => {
+  const openBreakdownModal = (type, loanType = 'ALL') => {
     setActiveModal(type);
+    setModalLoanType(loanType);
     setSearchQuery('');
     setLoadingLoans(true);
     
@@ -87,8 +89,9 @@ export default function Dashboard() {
   const a = data?.agent;
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
-  // Filter breakdown loans by search
+  // Filter breakdown loans by search and loan type
   const filteredLoans = breakdownLoans.filter(l => {
+    if (modalLoanType !== 'ALL' && l.interestType !== modalLoanType) return false;
     const q = searchQuery.toLowerCase();
     const name = l.customer?.name?.toLowerCase() || '';
     const phone = l.customer?.phone || '';
@@ -132,6 +135,56 @@ export default function Dashboard() {
             <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/collections" icon={HandCoins} label="Total Collected" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/reports" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
+          </div>
+          {/* Outstanding Breakdown by Loan Types */}
+          <div className="card" style={{ padding: '16px', marginBottom: 20, borderRadius: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <PieChart size={16} style={{ color: 'var(--primary-500)' }} /> Outstanding Dues by Loan Type (வகை வாரியாக நிலுவை)
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tap card to view list</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+              <div 
+                onClick={() => openBreakdownModal('OUTSTANDING', 'FLAT')}
+                style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வார வட்டி)</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#2563EB', marginTop: 4 }}>
+                  {fmt(s?.outstandingByLoanType?.FLAT?.amount)}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {s?.outstandingByLoanType?.FLAT?.count || 0} active loans
+                </div>
+              </div>
+
+              <div 
+                onClick={() => openBreakdownModal('OUTSTANDING', 'WITHOUT_INTEREST')}
+                style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து தருவது)</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#059669', marginTop: 4 }}>
+                  {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.amount)}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {s?.outstandingByLoanType?.WITHOUT_INTEREST?.count || 0} active loans
+                </div>
+              </div>
+
+              <div 
+                onClick={() => openBreakdownModal('OUTSTANDING', 'FIXED_FLAT')}
+                style={{ background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு தவணை)</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 4 }}>
+                  {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {s?.outstandingByLoanType?.FIXED_FLAT?.count || 0} active loans
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Section 2: Today's Metrics */}
@@ -327,6 +380,25 @@ export default function Dashboard() {
             </div>
 
             <div className="modal-body">
+              {/* Loan Type Filter Tabs */}
+              <div className="tabs" style={{ marginBottom: 14 }}>
+                {[
+                  ['ALL', 'All Types'],
+                  ['FLAT', 'Regular Interest (வார வட்டி)'],
+                  ['WITHOUT_INTEREST', 'Deduction Based (கழித்து)'],
+                  ['FIXED_FLAT', 'Reducing Principal (அசலோடு)']
+                ].map(([val, label]) => (
+                  <button 
+                    key={val} 
+                    className={`tab ${modalLoanType === val ? 'active' : ''}`}
+                    onClick={() => setModalLoanType(val)}
+                    style={{ fontSize: 12, padding: '6px 12px' }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               {/* Search Bar */}
               <div className="search-bar" style={{ marginBottom: 16, maxWidth: '100%' }}>
                 <Search size={16} />

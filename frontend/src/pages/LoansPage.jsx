@@ -12,7 +12,7 @@ export default function LoansPage() {
   const [filter, setFilter] = useState('ACTIVE');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [tenureFilter, setTenureFilter] = useState('');
+  const [loanTypeFilter, setLoanTypeFilter] = useState('ALL');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -27,51 +27,112 @@ export default function LoansPage() {
       .finally(() => setLoading(false));
   }, [filter, debouncedSearch, tenureFilter]);
 
+  const filteredLoans = loans.filter(l => {
+    if (loanTypeFilter !== 'ALL' && l.interestType !== loanTypeFilter) return false;
+    return true;
+  });
+
   return (
     <div className="animate-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ fontSize: 20, fontWeight: 800 }}>Loans <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 400 }}>({loans.length})</span></div>
+        <div style={{ fontSize: 20, fontWeight: 800 }}>Loans <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 400 }}>({filteredLoans.length})</span></div>
         <Link to="/loans/create" className="btn btn-primary btn-sm"><Plus size={15} /> New</Link>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+      {/* Outstanding Summary Pills */}
+      {filter === 'ACTIVE' && loans.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 14 }}>
+          <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(59, 130, 246, 0.15)' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வார வட்டி)</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: '#2563EB' }}>
+              {fmtAmt(loans.filter(l => l.interestType === 'FLAT' || !l.interestType).reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.15)' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து)</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: '#059669' }}>
+              {fmtAmt(loans.filter(l => l.interestType === 'WITHOUT_INTEREST').reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(139, 92, 246, 0.15)' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு)</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: '#7C3AED' }}>
+              {fmtAmt(loans.filter(l => l.interestType === 'FIXED_FLAT').reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         {/* Search */}
-        <div className="search-bar" style={{ flex: 1, margin: 0, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <div className="search-bar" style={{ flex: 1, minWidth: 180, margin: 0, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
           <Search size={16} color="var(--text-muted)" />
           <input placeholder="Search name, phone, loan ID..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         
-        {/* Tenure Filter */}
+        {/* Loan Type Filter */}
         <div style={{ position: 'relative' }}>
           <select 
             style={{ 
               height: '42px', 
-              padding: '0 36px 0 16px', 
+              padding: '0 30px 0 12px', 
               borderRadius: '12px', 
               border: '1px solid var(--border-subtle)', 
               background: 'var(--bg-card)', 
               color: 'var(--text-secondary)',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 500,
               outline: 'none',
               boxShadow: 'var(--shadow-sm)',
               cursor: 'pointer',
               appearance: 'none',
               WebkitAppearance: 'none',
-              minWidth: '130px'
+            }} 
+            value={loanTypeFilter} 
+            onChange={e => setLoanTypeFilter(e.target.value)}
+          >
+            <option value="ALL">All Loan Types</option>
+            <option value="FLAT">Regular Interest</option>
+            <option value="WITHOUT_INTEREST">Deduction Based</option>
+            <option value="FIXED_FLAT">Reducing Principal</option>
+          </select>
+          <ChevronDown 
+            size={15} 
+            color="var(--text-muted)" 
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} 
+          />
+        </div>
+
+        {/* Tenure Filter */}
+        <div style={{ position: 'relative' }}>
+          <select 
+            style={{ 
+              height: '42px', 
+              padding: '0 30px 0 12px', 
+              borderRadius: '12px', 
+              border: '1px solid var(--border-subtle)', 
+              background: 'var(--bg-card)', 
+              color: 'var(--text-secondary)',
+              fontSize: '13px',
+              fontWeight: 500,
+              outline: 'none',
+              boxShadow: 'var(--shadow-sm)',
+              cursor: 'pointer',
+              appearance: 'none',
+              WebkitAppearance: 'none',
             }} 
             value={tenureFilter} 
             onChange={e => setTenureFilter(e.target.value)}
           >
-            <option value="">All Types</option>
+            <option value="">All Tenure</option>
             <option value="DAYS">Daily Loans</option>
             <option value="WEEKS">Weekly Loans</option>
             <option value="MONTHS">Monthly Loans</option>
           </select>
           <ChevronDown 
-            size={16} 
+            size={15} 
             color="var(--text-muted)" 
-            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} 
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} 
           />
         </div>
       </div>
@@ -87,13 +148,13 @@ export default function LoansPage() {
         <div style={{ padding: '40px 0', display: 'flex', justifyContent: 'center' }}>
           <div className="spinner" />
         </div>
-      ) : loans.length === 0 ? (
+      ) : filteredLoans.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '40px 16px' }}>
           <Landmark size={36} style={{ opacity: 0.3, marginBottom: 8 }} />
           <div style={{ fontWeight: 600 }}>No loans found</div>
         </div>
       ) : (
-        loans.map(loan => {
+        filteredLoans.map(loan => {
           const paid = loan.repayments?.filter(r => r.status === 'PAID').length || 0;
           const total = loan.repayments?.length || 1;
           const progress = Math.round((paid / total) * 100);

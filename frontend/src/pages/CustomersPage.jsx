@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { customersAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Search, Eye, Edit2, Trash2, X, Phone } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, X, Phone, Camera, Upload, RefreshCw } from 'lucide-react';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -12,6 +12,12 @@ export default function CustomersPage() {
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP' });
+
+  // Camera states & refs
+  const [showCamera, setShowCamera] = useState(false);
+  const [facingMode, setFacingMode] = useState('environment');
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const load = async () => {
     try { setCustomers(await customersAPI.list({ search: debouncedSearch, limit: 100 })); }
@@ -28,6 +34,54 @@ export default function CustomersPage() {
 
   const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP' }); setEditCustomer(null); setShowModal(true); };
   const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, idProofUrl: c.idProofUrl || '', notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP' }); setShowModal(true); };
+
+  const startCamera = async (mode = facingMode) => {
+    setShowCamera(true);
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Camera access error:', err);
+      toast.error('Could not access camera. Please allow camera permissions or upload an image file.');
+      setShowCamera(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    setForm(prev => ({ ...prev, idProofUrl: dataUrl }));
+    stopCamera();
+    toast.success('Photo captured successfully!');
+  };
+
+  const toggleFacingMode = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    startCamera(nextMode);
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -170,26 +224,49 @@ export default function CustomersPage() {
                   <label className="form-label">
                     ID Proof Image (Aadhar / PAN / Driving License) {!editCustomer && <span style={{ color: 'var(--danger-400)' }}>*</span>}
                   </label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="form-input" 
-                    onChange={handleImageUpload} 
-                  />
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-ghost" 
+                      style={{ border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle, rgba(0,0,0,0.03))', justifyContent: 'center', fontSize: 13 }}
+                      onClick={() => startCamera()}
+                    >
+                      <Camera size={16} style={{ color: 'var(--primary-500)', marginRight: 6 }} /> Take Photo
+                    </button>
+                    
+                    <label 
+                      className="btn btn-ghost" 
+                      style={{ border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle, rgba(0,0,0,0.03))', justifyContent: 'center', fontSize: 13, cursor: 'pointer', margin: 0 }}
+                    >
+                      <Upload size={16} style={{ color: 'var(--accent-500)', marginRight: 6 }} /> Upload File
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        onChange={handleImageUpload} 
+                      />
+                    </label>
+                  </div>
+
                   {form.idProofUrl && (
-                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: 'rgba(16, 185, 129, 0.05)', borderRadius: 10, border: '1px dashed var(--accent-400)' }}>
                       <img 
                         src={form.idProofUrl} 
                         alt="ID Proof Document" 
-                        style={{ width: 90, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-subtle)' }} 
+                        style={{ width: 80, height: 55, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border-subtle)' }} 
                       />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-600)' }}>✓ Image Attached</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Ready for customer record</div>
+                      </div>
                       <button 
                         type="button" 
                         className="btn btn-ghost btn-sm" 
-                        style={{ color: 'var(--danger-400)', fontSize: 12 }} 
+                        style={{ color: 'var(--danger-400)', fontSize: 12, padding: '4px 8px' }} 
                         onClick={() => setForm({ ...form, idProofUrl: '' })}
                       >
-                        Remove Image
+                        Remove
                       </button>
                     </div>
                   )}
@@ -207,6 +284,51 @@ export default function CustomersPage() {
                 <button type="submit" className="btn btn-primary">{editCustomer ? 'Update' : 'Add Customer'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Live Camera Stream Modal */}
+      {showCamera && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={stopCamera}>
+          <div className="modal animate-in" style={{ maxWidth: 500, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ padding: '12px 16px', background: '#000', color: '#fff' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Camera size={18} style={{ color: 'var(--accent-400)' }} /> Capture ID Proof Photo
+              </div>
+              <button className="modal-close" style={{ color: '#fff' }} onClick={stopCamera}><X size={18} /></button>
+            </div>
+            
+            <div style={{ position: 'relative', background: '#000', minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                style={{ width: '100%', maxHeight: 360, objectFit: 'cover' }} 
+              />
+              <button 
+                type="button" 
+                onClick={toggleFacingMode} 
+                title="Switch Camera (Front/Back)"
+                style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <RefreshCw size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: 16, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <button type="button" className="btn btn-ghost" style={{ color: '#94a3b8' }} onClick={stopCamera}>
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                style={{ background: 'var(--accent-500)', border: 'none', padding: '10px 24px', fontWeight: 700, borderRadius: 24, display: 'flex', alignItems: 'center', gap: 8 }} 
+                onClick={capturePhoto}
+              >
+                <Camera size={18} /> Take Snapshot
+              </button>
+            </div>
           </div>
         </div>
       )}

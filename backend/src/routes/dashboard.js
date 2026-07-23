@@ -128,6 +128,35 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       });
     }
 
+    // Outstanding separated by Loan Types
+    const activeLoanRecords = await prisma.loan.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        interestType: true,
+        principalAmount: true,
+        totalPayable: true,
+        repayments: { select: { paidAmount: true } },
+      },
+    });
+
+    const outstandingByLoanType = {
+      FLAT: { count: 0, amount: 0, label: 'Regular Interest (வார வட்டி)' },
+      WITHOUT_INTEREST: { count: 0, amount: 0, label: 'Deduction Based (கழித்து தருவது)' },
+      FIXED_FLAT: { count: 0, amount: 0, label: 'Reducing Principal (அசலோடு தவணை)' },
+    };
+
+    activeLoanRecords.forEach(loan => {
+      const type = loan.interestType || 'FLAT';
+      if (!outstandingByLoanType[type]) {
+        outstandingByLoanType[type] = { count: 0, amount: 0, label: type };
+      }
+      const paid = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+      const remaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
+      outstandingByLoanType[type].count += 1;
+      outstandingByLoanType[type].amount += remaining;
+    });
+
     const todayDueAmt = todaysDues._sum.dueAmount || 0;
     const todayPaidAmt = todaysDues._sum.paidAmount || 0;
 
@@ -148,6 +177,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         totalOverdueAmount: (overdueAgg._sum.dueAmount || 0) - (overdueAgg._sum.paidAmount || 0),
         upcomingDues,
         recentCollections,
+        outstandingByLoanType,
         monthly: {
           disbursed: monthlyLoans._sum.principalAmount || 0,
           collection: monthlyPayments._sum.amount || 0,
