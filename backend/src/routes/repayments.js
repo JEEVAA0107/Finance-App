@@ -83,7 +83,17 @@ router.get('/', authenticate, async (req, res) => {
     const where = {};
 
     if (loanId) where.loanId = loanId;
-    if (status) where.status = status;
+    if (status === 'OVERDUE') {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      where.OR = [
+        { status: 'OVERDUE' },
+        { dueDate: { lt: startOfToday }, status: { in: ['PENDING', 'PARTIAL'] } }
+      ];
+    } else if (status) {
+      where.status = status;
+    }
+
     if (from || to) {
       where.dueDate = {};
       if (from) where.dueDate.gte = new Date(from);
@@ -134,7 +144,6 @@ router.get('/today', authenticate, async (req, res) => {
       where: {
         OR: [
           { dueDate: { gte: today, lt: tomorrow } },
-          { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
           { payments: { some: { collectedAt: { gte: today, lt: tomorrow } } } },
           { paidAt: { gte: today, lt: tomorrow } },
         ]
