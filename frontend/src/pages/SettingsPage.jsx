@@ -1,33 +1,8 @@
-import { useState } from 'react';
-import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { dashboardAPI } from '../services/api';
-import { Trash2, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, logout, isAdmin, isSuperAdmin } = useAuth();
-  const [resetting, setResetting] = useState(false);
-
-  const canReset = isAdmin || isSuperAdmin;
-
-  const handleResetData = async () => {
-    if (!window.confirm('⚠️ ARE YOU SURE? This will permanently delete ALL customers, loans, repayments, and collection history from the live database. You can start 100% fresh.')) {
-      return;
-    }
-
-    setResetting(true);
-    try {
-      await dashboardAPI.resetAllData();
-      toast.success('✓ Database reset successfully! All test data cleared.');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
-    } catch (err) {
-      toast.error('Failed to reset database: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setResetting(false);
-    }
-  };
+  const { user, logout } = useAuth();
 
   return (
     <div className="animate-in" style={{ maxWidth: 500, margin: '0 auto', paddingBottom: 40 }}>
@@ -56,25 +31,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-
-      {canReset && (
-        <div className="card" style={{ padding: '20px', marginBottom: 16, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--danger-600)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Trash2 size={18} /> Database Management
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-            Delete all test customers, active loans, and collection history from the production database to start 100% fresh.
-          </div>
-          <button
-            className="btn"
-            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-600)', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700 }}
-            onClick={handleResetData}
-            disabled={resetting}
-          >
-            {resetting ? 'Resetting Database...' : '🧹 Clear All Database Data (Start Fresh)'}
-          </button>
-        </div>
-      )}
 
       <button
         className="btn btn-primary"
