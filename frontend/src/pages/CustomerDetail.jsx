@@ -90,7 +90,16 @@ export default function CustomerDetail() {
                         </div>
                       )}
                     </td>
-                    <td data-label="Payable">₹{l.totalPayable?.toLocaleString('en-IN')}</td>
+                    <td data-label="Payable">
+                      {l.interestType === 'FLAT' ? (
+                        <div>
+                          <span style={{ fontWeight: 700, color: '#2563EB' }}>₹{l.installmentAmount?.toLocaleString('en-IN')}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}> / {l.tenureUnit === 'WEEKS' ? 'wk' : l.tenureUnit === 'MONTHS' ? 'mo' : 'day'} (வட்டி)</span>
+                        </div>
+                      ) : (
+                        <span>₹{l.totalPayable?.toLocaleString('en-IN')}</span>
+                      )}
+                    </td>
                     <td data-label="Tenure">{l.tenure} {l.tenureUnit?.toLowerCase()}</td>
                     <td data-label="Status"><span className={`badge ${l.status === 'ACTIVE' ? 'badge-success' : l.status === 'CLOSED' ? 'badge-muted' : 'badge-danger'}`}>{l.status}</span></td>
                     <td data-label="Start Date">{formatDate(l.startDate)}</td>
