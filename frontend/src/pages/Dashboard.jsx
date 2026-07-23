@@ -495,7 +495,7 @@ export default function Dashboard() {
                         ) : (
                           <>
                             <th>Disbursed</th>
-                            <th>Collected</th>
+                            <th>{modalLoanType === 'FLAT' ? 'Interest Collected (வட்டி வசூல்)' : 'Collected (வசூல்)'}</th>
                             <th>Principal Due</th>
                             <th>Interest Due</th>
                             <th>Total Outstanding</th>
@@ -553,8 +553,9 @@ export default function Dashboard() {
                                 <td data-label="Disbursed">
                                   ₹{loan.principalAmount?.toLocaleString('en-IN')}
                                 </td>
-                                <td data-label="Collected">
-                                  ₹{totalCollected?.toLocaleString('en-IN')}
+                                <td data-label={type === 'FLAT' ? 'Interest Collected' : 'Collected'}>
+                                  <span style={{ fontWeight: 600, color: '#059669' }}>₹{totalCollected?.toLocaleString('en-IN')}</span>
+                                  {type === 'FLAT' && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>(வட்டி வசூல்)</div>}
                                 </td>
                                 <td data-label="Principal Due">
                                   <span style={{ fontWeight: 700, color: '#7C3AED' }}>₹{princDue?.toLocaleString('en-IN')}</span>
