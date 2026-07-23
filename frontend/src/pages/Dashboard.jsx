@@ -332,87 +332,131 @@ export default function Dashboard() {
             </div>
 
             <div className="modal-body">
-              {/* Loan Type Filter Tabs */}
-              <div className="tabs" style={{ marginBottom: 14 }}>
-                {[
-                  ['ALL', 'All Types'],
-                  ['FLAT', 'Regular Interest (வட்டி)'],
-                  ['WITHOUT_INTEREST', 'Deduction Based (கழித்து)'],
-                  ['FIXED_FLAT', 'Reducing Principal (அசலோடு)']
-                ].map(([val, label]) => (
-                  <button 
-                    key={val} 
-                    className={`tab ${modalLoanType === val ? 'active' : ''}`}
-                    onClick={() => setModalLoanType(val)}
-                    style={{ fontSize: 12, padding: '6px 12px' }}
+              {/* Interactive Loan Type Filter Cards */}
+              {activeModal === 'OUTSTANDING' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: 10, marginBottom: 16 }}>
+                  {/* All Loans Card */}
+                  <div 
+                    onClick={() => setModalLoanType('ALL')}
+                    style={{ 
+                      background: modalLoanType === 'ALL' ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-subtle, rgba(0,0,0,0.03))', 
+                      border: modalLoanType === 'ALL' ? '2px solid var(--primary-500)' : '1px solid var(--border-subtle)', 
+                      padding: '10px 12px', 
+                      borderRadius: 12, 
+                      cursor: 'pointer',
+                      boxShadow: modalLoanType === 'ALL' ? '0 2px 8px rgba(59, 130, 246, 0.2)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>All Loans (எல்லாமும்)</span>
+                      {modalLoanType === 'ALL' && <span style={{ fontSize: 9, background: 'var(--primary-500)', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--primary-600)', marginTop: 2 }}>
+                      {fmt(s?.outstandingAmount)}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed var(--border-subtle)', paddingTop: 4 }}>
+                      <div>Principal: <b>{fmt(s?.outstandingPrincipal)}</b></div>
+                      <div>Interest: <b>{fmt(s?.outstandingInterest)}</b></div>
+                    </div>
+                  </div>
 
-              {/* Loan Type Breakdown Cards inside Modal */}
-              {activeModal === 'OUTSTANDING' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 16 }}>
+                  {/* Regular Interest Card */}
                   <div 
                     onClick={() => setModalLoanType('FLAT')}
                     style={{ 
-                      background: modalLoanType === 'FLAT' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.05)', 
-                      border: modalLoanType === 'FLAT' ? '2px solid #2563EB' : '1px solid rgba(59, 130, 246, 0.18)', 
-                      padding: '10px', 
+                      background: modalLoanType === 'FLAT' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(37, 99, 235, 0.04)', 
+                      border: modalLoanType === 'FLAT' ? '2px solid #2563EB' : '1px solid rgba(37, 99, 235, 0.18)', 
+                      padding: '10px 12px', 
                       borderRadius: 12, 
-                      cursor: 'pointer' 
+                      cursor: 'pointer',
+                      boxShadow: modalLoanType === 'FLAT' ? '0 2px 8px rgba(37, 99, 235, 0.2)' : 'none',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Regular Interest (வட்டி)</div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Regular (வட்டி)</span>
+                      {modalLoanType === 'FLAT' && <span style={{ fontSize: 9, background: '#2563EB', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: '#2563EB', marginTop: 2 }}>
                       {fmt(s?.outstandingByLoanType?.FLAT?.amount)}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(59, 130, 246, 0.2)', paddingTop: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(37, 99, 235, 0.2)', paddingTop: 4 }}>
                       <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FLAT?.principal)}</b></div>
                       <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FLAT?.interest)}</b></div>
                     </div>
                   </div>
 
+                  {/* Deduction Based Card */}
                   <div 
                     onClick={() => setModalLoanType('WITHOUT_INTEREST')}
                     style={{ 
-                      background: modalLoanType === 'WITHOUT_INTEREST' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.05)', 
-                      border: modalLoanType === 'WITHOUT_INTEREST' ? '2px solid #059669' : '1px solid rgba(16, 185, 129, 0.18)', 
-                      padding: '10px', 
+                      background: modalLoanType === 'WITHOUT_INTEREST' ? 'rgba(5, 150, 105, 0.15)' : 'rgba(5, 150, 105, 0.04)', 
+                      border: modalLoanType === 'WITHOUT_INTEREST' ? '2px solid #059669' : '1px solid rgba(5, 150, 105, 0.18)', 
+                      padding: '10px 12px', 
                       borderRadius: 12, 
-                      cursor: 'pointer' 
+                      cursor: 'pointer',
+                      boxShadow: modalLoanType === 'WITHOUT_INTEREST' ? '0 2px 8px rgba(5, 150, 105, 0.2)' : 'none',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deduction Based (கழித்து)</div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deduction (கழித்து)</span>
+                      {modalLoanType === 'WITHOUT_INTEREST' && <span style={{ fontSize: 9, background: '#059669', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: '#059669', marginTop: 2 }}>
                       {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.amount)}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(16, 185, 129, 0.2)', paddingTop: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(5, 150, 105, 0.2)', paddingTop: 4 }}>
                       <div>Principal: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.principal)}</b></div>
                       <div>Interest: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.interest)}</b></div>
                     </div>
                   </div>
 
+                  {/* Reducing Principal Card */}
                   <div 
                     onClick={() => setModalLoanType('FIXED_FLAT')}
                     style={{ 
-                      background: modalLoanType === 'FIXED_FLAT' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.05)', 
-                      border: modalLoanType === 'FIXED_FLAT' ? '2px solid #7C3AED' : '1px solid rgba(139, 92, 246, 0.18)', 
-                      padding: '10px', 
+                      background: modalLoanType === 'FIXED_FLAT' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(124, 58, 237, 0.04)', 
+                      border: modalLoanType === 'FIXED_FLAT' ? '2px solid #7C3AED' : '1px solid rgba(124, 58, 237, 0.18)', 
+                      padding: '10px 12px', 
                       borderRadius: 12, 
-                      cursor: 'pointer' 
+                      cursor: 'pointer',
+                      boxShadow: modalLoanType === 'FIXED_FLAT' ? '0 2px 8px rgba(124, 58, 237, 0.2)' : 'none',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Reducing Principal (அசலோடு)</div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: '#7C3AED', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Reducing (அசலோடு)</span>
+                      {modalLoanType === 'FIXED_FLAT' && <span style={{ fontSize: 9, background: '#7C3AED', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 2 }}>
                       {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(139, 92, 246, 0.2)', paddingTop: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(124, 58, 237, 0.2)', paddingTop: 4 }}>
                       <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</b></div>
                       <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</b></div>
                     </div>
                   </div>
+                </div>
+              ) : (
+                /* Disbursed Filter Tabs */
+                <div className="tabs" style={{ marginBottom: 14 }}>
+                  {[
+                    ['ALL', 'All Types'],
+                    ['FLAT', 'Regular Interest (வட்டி)'],
+                    ['WITHOUT_INTEREST', 'Deduction Based (கழித்து)'],
+                    ['FIXED_FLAT', 'Reducing Principal (அசலோடு)']
+                  ].map(([val, label]) => (
+                    <button 
+                      key={val} 
+                      className={`tab ${modalLoanType === val ? 'active' : ''}`}
+                      onClick={() => setModalLoanType(val)}
+                      style={{ fontSize: 12, padding: '6px 12px' }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               )}
 
