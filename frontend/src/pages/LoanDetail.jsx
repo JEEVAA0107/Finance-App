@@ -84,15 +84,15 @@ export default function LoanDetail() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? 'Total Payable' : 'Principal'}</div>
-            <div style={{ fontWeight: 800, fontSize: 15 }}>₹{(loan.principalAmount / 1000).toFixed(0)}K</div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>₹{loan.principalAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? (loan.tenureUnit === 'DAYS' ? 'Daily Due' : 'Weekly Due') : 'Per Period'}</div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Outstanding</div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: outstanding > 0 ? 'var(--warning-400)' : 'var(--accent-400)' }}>₹{(outstanding / 1000).toFixed(0)}K</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: outstanding > 0 ? 'var(--warning-400)' : 'var(--accent-400)' }}>₹{outstanding?.toLocaleString('en-IN')}</div>
           </div>
         </div>
 

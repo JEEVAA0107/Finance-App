@@ -4,7 +4,7 @@ import { loansAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Plus, Eye, Landmark, Search, ChevronDown } from 'lucide-react';
 
-const fmtAmt = (v) => v >= 100000 ? `₹${(v/100000).toFixed(1)}L` : `₹${v?.toLocaleString('en-IN')}`;
+const fmtAmt = (v) => (!v && v !== 0) ? '₹0' : `₹${(typeof v === 'number' ? v : parseFloat(v) || 0).toLocaleString('en-IN')}`;
 
 export default function LoansPage() {
   const [loans, setLoans] = useState([]);

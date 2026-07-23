@@ -7,18 +7,17 @@ import { ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid, Tooltip, Respons
 
 function fmt(val) {
   if (!val && val !== 0) return '₹0';
-  if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`;
-  if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
-  if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
-  return `₹${val.toLocaleString('en-IN')}`;
+  const num = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(num)) return '₹0';
+  return `₹${Number.isInteger(num) ? num.toLocaleString('en-IN') : num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 const StatCard = ({ icon: Icon, label, value, color, to, onClick }) => {
   const content = (
     <>
-      <div className={`stat-icon ${color}`} style={{ marginBottom: '12px' }}><Icon size={18} /></div>
-      <div className="stat-value" style={{ fontSize: '1.25rem' }}>{value}</div>
-      <div className="stat-label" style={{ marginTop: 'auto' }}>{label}</div>
+      <div className={`stat-icon ${color}`} style={{ marginBottom: '10px' }}><Icon size={18} /></div>
+      <div className="stat-value" style={{ fontSize: '1.1rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{value}</div>
+      <div className="stat-label" style={{ marginTop: 'auto', fontSize: '11px' }}>{label}</div>
     </>
   );
 
