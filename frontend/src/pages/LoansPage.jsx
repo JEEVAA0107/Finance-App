@@ -65,8 +65,7 @@ export default function LoansPage() {
       )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        {/* Search */}
-        <div className="search-bar" style={{ flex: 1, minWidth: 180, margin: 0, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <div className="search-bar" style={{ flex: 1, minWidth: 180, margin: 0 }}>
           <Search size={16} color="var(--text-muted)" />
           <input placeholder="Search name, phone, loan ID..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
