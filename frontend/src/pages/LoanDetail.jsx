@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { loansAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock } from 'lucide-react';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 const fmtShort = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-';
@@ -62,6 +62,11 @@ export default function LoanDetail() {
   const unpaid = loan.repayments?.filter(r => r.status !== 'PAID') || [];
   const paid = loan.repayments?.filter(r => r.status === 'PAID').slice(-5) || [];
   const displayList = showAll ? loan.repayments : [...unpaid, ...paid].slice(0, 20);
+
+  // Sequential lock: find lowest installmentNo that is not PAID
+  const lowestUnpaidInstNo = unpaid.length > 0
+    ? Math.min(...unpaid.map(r => r.installmentNo))
+    : null;
 
   return (
     <div className="animate-in">
@@ -157,10 +162,22 @@ export default function LoanDetail() {
                 <div style={{ fontWeight: 700, fontSize: 14 }}>₹{r.dueAmount?.toLocaleString('en-IN')}</div>
               </div>
               {r.status !== 'PAID' && loan.status !== 'CLOSED' && (
-                <button className="btn btn-success btn-sm" style={{ padding: '6px 10px' }}
-                  onClick={() => { setPayModal(r); setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '' }); }}>
-                  <HandCoins size={13} />
-                </button>
+                lowestUnpaidInstNo !== null && r.installmentNo > lowestUnpaidInstNo ? (
+                  // Blocked — earlier installment not paid yet
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ padding: '6px 10px', cursor: 'not-allowed', opacity: 0.45 }}
+                    disabled
+                    title={`முதலில் #${lowestUnpaidInstNo} collect செய்யுங்கள்`}
+                  >
+                    <Lock size={13} />
+                  </button>
+                ) : (
+                  <button className="btn btn-success btn-sm" style={{ padding: '6px 10px' }}
+                    onClick={() => { setPayModal(r); setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '' }); }}>
+                    <HandCoins size={13} />
+                  </button>
+                )
               )}
             </div>
           </div>
