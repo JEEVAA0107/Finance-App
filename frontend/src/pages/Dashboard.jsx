@@ -353,25 +353,24 @@ export default function Dashboard() {
 
               {/* Loan Type Breakdown Cards inside Modal */}
               {activeModal === 'OUTSTANDING' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 16 }}>
                   <div 
                     onClick={() => setModalLoanType('FLAT')}
                     style={{ 
                       background: modalLoanType === 'FLAT' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.05)', 
                       border: modalLoanType === 'FLAT' ? '2px solid #2563EB' : '1px solid rgba(59, 130, 246, 0.18)', 
-                      padding: '10px 12px', 
+                      padding: '10px', 
                       borderRadius: 12, 
                       cursor: 'pointer' 
                     }}
                   >
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வட்டி)</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Regular Interest (வட்டி)</div>
                     <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>
                       {fmt(s?.outstandingByLoanType?.FLAT?.amount)}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
-                      <span>Principal: {fmt(s?.outstandingByLoanType?.FLAT?.principal)}</span>
-                      <span>·</span>
-                      <span>Interest: {fmt(s?.outstandingByLoanType?.FLAT?.interest)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(59, 130, 246, 0.2)', paddingTop: 4 }}>
+                      <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FLAT?.principal)}</b></div>
+                      <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FLAT?.interest)}</b></div>
                     </div>
                   </div>
 
@@ -380,19 +379,18 @@ export default function Dashboard() {
                     style={{ 
                       background: modalLoanType === 'WITHOUT_INTEREST' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.05)', 
                       border: modalLoanType === 'WITHOUT_INTEREST' ? '2px solid #059669' : '1px solid rgba(16, 185, 129, 0.18)', 
-                      padding: '10px 12px', 
+                      padding: '10px', 
                       borderRadius: 12, 
                       cursor: 'pointer' 
                     }}
                   >
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து)</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deduction Based (கழித்து)</div>
                     <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>
                       {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.amount)}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
-                      <span>Principal: {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.principal)}</span>
-                      <span>·</span>
-                      <span>Interest: {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.interest)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(16, 185, 129, 0.2)', paddingTop: 4 }}>
+                      <div>Principal: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.principal)}</b></div>
+                      <div>Interest: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.interest)}</b></div>
                     </div>
                   </div>
 
@@ -401,19 +399,18 @@ export default function Dashboard() {
                     style={{ 
                       background: modalLoanType === 'FIXED_FLAT' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.05)', 
                       border: modalLoanType === 'FIXED_FLAT' ? '2px solid #7C3AED' : '1px solid rgba(139, 92, 246, 0.18)', 
-                      padding: '10px 12px', 
+                      padding: '10px', 
                       borderRadius: 12, 
                       cursor: 'pointer' 
                     }}
                   >
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு)</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Reducing Principal (அசலோடு)</div>
                     <div style={{ fontWeight: 800, fontSize: 15, color: '#7C3AED', marginTop: 2 }}>
                       {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
-                      <span>Principal: {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</span>
-                      <span>·</span>
-                      <span>Interest: {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(139, 92, 246, 0.2)', paddingTop: 4 }}>
+                      <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</b></div>
+                      <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</b></div>
                     </div>
                   </div>
                 </div>

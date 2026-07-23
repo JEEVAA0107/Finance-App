@@ -1315,8 +1315,10 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
 
   /* Tabs */
   .tabs {
-    padding: 3px !important;
-    gap: 2px !important;
+    padding: 4px !important;
+    gap: 6px !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
@@ -1324,11 +1326,11 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   }
   .tabs::-webkit-scrollbar { display: none !important; }
   .tab {
-    flex: 1 !important;
+    flex: none !important;
     text-align: center !important;
-    padding: 8px 4px !important;
-    font-size: 11px !important;
-    min-width: 60px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
   }
 
   /* Buttons — minimum 44px touch target */
