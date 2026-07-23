@@ -81,12 +81,12 @@ export default function AppLayout() {
         { to: '/', icon: LayoutDashboard, label: 'Home' },
         { to: '/customers', icon: Users, label: 'Customers' },
         { to: '/loans', icon: Landmark, label: 'Loans' },
-        { to: '/collections', icon: HandCoins, label: 'Collect' },
+        { to: '/collections', icon: HandCoins, label: 'Collections' },
         { to: '/settings', icon: Settings, label: 'Settings' },
       ]
     : [
         { to: '/', icon: LayoutDashboard, label: 'Home' },
-        { to: '/collections', icon: HandCoins, label: 'Collect' },
+        { to: '/collections', icon: HandCoins, label: 'Collections' },
         { to: '/customers', icon: Users, label: 'Customers' },
         { to: '/loans', icon: Landmark, label: 'Loans' },
         { to: '/settings', icon: Settings, label: 'Settings' },
