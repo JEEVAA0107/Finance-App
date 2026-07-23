@@ -130,12 +130,15 @@ export default function Dashboard() {
 
           {/* Section 1: Overall Financials */}
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Overall Financials</div>
-          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding" value={fmt(s?.outstandingAmount)} color="blue" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Principal Outstanding (அசல்)" value={fmt(s?.outstandingPrincipal)} color="purple" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
             <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/collections" icon={HandCoins} label="Total Collected" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/reports" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
+
           {/* Outstanding Breakdown by Loan Types */}
           <div className="card" style={{ padding: '16px', marginBottom: 20, borderRadius: 14 }}>
             <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -145,16 +148,21 @@ export default function Dashboard() {
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tap card to view list</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
               <div 
                 onClick={() => openBreakdownModal('OUTSTANDING', 'FLAT')}
                 style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
               >
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வார வட்டி)</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#2563EB', marginTop: 4 }}>
+                <div style={{ fontWeight: 800, fontSize: 17, color: '#2563EB', marginTop: 4 }}>
                   {fmt(s?.outstandingByLoanType?.FLAT?.amount)}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(59, 130, 246, 0.2)', fontSize: 10, color: 'var(--text-secondary)' }}>
+                  <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FLAT?.principal)}</b></div>
+                  <div>·</div>
+                  <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FLAT?.interest)}</b></div>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
                   {s?.outstandingByLoanType?.FLAT?.count || 0} active loans
                 </div>
               </div>
@@ -164,10 +172,15 @@ export default function Dashboard() {
                 style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
               >
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து தருவது)</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#059669', marginTop: 4 }}>
+                <div style={{ fontWeight: 800, fontSize: 17, color: '#059669', marginTop: 4 }}>
                   {fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.amount)}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(16, 185, 129, 0.2)', fontSize: 10, color: 'var(--text-secondary)' }}>
+                  <div>Principal: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.principal)}</b></div>
+                  <div>·</div>
+                  <div>Interest: <b>{fmt(s?.outstandingByLoanType?.WITHOUT_INTEREST?.interest)}</b></div>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
                   {s?.outstandingByLoanType?.WITHOUT_INTEREST?.count || 0} active loans
                 </div>
               </div>
@@ -177,10 +190,15 @@ export default function Dashboard() {
                 style={{ background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.18)', padding: '12px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}
               >
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு தவணை)</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 4 }}>
+                <div style={{ fontWeight: 800, fontSize: 17, color: '#7C3AED', marginTop: 4 }}>
                   {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(139, 92, 246, 0.2)', fontSize: 10, color: 'var(--text-secondary)' }}>
+                  <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</b></div>
+                  <div>·</div>
+                  <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</b></div>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
                   {s?.outstandingByLoanType?.FIXED_FLAT?.count || 0} active loans
                 </div>
               </div>
@@ -435,7 +453,9 @@ export default function Dashboard() {
                           <>
                             <th>Disbursed</th>
                             <th>Collected</th>
-                            <th>Outstanding Balance</th>
+                            <th>Principal Due</th>
+                            <th>Interest Due</th>
+                            <th>Total Outstanding</th>
                           </>
                         )}
                         <th>Status</th>
@@ -445,6 +465,8 @@ export default function Dashboard() {
                       {filteredLoans.map(loan => {
                         const totalCollected = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
                         const outstandingAmt = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
+                        const princDue = Math.min(outstandingAmt, loan.outstandingPrincipal ?? loan.principalAmount);
+                        const intDue = Math.max(0, outstandingAmt - princDue);
 
                         return (
                           <tr key={loan.id}>
@@ -472,7 +494,13 @@ export default function Dashboard() {
                                 <td data-label="Collected">
                                   ₹{totalCollected?.toLocaleString('en-IN')}
                                 </td>
-                                <td data-label="Outstanding Balance">
+                                <td data-label="Principal Due">
+                                  <span style={{ fontWeight: 700, color: '#7C3AED' }}>₹{princDue?.toLocaleString('en-IN')}</span>
+                                </td>
+                                <td data-label="Interest Due">
+                                  <span style={{ fontWeight: 700, color: '#D97706' }}>₹{intDue?.toLocaleString('en-IN')}</span>
+                                </td>
+                                <td data-label="Total Outstanding">
                                   <span style={{ fontWeight: 800, color: 'var(--primary-600)', fontSize: 15 }}>
                                     ₹{outstandingAmt?.toLocaleString('en-IN')}
                                   </span>

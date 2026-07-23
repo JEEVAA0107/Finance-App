@@ -127,7 +127,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       });
     }
 
-    // Outstanding separated by Loan Types
+    // Outstanding separated by Loan Types and Principal vs Interest
     const activeLoanRecords = await prisma.loan.findMany({
       where: { status: 'ACTIVE' },
       select: {
@@ -135,25 +135,38 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         interestType: true,
         principalAmount: true,
         totalPayable: true,
+        outstandingPrincipal: true,
         repayments: { select: { paidAmount: true } },
       },
     });
 
+    let totalOutstandingPrincipal = 0;
+    let totalOutstandingInterest = 0;
+
     const outstandingByLoanType = {
-      FLAT: { count: 0, amount: 0, label: 'Regular Interest (வார வட்டி)' },
-      WITHOUT_INTEREST: { count: 0, amount: 0, label: 'Deduction Based (கழித்து தருவது)' },
-      FIXED_FLAT: { count: 0, amount: 0, label: 'Reducing Principal (அசலோடு தவணை)' },
+      FLAT: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Regular Interest (வார வட்டி)' },
+      WITHOUT_INTEREST: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Deduction Based (கழித்து தருவது)' },
+      FIXED_FLAT: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Reducing Principal (அசலோடு தவணை)' },
     };
 
     activeLoanRecords.forEach(loan => {
       const type = loan.interestType || 'FLAT';
       if (!outstandingByLoanType[type]) {
-        outstandingByLoanType[type] = { count: 0, amount: 0, label: type };
+        outstandingByLoanType[type] = { count: 0, amount: 0, principal: 0, interest: 0, label: type };
       }
       const paid = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
-      const remaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
+      const totalRemaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
+      
+      const princRemaining = Math.min(totalRemaining, loan.outstandingPrincipal ?? loan.principalAmount);
+      const intRemaining = Math.max(0, totalRemaining - princRemaining);
+
+      totalOutstandingPrincipal += princRemaining;
+      totalOutstandingInterest += intRemaining;
+
       outstandingByLoanType[type].count += 1;
-      outstandingByLoanType[type].amount += remaining;
+      outstandingByLoanType[type].amount += totalRemaining;
+      outstandingByLoanType[type].principal += princRemaining;
+      outstandingByLoanType[type].interest += intRemaining;
     });
 
     const todayDueAmt = todaysDues._sum.dueAmount || 0;
@@ -162,7 +175,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     res.json({
       success: true,
       data: {
-        outstandingAmount: Math.max(0, (loanAgg._sum.totalPayable || 0) - (paymentAgg._sum.amount || 0)),
+        outstandingAmount: totalOutstandingPrincipal + totalOutstandingInterest,
+        outstandingPrincipal: totalOutstandingPrincipal,
+        outstandingInterest: totalOutstandingInterest,
         totalDisbursed: loanAgg._sum.principalAmount || 0,
         totalCollected: paymentAgg._sum.amount || 0,
         totalInterestCollected: loanAgg._sum.totalInterest || 0, // Expected profit
