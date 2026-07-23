@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { customersAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Search, Eye, Edit2, Trash2, X, Phone, Camera, Upload, RefreshCw } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, X, Phone, Camera, Upload, RefreshCw, MapPin } from 'lucide-react';
+import MapPickerModal from '../components/MapPickerModal';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -11,7 +12,8 @@ export default function CustomersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP', latitude: null, longitude: null });
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Camera states & refs
   const [showCamera, setShowCamera] = useState(false);
@@ -32,8 +34,8 @@ export default function CustomersPage() {
 
   useEffect(() => { load(); }, [debouncedSearch]);
 
-  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP' }); setEditCustomer(null); setShowModal(true); };
-  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, idProofUrl: c.idProofUrl || '', notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP' }); setShowModal(true); };
+  const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP', latitude: null, longitude: null }); setEditCustomer(null); setShowModal(true); };
+  const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, idProofUrl: c.idProofUrl || '', notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP', latitude: c.latitude || null, longitude: c.longitude || null }); setShowModal(true); };
 
   const startCamera = async (mode = facingMode) => {
     setShowCamera(true);
@@ -278,6 +280,30 @@ export default function CustomersPage() {
                     <option value="NONE">Do Not Send</option>
                   </select>
                 </div>
+
+                {/* Location Picker */}
+                <div className="form-group">
+                  <label className="form-label">📍 Customer Location (Map Pin)</label>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ width: '100%', justifyContent: 'center', gap: 8, border: '1.5px dashed var(--border-subtle)', fontSize: 13 }}
+                    onClick={() => setShowMapPicker(true)}
+                  >
+                    <MapPin size={15} style={{ color: form.latitude ? '#059669' : 'var(--primary-400)' }} />
+                    {form.latitude ? `✅ Pinned: ${form.latitude.toFixed(4)}, ${form.longitude.toFixed(4)}` : 'Pick Location on Map'}
+                  </button>
+                  {form.latitude && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ marginTop: 6, color: 'var(--danger-400)', fontSize: 11 }}
+                      onClick={() => setForm({ ...form, latitude: null, longitude: null })}
+                    >
+                      Remove location
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
@@ -331,6 +357,16 @@ export default function CustomersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <MapPickerModal
+          initialLat={form.latitude}
+          initialLng={form.longitude}
+          onClose={() => setShowMapPicker(false)}
+          onConfirm={(pos) => setForm({ ...form, latitude: pos.lat, longitude: pos.lng })}
+        />
       )}
     </div>
   );

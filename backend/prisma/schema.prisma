@@ -58,6 +58,8 @@ model Customer {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   notificationPref String @default("BOTH") // WHATSAPP | APP | BOTH | NONE
+  latitude   Float?   // GPS latitude for map pinning
+  longitude  Float?   // GPS longitude for map pinning
 
   loans       Loan[]
   notificationLogs NotificationLog[]

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { repaymentsAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { HandCoins, CheckCircle, AlertTriangle, Clock, X, Phone, Lock } from 'lucide-react';
+import { HandCoins, CheckCircle, AlertTriangle, Clock, X, Phone, Lock, Route } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-';
 
 export default function CollectionPage() {
+  const navigate = useNavigate();
   const [repayments, setRepayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('today');
@@ -83,8 +85,15 @@ export default function CollectionPage() {
 
   return (
     <div className="animate-in">
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ fontSize: 20, fontWeight: 800 }}>Collections</div>
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ gap: 6, fontSize: 12, borderColor: 'rgba(99,102,241,0.3)', color: 'var(--primary-400)' }}
+          onClick={() => navigate('/collection-route')}
+        >
+          <Route size={14} /> Route Map
+        </button>
       </div>
 
       {/* Tabs */}
