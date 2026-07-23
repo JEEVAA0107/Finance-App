@@ -136,7 +136,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         principalAmount: true,
         totalPayable: true,
         outstandingPrincipal: true,
-        repayments: { select: { paidAmount: true } },
+        repayments: { select: { status: true, dueDate: true, dueAmount: true, paidAmount: true } },
       },
     });
 
@@ -154,11 +154,32 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       if (!outstandingByLoanType[type]) {
         outstandingByLoanType[type] = { count: 0, amount: 0, principal: 0, interest: 0, label: type };
       }
-      const paid = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
-      const totalRemaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
-      
-      const princRemaining = Math.min(totalRemaining, loan.outstandingPrincipal ?? loan.principalAmount);
-      const intRemaining = Math.max(0, totalRemaining - princRemaining);
+
+      let princRemaining = 0;
+      let intRemaining = 0;
+
+      if (type === 'FLAT') {
+        // Regular Interest: Principal = remaining principal. Interest = only unpaid interest from due/overdue installments up to today
+        princRemaining = loan.outstandingPrincipal ?? loan.principalAmount;
+        const unpaidDueInterest = (loan.repayments || [])
+          .filter(r => r.status === 'OVERDUE' || (r.status === 'PENDING' && new Date(r.dueDate) <= startOfToday) || r.status === 'PARTIAL')
+          .reduce((acc, r) => acc + Math.max(0, (r.dueAmount || 0) - (r.paidAmount || 0)), 0);
+        intRemaining = unpaidDueInterest;
+      } else if (type === 'WITHOUT_INTEREST') {
+        // Deduction Based: Interest was deducted upfront. Total remaining = sum of unpaid installments
+        const paid = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+        const totalRemaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
+        princRemaining = totalRemaining;
+        intRemaining = 0;
+      } else {
+        // FIXED_FLAT (Reducing Principal)
+        const paid = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+        const totalRemaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
+        princRemaining = Math.min(totalRemaining, loan.outstandingPrincipal ?? loan.principalAmount);
+        intRemaining = Math.max(0, totalRemaining - princRemaining);
+      }
+
+      const totalRemaining = princRemaining + intRemaining;
 
       totalOutstandingPrincipal += princRemaining;
       totalOutstandingInterest += intRemaining;

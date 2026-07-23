@@ -506,10 +506,29 @@ export default function Dashboard() {
                     </thead>
                     <tbody>
                       {filteredLoans.map(loan => {
+                        const type = loan.interestType || 'FLAT';
                         const totalCollected = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
-                        const outstandingAmt = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
-                        const princDue = Math.min(outstandingAmt, loan.outstandingPrincipal ?? loan.principalAmount);
-                        const intDue = Math.max(0, outstandingAmt - princDue);
+                        
+                        let princDue = loan.outstandingPrincipal ?? loan.principalAmount;
+                        let intDue = 0;
+
+                        if (type === 'FLAT') {
+                          // Regular Interest: Principal = remaining principal. Interest = due/overdue unpaid interest up to today
+                          const startOfToday = new Date();
+                          startOfToday.setHours(0, 0, 0, 0);
+                          intDue = (loan.repayments || [])
+                            .filter(r => r.status === 'OVERDUE' || (r.status === 'PENDING' && new Date(r.dueDate) <= startOfToday) || r.status === 'PARTIAL')
+                            .reduce((acc, r) => acc + Math.max(0, (r.dueAmount || 0) - (r.paidAmount || 0)), 0);
+                        } else if (type === 'WITHOUT_INTEREST') {
+                          princDue = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
+                          intDue = 0;
+                        } else {
+                          const rem = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
+                          princDue = Math.min(rem, loan.outstandingPrincipal ?? loan.principalAmount);
+                          intDue = Math.max(0, rem - princDue);
+                        }
+
+                        const outstandingAmt = princDue + intDue;
 
                         return (
                           <tr key={loan.id}>

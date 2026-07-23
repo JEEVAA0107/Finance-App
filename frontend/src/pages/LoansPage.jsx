@@ -159,7 +159,20 @@ export default function LoansPage() {
           const paid = loan.repayments?.filter(r => r.status === 'PAID').length || 0;
           const total = loan.repayments?.length || 1;
           const progress = Math.round((paid / total) * 100);
-          const outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
+          const type = loan.interestType || 'FLAT';
+          
+          let outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
+          if (type === 'FLAT') {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            const unpaidDueInt = (loan.repayments || [])
+              .filter(r => r.status === 'OVERDUE' || (r.status === 'PENDING' && new Date(r.dueDate) <= startOfToday) || r.status === 'PARTIAL')
+              .reduce((acc, r) => acc + Math.max(0, (r.dueAmount || 0) - (r.paidAmount || 0)), 0);
+            outstanding = (loan.outstandingPrincipal ?? loan.principalAmount) + unpaidDueInt;
+          } else if (type === 'WITHOUT_INTEREST' || type === 'FIXED_FLAT') {
+            const totalCollected = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+            outstanding = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
+          }
           return (
             <div key={loan.id} className="collection-card">
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
