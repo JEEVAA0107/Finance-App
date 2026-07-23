@@ -132,7 +132,7 @@ export default function Dashboard() {
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding" value={fmt(s?.outstandingAmount)} color="blue" />
             <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல்)" value={fmt(s?.outstandingPrincipal)} color="purple" />
-            <StatCard to="/collections" icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
             <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/collections" icon={HandCoins} label="Total Collected" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/reports" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
