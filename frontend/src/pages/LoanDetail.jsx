@@ -12,7 +12,7 @@ export default function LoanDetail() {
   const [loan, setLoan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [payModal, setPayModal] = useState(null);
-  const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '' });
+  const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
   const [principalModal, setPrincipalModal] = useState(false);
   const [principalForm, setPrincipalForm] = useState({ amount: '', paymentMode: 'CASH' });
@@ -29,7 +29,7 @@ export default function LoanDetail() {
     e.preventDefault();
     setPaying(true);
     try {
-      await paymentsAPI.collect({ repaymentId: payModal.id, ...payForm, amount: parseFloat(payForm.amount) });
+      await paymentsAPI.collect({ repaymentId: payModal.id, ...payForm, amount: parseFloat(payForm.amount), penaltyAmount: parseFloat(payForm.penaltyAmount) || 0 });
       toast.success('✓ Payment collected!');
       setPayModal(null);
       load();
@@ -174,7 +174,7 @@ export default function LoanDetail() {
                   </button>
                 ) : (
                   <button className="btn btn-success btn-sm" style={{ padding: '6px 10px' }}
-                    onClick={() => { setPayModal(r); setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '' }); }}>
+                    onClick={() => { setPayModal(r); setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '', penaltyAmount: '' }); }}>
                     <HandCoins size={13} />
                   </button>
                 )
@@ -212,6 +212,13 @@ export default function LoanDetail() {
                   <label className="form-label">Amount *</label>
                   <input className="form-input" type="number" step="0.01" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} required />
                 </div>
+                {payModal.status === 'OVERDUE' && (
+                  <div className="form-group">
+                    <label className="form-label">Interest for Overdue (₹) - optional</label>
+                    <input className="form-input" type="number" min="0" placeholder="e.g. 100" value={payForm.penaltyAmount}
+                      onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })} />
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Payment Mode</label>
                   <select className="form-select" value={payForm.paymentMode} onChange={e => setPayForm({ ...payForm, paymentMode: e.target.value })}>
@@ -228,7 +235,7 @@ export default function LoanDetail() {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setPayModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-success" disabled={paying}>{paying ? 'Processing...' : `Collect ₹${payForm.amount || '0'}`}</button>
+                <button type="submit" className="btn btn-success" disabled={paying}>{paying ? 'Processing...' : `Collect ₹${(parseFloat(payForm.amount || 0) + parseFloat(payForm.penaltyAmount || 0)).toLocaleString('en-IN')}`}</button>
               </div>
             </form>
           </div>

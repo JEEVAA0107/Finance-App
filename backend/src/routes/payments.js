@@ -13,7 +13,7 @@ const round2 = (num) => Math.round(num * 100) / 100;
 // POST /api/payments — Collect INTEREST payment
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { repaymentId, amount, paymentMode = 'CASH', reference, notes } = req.body;
+    const { repaymentId, amount, paymentMode = 'CASH', reference, notes, penaltyAmount = 0 } = req.body;
 
     if (!repaymentId || !amount) {
       return res.status(400).json({ success: false, message: 'repaymentId and amount required' });
@@ -50,32 +50,38 @@ router.post('/', authenticate, async (req, res) => {
     // ─────────────────────────────────────────────────────────────────────────
 
 
+    const baseAmt = parseFloat(amount);
+    const penaltyAmt = parseFloat(penaltyAmount) || 0;
+    const totalCollectedAmt = baseAmt + penaltyAmt;
+
     const paymentType = (repayment.principal > 0 && repayment.interest > 0) ? 'EMI' : (repayment.principal > 0 ? 'PRINCIPAL' : 'INTEREST');
 
     const payment = await prisma.payment.create({
       data: {
         repaymentId,
         collectedById: req.user.id,
-        amount: parseFloat(amount),
+        amount: totalCollectedAmt,
         paymentMode,
         paymentType,
         reference,
-        notes,
+        notes: penaltyAmt > 0 ? (notes ? `${notes} (Includes ₹${penaltyAmt} overdue interest)` : `Includes ₹${penaltyAmt} overdue interest`) : notes,
       },
     });
 
-    const totalPaid = repayment.paidAmount + parseFloat(amount);
-    const newStatus = totalPaid >= repayment.dueAmount ? 'PAID' : 'PARTIAL';
+    const totalPaid = repayment.paidAmount + totalCollectedAmt;
+    // For status check, compare against dueAmount + penaltyAmt so it only marks PAID if they cover everything
+    const newStatus = totalPaid >= (repayment.dueAmount + penaltyAmt) ? 'PAID' : 'PARTIAL';
 
     await prisma.repayment.update({
       where: { id: repaymentId },
       data: { paidAmount: totalPaid, paidAt: newStatus === 'PAID' ? new Date() : null, status: newStatus },
     });
 
-    const amt = parseFloat(amount);
     const dueAmt = repayment.dueAmount || 1;
-    const principalPaid = amt * (repayment.principal / dueAmt);
-    const interestPaid = amt * (repayment.interest / dueAmt);
+    // Principal paid is proportional to the base amount only
+    const principalPaid = baseAmt * (repayment.principal / dueAmt);
+    // Interest paid is proportional to base amount PLUS the entire penalty
+    const interestPaid = (baseAmt * (repayment.interest / dueAmt)) + penaltyAmt;
 
     await prisma.loan.update({
       where: { id: repayment.loanId },

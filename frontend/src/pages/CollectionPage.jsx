@@ -250,7 +250,7 @@ export default function CollectionPage() {
                 </div>
                 {payModal.status === 'OVERDUE' && (
                   <div className="form-group">
-                    <label className="form-label">Penalty Amount (₹) - optional</label>
+                    <label className="form-label">Interest for Overdue (₹) - optional</label>
                     <input className="form-input" type="number" min="0" placeholder="e.g. 100" value={payForm.penaltyAmount}
                       onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })} />
                   </div>
