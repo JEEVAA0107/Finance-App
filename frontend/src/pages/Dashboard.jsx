@@ -106,9 +106,14 @@ export default function Dashboard() {
           <div style={{ fontSize: 22, fontWeight: 800 }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
           <div className="color-muted" style={{ fontSize: 13 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link to="/loans/create" className="btn btn-primary btn-sm"><Plus size={15}/> New Loan</Link>
           <Link to="/collections" className="btn btn-success btn-sm"><HandCoins size={15}/> Collect</Link>
+          {isAdmin && (
+            <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
+               History
+            </Link>
+          )}
         </div>
       </div>
 
