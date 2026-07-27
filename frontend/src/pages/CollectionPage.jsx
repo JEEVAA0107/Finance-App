@@ -13,6 +13,14 @@ export default function CollectionPage() {
   const [repayments, setRepayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    const currentTabParam = searchParams.get('tab');
+    if (currentTabParam && currentTabParam !== tab) {
+      setTab(currentTabParam);
+    }
+  }, [searchParams]);
+
   const [payModal, setPayModal] = useState(null);
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
