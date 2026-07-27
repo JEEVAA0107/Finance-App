@@ -135,27 +135,27 @@ export default function Dashboard() {
           {/* Section 1: Overall Financials */}
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Overall Financials</div>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
-            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding" value={fmt(s?.outstandingAmount)} color="blue" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
             <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல்)" value={fmt(s?.outstandingPrincipal)} color="purple" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
-            <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed" value={fmt(s?.totalDisbursed)} color="green" />
-            <StatCard to="/collections" icon={HandCoins} label="Total Collected" value={fmt(s?.totalCollected)} color="purple" />
-            <StatCard to="/profit" icon={TrendingUp} label="Total Profit" value={fmt(s?.totalInterestCollected)} color="yellow" />
+            <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed (வழங்கியது)" value={fmt(s?.totalDisbursed)} color="green" />
+            <StatCard to="/collections" icon={HandCoins} label="Total Collected (வசூலானது)" value={fmt(s?.totalCollected)} color="purple" />
+            <StatCard to="/profit" icon={TrendingUp} label="Total Profit (லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
 
           {/* Section 2: Today's Metrics */}
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Today's Performance</div>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
-            <StatCard to="/collections" icon={Calendar} label="Today's Collection" value={fmt(s?.todayCollection)} color="green" />
-            <StatCard to="/collections" icon={Clock} label="Today's Due" value={fmt(s?.todayDueAmount)} color="blue" />
-            <StatCard to="/collections" icon={AlertTriangle} label="Remaining Due" value={fmt(s?.remainingToday)} color="yellow" />
-            <StatCard to="/collections" icon={PieChart} label="Pending (All)" value={fmt(s?.pendingCollections)} color="purple" />
+            <StatCard to="/collections" icon={Calendar} label="Today's Collection (இன்றைய வசூல்)" value={fmt(s?.todayCollection)} color="green" />
+            <StatCard to="/collections" icon={Clock} label="Today's Due (இன்றைய டியூ)" value={fmt(s?.todayDueAmount)} color="blue" />
+            <StatCard to="/collections" icon={AlertTriangle} label="Remaining Due (மீதமுள்ள டியூ)" value={fmt(s?.remainingToday)} color="yellow" />
+            <StatCard to="/collections" icon={PieChart} label="Pending (All) (நிலுவையில் உள்ளவை)" value={fmt(s?.pendingCollections)} color="purple" />
           </div>
 
           {/* Section 3: Entities */}
           <div className="stats-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-            <StatCard to="/customers" icon={Users} label="Active Customers" value={s?.activeCustomers} color="blue" />
-            <StatCard to="/loans?status=ACTIVE" icon={Landmark} label="Active Loans" value={s?.activeLoans} color="green" />
+            <StatCard to="/customers" icon={Users} label="Active Customers (வாடிக்கையாளர்கள்)" value={s?.activeCustomers} color="blue" />
+            <StatCard to="/loans?status=ACTIVE" icon={Landmark} label="Active Loans (நடப்பு கடன்கள்)" value={s?.activeLoans} color="green" />
           </div>
 
           {/* Monthly Analytics Chart */}
@@ -192,31 +192,35 @@ export default function Dashboard() {
                 <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                   <defs>
                     <linearGradient id="colorDisbursed" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.6}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
                     </linearGradient>
                     <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.6}/>
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.15} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-muted)' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(0,0,0,0.06)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'var(--text-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} dx={-10} />
                   <Tooltip 
-                    cursor={{ fill: 'rgba(0,0,0,0.04)' }} 
+                    cursor={{ fill: 'transparent' }} 
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 20px rgba(0,0,0,0.12)', fontSize: '12px' }}>
-                            <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>🗓️ {label}</div>
+                          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '16px', padding: '14px 18px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '13px', minWidth: '180px' }}>
+                            <div style={{ fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: 8 }}>🗓️ {label}</div>
                             {payload.map((entry, idx) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
-                                <span style={{ color: entry.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color, display: 'inline-block' }} />
-                                  {entry.name}:
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, marginTop: 8 }}>
+                                <span style={{ color: entry.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ width: 10, height: 10, borderRadius: '4px', background: entry.color, display: 'inline-block', boxShadow: `0 0 8px ${entry.color}66` }} />
+                                  {entry.name.split(' (')[0]}:
                                 </span>
-                                <span style={{ fontWeight: 700 }}>₹{entry.value?.toLocaleString('en-IN')}</span>
+                                <span style={{ fontWeight: 800, fontSize: '14px' }}>₹{entry.value?.toLocaleString('en-IN')}</span>
                               </div>
                             ))}
                           </div>
@@ -225,20 +229,21 @@ export default function Dashboard() {
                       return null;
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                  <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 20 }} iconType="circle" />
                   
                   {chartView === 'BAR' ? (
                     <>
-                      <Bar dataKey="disbursed" name="Disbursed (வழங்கியது)" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={36} />
-                      <Bar dataKey="collected" name="Collected (வசூலானது)" fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                      <Bar dataKey="disbursed" name="Disbursed (வழங்கியது)" fill="#3B82F6" radius={[8, 8, 0, 0]} maxBarSize={30} />
+                      <Bar dataKey="collected" name="Collected (வசூலானது)" fill="#10B981" radius={[8, 8, 0, 0]} maxBarSize={30} />
+                      <Bar dataKey="profit" name="Profit (லாபம்)" fill="#F59E0B" radius={[8, 8, 0, 0]} maxBarSize={30} />
                     </>
                   ) : (
                     <>
-                      <Area type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorDisbursed)" />
-                      <Area type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorCollected)" />
+                      <Area type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorDisbursed)" />
+                      <Area type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
+                      <Area type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
                     </>
                   )}
-                  <Line type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B' }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
