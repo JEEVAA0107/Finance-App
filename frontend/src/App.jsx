@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage';
 import NotificationsDashboard from './pages/NotificationsDashboard';
 import ProfitPage from './pages/ProfitPage';
 import CollectionRoutePage from './pages/CollectionRoutePage';
+import PaymentsHistoryPage from './pages/PaymentsHistoryPage';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="profit" element={isAdmin ? <ProfitPage /> : <Navigate to="/" replace />} />
+        <Route path="payment-history" element={isAdmin ? <PaymentsHistoryPage /> : <Navigate to="/" replace />} />
         <Route path="collection-route" element={<CollectionRoutePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

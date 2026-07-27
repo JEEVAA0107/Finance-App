@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { notificationsAPI } from '../services/api';
 import {
   LayoutDashboard, Users, Landmark, HandCoins, ChevronRight,
-  FileBarChart, Shield, UserCog, LogOut, Menu, X, Settings, Bell
+  FileBarChart, Shield, UserCog, LogOut, Menu, X, Settings, Bell, History
 } from 'lucide-react';
 
 export default function AppLayout() {
@@ -48,6 +48,7 @@ export default function AppLayout() {
         ]},
         { section: 'Operations', items: [
           { to: '/collections', icon: HandCoins, label: 'Collections' },
+          { to: '/payment-history', icon: History, label: 'History' },
         ]},
         { section: 'Admin', items: [
           { to: '/notifications', icon: Bell, label: 'Notifications' },
@@ -106,6 +107,7 @@ export default function AppLayout() {
     { to: '/loans/create', label: 'Create Loan' },
     { to: '/loans', label: 'Loans' },
     { to: '/collections', label: 'Collections' },
+    { to: '/payment-history', label: 'History' },
     { to: '/users', label: 'Users' },
   ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'Finova';
 
