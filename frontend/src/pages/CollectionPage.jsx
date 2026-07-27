@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { repaymentsAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { HandCoins, CheckCircle, AlertTriangle, Clock, X, Phone, Lock, Route } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-';
 
 export default function CollectionPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'today';
   const [repayments, setRepayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('today');
+  const [tab, setTab] = useState(initialTab);
   const [payModal, setPayModal] = useState(null);
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);

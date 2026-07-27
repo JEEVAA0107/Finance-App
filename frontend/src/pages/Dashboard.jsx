@@ -116,7 +116,7 @@ export default function Dashboard() {
         <>
           {/* Overdue alert */}
           {s?.overdueLoansCount > 0 && (
-            <Link to="/loans?status=ACTIVE" style={{ textDecoration: 'none' }}>
+            <Link to="/collections?tab=overdue" style={{ textDecoration: 'none' }}>
               <div className="alert-card" style={{ background: 'var(--danger-50)', border: '1px solid rgba(244,63,94,0.25)', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <AlertTriangle size={18} style={{ color: 'var(--danger-600)', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
