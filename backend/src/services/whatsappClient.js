@@ -43,8 +43,12 @@ client.on('auth_failure', msg => {
   console.error('WhatsApp Client Authentication failure', msg);
 });
 
-// Initialize client
-client.initialize();
+if (process.env.DISABLE_WHATSAPP !== 'true') {
+  // Initialize client
+  client.initialize();
+} else {
+  console.log('WhatsApp Client disabled via DISABLE_WHATSAPP=true. Skipping initialization to save memory.');
+}
 
 /**
  * Send a WhatsApp message
