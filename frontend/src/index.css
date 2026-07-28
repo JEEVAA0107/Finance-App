@@ -515,7 +515,7 @@ input, select, textarea, button { font-family: inherit; }
   .desktop-header-actions { display: none; }
   .main-content {
     margin-left: 0;
-    padding: calc(56px + env(safe-area-inset-top) + 24px) 16px calc(58px + env(safe-area-inset-bottom) + 24px);
+    padding: calc(56px + env(safe-area-inset-top, 0px) + 24px) 16px calc(58px + env(safe-area-inset-bottom, 0px) + 24px) 16px;
   }
 }
 
