@@ -73,7 +73,7 @@ export default function PaymentsHistoryPage() {
   }, {});
 
   return (
-    <div className="animate-in" style={{ paddingBottom: 40, maxWidth: '800px', margin: '0 auto' }}>
+    <div className="animate-in" style={{ padding: '16px 16px 80px 16px', maxWidth: '800px', margin: '0 auto' }}>
       
       {/* Premium Header Profile Style */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
