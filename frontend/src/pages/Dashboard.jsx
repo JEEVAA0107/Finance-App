@@ -100,13 +100,11 @@ export default function Dashboard() {
 
   return (
     <div className="animate-in" style={{ paddingBottom: '40px' }}>
-      {/* Greeting */}
-      <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
-            <div className="color-muted" style={{ fontSize: 13, marginTop: 2 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-          </div>
+      {/* Greeting & Quick Actions */}
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
+          <div className="color-muted" style={{ fontSize: 13, marginTop: 2 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
         
         {/* Responsive Quick Actions */}
