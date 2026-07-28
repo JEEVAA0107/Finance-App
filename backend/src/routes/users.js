@@ -18,7 +18,7 @@ router.get('/', authenticate, authorize('ADMIN'), async (req, res) => {
         where,
         skip,
         take: parseInt(limit),
-        select: { id: true, name: true, email: true, phone: true, role: true, isActive: true, createdAt: true },
+        select: { id: true, name: true, email: true, phone: true, role: true, isActive: true, createdAt: true, agentId: true },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.user.count({ where }),
@@ -33,17 +33,26 @@ router.get('/', authenticate, authorize('ADMIN'), async (req, res) => {
 // POST /api/users — Admin creates agent/customer account
 router.post('/', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
-    const { name, email, phone, password, role } = req.body;
+    const { name, email, phone, role } = req.body;
     const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
     if (existing) return res.status(409).json({ success: false, message: 'Email or phone exists' });
 
-    const passwordHash = await bcrypt.hash(password || 'Welcome@123', 12);
+    let agentId = null;
+    let passwordHash = '';
+    
+    if (role === 'AGENT' || role === 'ADMIN') {
+      agentId = `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
+      passwordHash = await bcrypt.hash(agentId, 12);
+    } else {
+      passwordHash = await bcrypt.hash('Welcome@123', 12);
+    }
+
     const user = await prisma.user.create({
-      data: { name, email: email.toLowerCase(), phone, passwordHash, role: role || 'AGENT' },
+      data: { name, email: email.toLowerCase(), phone, passwordHash, role: role || 'AGENT', agentId },
     });
 
     await auditLog(req.user.id, 'CREATE_USER', 'User', user.id, { role: user.role }, req);
-    res.status(201).json({ success: true, data: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.status(201).json({ success: true, data: { id: user.id, name: user.name, email: user.email, role: user.role, agentId: user.agentId } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

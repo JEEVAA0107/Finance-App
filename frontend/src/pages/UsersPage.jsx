@@ -90,7 +90,7 @@ export default function UsersPage() {
       <div className="table-container">
         <table className="data-table">
           <thead>
-            <tr><th>User</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+            <tr><th>User</th><th>Agent ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
           </thead>
           <tbody>
             {users.map(u => (
@@ -101,6 +101,7 @@ export default function UsersPage() {
                     <div className="fw-600">{u.name}</div>
                   </div>
                 </td>
+                <td data-label="Agent ID"><div className="fw-600 color-primary">{u.agentId || '-'}</div></td>
                 <td data-label="Email"><Mail size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{u.email}</td>
                 <td data-label="Phone"><Phone size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /><a href={`tel:${u.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{u.phone}</a></td>
                 <td data-label="Role">
@@ -153,17 +154,18 @@ export default function UsersPage() {
                   </div>
                 </div>
                 <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">{editUser ? 'New Password (optional)' : 'Password *'}</label>
-                    <input
-                      className="form-input"
-                      type="password"
-                      placeholder={editUser ? 'Leave blank to keep current' : 'Min 6 characters'}
-                      value={form.password}
-                      onChange={e => setForm({...form, password: e.target.value})}
-                      required={!editUser}
-                    />
-                  </div>
+                  {editUser && (
+                    <div className="form-group">
+                      <label className="form-label">New Password (optional)</label>
+                      <input
+                        className="form-input"
+                        type="password"
+                        placeholder="Leave blank to keep current"
+                        value={form.password}
+                        onChange={e => setForm({...form, password: e.target.value})}
+                      />
+                    </div>
+                  )}
                   <div className="form-group">
                     <label className="form-label">Role *</label>
                     <select className="form-select" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>

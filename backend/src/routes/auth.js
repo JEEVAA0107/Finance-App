@@ -33,44 +33,33 @@ router.get('/me', authenticate, async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body; // 'email' can now be email or phone
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email/Phone and password required' });
+    const { phone, agentId } = req.body;
+    if (!phone || !agentId) {
+      return res.status(400).json({ success: false, message: 'Phone and Agent ID required' });
     }
 
-    const identifier = email.toLowerCase().trim();
+    const identifier = phone.trim();
+    const agentIdFormatted = agentId.trim().toUpperCase();
+
     const users = await prisma.user.findMany({
-      where: {
-        OR: [
-          { email: identifier },
-          { phone: identifier }
-        ]
-      }
+      where: { phone: identifier }
     });
 
     if (users.length === 0) {
-      // Dev fallback for Super Admin if no user found at all
-      if (password === 'bypass123') {
-        const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
-        if (adminUser) {
-          const { accessToken, refreshToken } = signTokens(adminUser.id, adminUser.role);
-          return res.json({
-            success: true,
-            data: { user: adminUser, accessToken, refreshToken }
-          });
-        }
-      }
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     let matchedUser = null;
 
-    if (password === 'bypass123') {
-      matchedUser = users.find(u => u.isActive);
-    } else {
-      for (const u of users) {
-        if (!u.isActive) continue;
-        const valid = await bcrypt.compare(password, u.passwordHash);
+    for (const u of users) {
+      if (!u.isActive) continue;
+      
+      // Match by agentId column (new way) or bcrypt passwordHash (legacy way)
+      if (u.agentId === agentIdFormatted) {
+        matchedUser = u;
+        break;
+      } else {
+        const valid = await bcrypt.compare(agentId, u.passwordHash);
         if (valid) {
           matchedUser = u;
           break;

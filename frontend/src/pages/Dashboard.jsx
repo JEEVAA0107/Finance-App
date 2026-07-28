@@ -195,7 +195,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ width: '100%', height: 260 }}>
+            <div style={{ width: '100%', height: 260, minWidth: 0, position: 'relative' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                   <defs>
@@ -220,15 +220,15 @@ export default function Dashboard() {
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '16px', padding: '14px 18px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '13px', minWidth: '180px' }}>
-                            <div style={{ fontWeight: 800, marginBottom: 12, color: 'var(--text-primary)', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: 8 }}>🗓️ {label}</div>
+                          <div style={{ background: 'var(--card-bg, #ffffff)', color: 'var(--text-primary, #000000)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '16px', padding: '14px 18px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '13px', minWidth: '180px' }}>
+                            <div style={{ fontWeight: 800, marginBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: 8 }}>🗓️ {label}</div>
                             {payload.map((entry, idx) => (
                               <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, marginTop: 8 }}>
                                 <span style={{ color: entry.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <span style={{ width: 10, height: 10, borderRadius: '4px', background: entry.color, display: 'inline-block', boxShadow: `0 0 8px ${entry.color}66` }} />
                                   {entry.name.split(' (')[0]}:
                                 </span>
-                                <span style={{ fontWeight: 800, fontSize: '14px' }}>₹{entry.value?.toLocaleString('en-IN')}</span>
+                                <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)' }}>₹{entry.value?.toLocaleString('en-IN')}</span>
                               </div>
                             ))}
                           </div>

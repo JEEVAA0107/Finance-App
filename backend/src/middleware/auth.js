@@ -18,21 +18,12 @@ const authenticate = async (req, res, next) => {
           req.user = user;
           return next();
         }
-      } catch (_) { /* token invalid, fall through to bypass */ }
+      } catch (_) { 
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+      }
     }
 
-    // BYPASS: Auto-login as first Admin (dev mode)
-    const adminUser = await prisma.user.findFirst({
-      where: { role: 'ADMIN', isActive: true },
-      select: { id: true, name: true, email: true, phone: true, role: true, isActive: true },
-    });
-
-    if (!adminUser) {
-      return res.status(401).json({ success: false, message: 'No admin user found. Run seed first.' });
-    }
-
-    req.user = adminUser;
-    return next();
+    return res.status(401).json({ success: false, message: 'Authentication required' });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Auth error: ' + error.message });
   }

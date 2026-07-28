@@ -1572,3 +1572,14 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
 .profile-dropdown-item.text-danger:hover {
   background: var(--danger-50);
 }
+
+/* ─── Mobile Utilities ──────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .responsive-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .mobile-full-width {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+}

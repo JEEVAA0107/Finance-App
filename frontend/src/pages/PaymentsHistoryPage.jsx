@@ -108,7 +108,7 @@ export default function PaymentsHistoryPage() {
 
       {/* Modern Search & Filter Bar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <div className="search-bar" style={{ flex: 1, minWidth: 250, margin: 0, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+        <div className="search-bar mobile-full-width" style={{ flex: 1, minWidth: 250, margin: 0, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
           <Search size={18} color="var(--text-muted)" />
           <input 
             type="text" 
@@ -119,7 +119,7 @@ export default function PaymentsHistoryPage() {
           />
         </div>
         <button 
-          className={`btn ${showFilters ? 'btn-primary' : 'btn-ghost'}`} 
+          className={`btn ${showFilters ? 'btn-primary' : 'btn-ghost'} mobile-full-width`} 
           onClick={() => setShowFilters(!showFilters)}
           style={{ background: showFilters ? 'var(--primary-600)' : 'var(--card-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}
         >
@@ -130,7 +130,7 @@ export default function PaymentsHistoryPage() {
       {/* Expandable Filter Card */}
       {showFilters && (
         <div className="card animate-in" style={{ marginBottom: 24, padding: 20, borderRadius: 16, border: '1px solid var(--primary-100)', background: 'var(--bg-subtle)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
+          <div className="responsive-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Start Date</label>
               <input 
@@ -211,12 +211,12 @@ export default function PaymentsHistoryPage() {
                       key={p.id} 
                       className="card" 
                       style={{ 
-                        padding: 16, 
-                        borderRadius: 16, 
+                        padding: 12, 
+                        borderRadius: 12, 
                         borderLeft: `4px solid ${isPrincipal ? 'var(--warning-500)' : 'var(--success-500)'}`,
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 12,
+                        gap: 8,
                         transition: 'transform 0.2s, box-shadow 0.2s',
                         cursor: 'default',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
@@ -235,7 +235,7 @@ export default function PaymentsHistoryPage() {
                       </div>
 
                       {/* Middle Row: Customer Info */}
-                      <div style={{ background: 'var(--bg-subtle)', padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ background: 'var(--bg-subtle)', padding: '8px 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14, background: 'rgba(0,0,0,0.05)', color: 'var(--text-primary)' }}>
                             {p.repayment?.loan?.customer?.name?.charAt(0)}
@@ -247,7 +247,13 @@ export default function PaymentsHistoryPage() {
                               {p.repayment?.loan?.customer?.phone && (
                                 <>
                                   <span>•</span>
-                                  <Phone size={10} /> {p.repayment?.loan?.customer?.phone}
+                                  <a 
+                                    href={`tel:${p.repayment?.loan?.customer?.phone}`} 
+                                    style={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Phone size={10} /> {p.repayment?.loan?.customer?.phone}
+                                  </a>
                                 </>
                               )}
                             </div>
@@ -264,7 +270,7 @@ export default function PaymentsHistoryPage() {
                       </div>
 
                       {/* Bottom Row: Agent & Notes */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-subtle)', paddingTop: 12, marginTop: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-subtle)', paddingTop: 8, marginTop: 2 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Collected by:</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)', padding: '2px 8px 2px 2px', borderRadius: 20 }}>

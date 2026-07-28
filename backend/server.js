@@ -31,9 +31,10 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
-// Allow all origins for local development to prevent network errors across multiple network interfaces
+// Allow specific origins for production security
 app.use(cors({
-  origin: '*'
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
 }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));

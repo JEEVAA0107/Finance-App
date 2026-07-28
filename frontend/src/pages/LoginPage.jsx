@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Landmark, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { Landmark, User, Lock, Eye, EyeOff, Phone } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -37,29 +37,29 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Phone Number / Email</label>
+            <label className="form-label">Phone Number</label>
             <div style={{ position: 'relative' }}>
-              <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 className="form-input input-with-icon-left"
-                type="text"
-                placeholder="Enter Phone Number or Email"
+                type="tel"
+                placeholder="Enter registered mobile number"
                 value={form.userId}
                 onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                autoComplete="username"
+                autoComplete="tel"
                 required
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label className="form-label">Agent ID (Password)</label>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 className="form-input input-with-icon-both"
                 type={showPass ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder="e.g., AGT-1234 or Password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 autoComplete="current-password"

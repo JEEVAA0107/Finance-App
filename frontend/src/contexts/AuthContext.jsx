@@ -42,10 +42,9 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (emailOrPhone, password) => {
-    // Note: old localDb login expected 3 args (companyCode, emailOrPhone, password).
-    // Express API expects { email: emailOrPhone, password }
-    const response = await authAPI.login({ email: emailOrPhone, password });
+  const login = async (phone, agentId) => {
+    // Note: API now expects { phone, agentId }
+    const response = await authAPI.login({ phone, agentId });
     if (response.accessToken) {
       localStorage.setItem('token', response.accessToken);
     }
