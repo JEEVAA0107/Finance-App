@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { paymentsAPI, usersAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { FileText, Calendar, User, Search, HandCoins, ArrowDownToLine, Clock, Phone, Banknote, Filter } from 'lucide-react';
+import { FileText, Calendar, User, Search, HandCoins, ArrowDownToLine, Clock, Phone, Banknote, Filter, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function PaymentsHistoryPage() {
@@ -64,6 +64,42 @@ export default function PaymentsHistoryPage() {
 
   const totalCollected = filteredPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
 
+  const exportToCSV = () => {
+    if (filteredPayments.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    const headers = ['Date', 'Time', 'Customer Name', 'Loan Number', 'Amount', 'Payment Type', 'Mode', 'Collected By'];
+    
+    const rows = filteredPayments.map(p => {
+      const date = new Date(p.collectedAt).toLocaleDateString('en-IN');
+      const time = new Date(p.collectedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const customerName = (p.repayment?.loan?.customer?.name || 'N/A').replace(/,/g, '');
+      const loanNo = p.repayment?.loan?.loanNumber || 'N/A';
+      const amount = p.amount || 0;
+      const type = p.paymentType || '';
+      const mode = p.paymentMode || '';
+      const agent = (p.collectedBy?.name || 'Unknown').replace(/,/g, '');
+      
+      return [date, time, customerName, loanNo, amount, type, mode, agent].join(',');
+    });
+    
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Collections_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Download started!');
+  };
+
   // Group by date for a timeline view
   const groupedPayments = filteredPayments.reduce((acc, p) => {
     const date = new Date(p.collectedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -118,6 +154,13 @@ export default function PaymentsHistoryPage() {
             style={{ fontSize: 14 }}
           />
         </div>
+        <button 
+          className="btn btn-ghost mobile-full-width" 
+          onClick={exportToCSV}
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}
+        >
+          <Download size={18} /> Export
+        </button>
         <button 
           className={`btn ${showFilters ? 'btn-primary' : 'btn-ghost'} mobile-full-width`} 
           onClick={() => setShowFilters(!showFilters)}
