@@ -232,7 +232,22 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     else if (tenureUnit === 'WEEKS') end.setDate(end.getDate() + batchSize * 7);
     else end.setDate(end.getDate() + batchSize);
 
-    const loanNumber = generateLoanNumber();
+    // Generate sequential loan number
+    const lastLoan = await prisma.loan.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { loanNumber: true }
+    });
+    let nextSeq = 1;
+    if (lastLoan && lastLoan.loanNumber && lastLoan.loanNumber.startsWith('LN-')) {
+      const parts = lastLoan.loanNumber.split('-');
+      if (parts.length === 2 && !isNaN(parts[1])) {
+        nextSeq = parseInt(parts[1], 10) + 1;
+      }
+    } else {
+      const count = await prisma.loan.count();
+      nextSeq = count + 1;
+    }
+    const loanNumber = `LN-${String(nextSeq).padStart(4, '0')}`;
 
     const loan = await prisma.loan.create({
       data: {
