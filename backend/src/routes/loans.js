@@ -183,7 +183,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     const {
       customerId, agentId, principalAmount, interestRate,
       interestType = 'FLAT', tenure, tenureUnit = 'MONTHS',
-      processingFee = 0, startDate,
+      processingFee = 0, startDate, alreadyCollectedAmount = 0,
     } = req.body;
 
     if (!customerId || !principalAmount || interestRate === undefined || !startDate) {
@@ -276,7 +276,54 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     );
     await prisma.repayment.createMany({ data: installments });
 
-    await auditLog(req.user.id, 'CREATE_LOAN', 'Loan', loan.id, { loanNumber, principalAmount, continuous: true }, req);
+    // Handle Pre-collected Amount (alreadyCollectedAmount)
+    let remainingCollected = parseFloat(alreadyCollectedAmount);
+    if (remainingCollected > 0) {
+      const createdReps = await prisma.repayment.findMany({
+        where: { loanId: loan.id },
+        orderBy: { installmentNo: 'asc' }
+      });
+      let totalInterestPaid = 0;
+      
+      for (const rep of createdReps) {
+        if (remainingCollected <= 0) break;
+        const pendingAmount = rep.dueAmount - rep.paidAmount;
+        const toPay = Math.min(pendingAmount, remainingCollected);
+        
+        if (toPay > 0) {
+          const newPaidAmount = rep.paidAmount + toPay;
+          const status = newPaidAmount >= rep.dueAmount ? 'PAID' : 'PARTIAL';
+          
+          await prisma.repayment.update({
+            where: { id: rep.id },
+            data: { paidAmount: newPaidAmount, paidAt: new Date(), status }
+          });
+          
+          await prisma.payment.create({
+            data: {
+              repaymentId: rep.id,
+              collectedById: loan.agentId,
+              amount: toPay,
+              paymentMode: 'CASH',
+              paymentType: 'INTEREST',
+              reference: 'Pre-collected Entry',
+              collectedAt: new Date()
+            }
+          });
+          remainingCollected -= toPay;
+          totalInterestPaid += toPay;
+        }
+      }
+      
+      if (totalInterestPaid > 0) {
+        await prisma.loan.update({
+          where: { id: loan.id },
+          data: { interestCollected: { increment: totalInterestPaid } }
+        });
+      }
+    }
+
+    await auditLog(req.user.id, 'CREATE_LOAN', 'Loan', loan.id, { loanNumber, principalAmount, continuous: true, alreadyCollectedAmount }, req);
 
     const fullLoan = await prisma.loan.findUnique({
       where: { id: loan.id },

@@ -10,7 +10,7 @@ export default function CreateLoan() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     customerId: '', principalAmount: '', interestRate: '',
-    interestType: 'FLAT', tenure: '10', advanceDeduction: '',
+    interestType: 'FLAT', tenure: '10', advanceDeduction: '', alreadyCollectedAmount: '',
     tenureUnit: 'WEEKS', startDate: new Date().toISOString().split('T')[0],
   });
 
@@ -89,6 +89,7 @@ export default function CreateLoan() {
         processingFee: fee,
         tenure: tenureVal,
         tenureUnit: form.tenureUnit,
+        alreadyCollectedAmount: parseFloat(form.alreadyCollectedAmount || 0),
       });
       toast.success(`Loan ${res.loanNumber} created!`);
       navigate(`/loans/${res.id}`);
@@ -198,6 +199,11 @@ export default function CreateLoan() {
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Start Date *</label>
             <input className="form-input" type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} required />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Already Collected Amount (₹) [Optional]</label>
+            <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.alreadyCollectedAmount} onChange={e => set('alreadyCollectedAmount', e.target.value)} />
           </div>
         </div>
 
