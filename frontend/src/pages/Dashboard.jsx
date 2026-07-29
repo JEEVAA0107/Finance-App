@@ -255,26 +255,26 @@ export default function Dashboard() {
             </div>
             
             {/* KPI Summary Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginTop: 18, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
-              <Link to="/loans" style={{ textDecoration: 'none', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 12, marginTop: 18, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
+              <Link to="/loans" style={{ textDecoration: 'none', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Disbursed</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>{fmt(s?.monthly?.disbursed)}</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#2563EB', marginTop: 4 }}>{fmt(s?.monthly?.disbursed)}</div>
               </Link>
-              <Link to="/payment-history?filter=this_month" style={{ textDecoration: 'none', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <Link to="/payment-history?filter=this_month" style={{ textDecoration: 'none', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Collected</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>{fmt(s?.monthly?.collection)}</div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: 6, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(16,185,129,0.2)', paddingTop: 4 }}>
-                  <span>Prin: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.principalCollected)}</b></span>
-                  <span>Int: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.interestCollected)}</b></span>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#059669', marginTop: 4 }}>{fmt(s?.monthly?.collection)}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', marginTop: 8, fontSize: 11, color: 'var(--text-muted)', borderTop: '1px dashed rgba(16,185,129,0.2)', paddingTop: 6 }}>
+                  <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Prin: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.principalCollected)}</b></span>
+                  <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Int: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.interestCollected)}</b></span>
                 </div>
               </Link>
-              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Interest</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: '#7C3AED', marginTop: 2 }}>{fmt(s?.monthly?.interestIncome)}</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 4 }}>{fmt(s?.monthly?.interestIncome)}</div>
               </Link>
-              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Profit</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: '#D97706', marginTop: 2 }}>{fmt(s?.monthly?.profit)}</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#D97706', marginTop: 4 }}>{fmt(s?.monthly?.profit)}</div>
               </Link>
             </div>
           </div>
