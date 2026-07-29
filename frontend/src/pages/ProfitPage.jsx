@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { TrendingUp, ArrowLeft, Filter, IndianRupee, Users, Landmark, ChevronRight } from 'lucide-react';
 import { dashboardAPI } from '../services/api';
 import toast from 'react-hot-toast';
@@ -35,10 +35,11 @@ const PERIODS = [
 
 export default function ProfitPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loanType, setLoanType] = useState('ALL');
-  const [period, setPeriod] = useState('ALL');
+  const [period, setPeriod] = useState(searchParams.get('period') || 'ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 

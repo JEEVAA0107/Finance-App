@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { paymentsAPI, usersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { FileText, Calendar, User, Search, HandCoins, ArrowDownToLine, Clock, Phone, Banknote, Filter, Download } from 'lucide-react';
@@ -6,6 +7,15 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function PaymentsHistoryPage() {
   const { user: currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const filterParam = searchParams.get('filter');
+  
+  const getStartOfMonth = () => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split('T')[0];
+  };
+
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [agents, setAgents] = useState([]);
@@ -13,7 +23,7 @@ export default function PaymentsHistoryPage() {
   
   // Filters
   const [filters, setFilters] = useState({
-    from: new Date().toISOString().split('T')[0], // Default today
+    from: filterParam === 'this_month' ? getStartOfMonth() : new Date().toISOString().split('T')[0],
     to: new Date().toISOString().split('T')[0],
     collectedById: ''
   });

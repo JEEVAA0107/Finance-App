@@ -256,22 +256,22 @@ export default function Dashboard() {
             
             {/* KPI Summary Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginTop: 18, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
-              <div style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+              <Link to="/loans" style={{ textDecoration: 'none', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Disbursed</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>{fmt(s?.monthly?.disbursed)}</div>
-              </div>
-              <div style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+              </Link>
+              <Link to="/payment-history?filter=this_month" style={{ textDecoration: 'none', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Collected</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>{fmt(s?.monthly?.collection)}</div>
-              </div>
-              <div style={{ background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+              </Link>
+              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Interest</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#7C3AED', marginTop: 2 }}>{fmt(s?.monthly?.interestIncome)}</div>
-              </div>
-              <div style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '10px 12px', borderRadius: 10 }}>
+              </Link>
+              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Profit</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#D97706', marginTop: 2 }}>{fmt(s?.monthly?.profit)}</div>
-              </div>
+              </Link>
             </div>
           </div>
 
