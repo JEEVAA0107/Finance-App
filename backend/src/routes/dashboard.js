@@ -102,15 +102,31 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     });
 
     let monthlyInterestIncome = 0;
+    let monthlyCashPrincipal = 0;
+    let monthlyCashInterest = 0;
+
     monthlyPaymentRecords.forEach(p => {
       const loan = p.repayment?.loan;
+      const amt = p.amount || 0;
       if (!loan) return;
       const type = loan.interestType || 'FLAT';
+      
       if (type === 'FLAT') {
-        monthlyInterestIncome += (p.amount || 0);
+        if (p.paymentType === 'PRINCIPAL') {
+          monthlyCashPrincipal += amt;
+        } else {
+          monthlyInterestIncome += amt;
+          monthlyCashInterest += amt;
+        }
       } else if (type === 'FIXED_FLAT') {
         const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
-        monthlyInterestIncome += (p.amount || 0) * interestRatio;
+        const intPortion = amt * interestRatio;
+        const princPortion = amt - intPortion;
+        monthlyInterestIncome += intPortion;
+        monthlyCashInterest += intPortion;
+        monthlyCashPrincipal += princPortion;
+      } else if (type === 'WITHOUT_INTEREST') {
+        monthlyCashPrincipal += amt;
       }
     });
 
@@ -322,6 +338,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         monthly: {
           disbursed: monthlyLoans._sum.principalAmount || 0,
           collection: monthlyPayments._sum.amount || 0,
+          principalCollected: monthlyCashPrincipal,
+          interestCollected: monthlyCashInterest,
           interestIncome: monthlyInterestIncome,
           profit: monthlyInterestIncome,
         },

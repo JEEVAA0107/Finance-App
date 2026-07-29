@@ -260,9 +260,13 @@ export default function Dashboard() {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Disbursed</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#2563EB', marginTop: 2 }}>{fmt(s?.monthly?.disbursed)}</div>
               </Link>
-              <Link to="/payment-history?filter=this_month" style={{ textDecoration: 'none', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <Link to="/payment-history?filter=this_month" style={{ textDecoration: 'none', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Collected</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#059669', marginTop: 2 }}>{fmt(s?.monthly?.collection)}</div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: 6, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(16,185,129,0.2)', paddingTop: 4 }}>
+                  <span>Prin: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.principalCollected)}</b></span>
+                  <span>Int: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.interestCollected)}</b></span>
+                </div>
               </Link>
               <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '10px 12px', borderRadius: 10, cursor: 'pointer', transition: 'transform 0.15s', display: 'block' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Interest</div>
