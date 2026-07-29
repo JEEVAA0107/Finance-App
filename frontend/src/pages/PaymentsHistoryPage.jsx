@@ -293,9 +293,9 @@ export default function PaymentsHistoryPage() {
                           <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14, background: 'rgba(0,0,0,0.05)', color: 'var(--text-primary)' }}>
                             {p.repayment?.loan?.customer?.name?.charAt(0)}
                           </div>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{p.repayment?.loan?.customer?.name}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                          <div style={{ minWidth: 0, paddingRight: 8 }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.repayment?.loan?.customer?.name}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
                               <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--primary-600)' }}>{p.repayment?.loan?.loanNumber}</span>
                               {p.repayment?.loan?.customer?.phone && (
                                 <>
@@ -312,12 +312,12 @@ export default function PaymentsHistoryPage() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                           <span className={`badge ${isPrincipal ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: 10, padding: '4px 8px', borderRadius: 8 }}>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                           <span className={`badge ${isPrincipal ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: 10, padding: '4px 8px', borderRadius: 8, whiteSpace: 'nowrap' }}>
                              {p.paymentType}
                            </span>
                            <div style={{ marginTop: 6 }}>
-                             <span className="badge badge-info" style={{ fontSize: 9, opacity: 0.8 }}>{p.paymentMode}</span>
+                             <span className="badge badge-info" style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap' }}>{p.paymentMode}</span>
                            </div>
                         </div>
                       </div>
