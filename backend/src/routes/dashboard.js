@@ -159,7 +159,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       if (!loan) return;
       const type = loan.interestType || 'FLAT';
       if (type === 'FLAT') {
-        totalActualProfit += (p.amount || 0);
+        if (p.paymentType !== 'PRINCIPAL') {
+          totalActualProfit += (p.amount || 0);
+        }
       } else if (type === 'EMI') {
         const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
         totalActualProfit += (p.amount || 0) * interestRatio;
@@ -226,7 +228,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         if (!loan) return;
         const type = loan.interestType || 'FLAT';
         if (type === 'FLAT') {
-          mInterest += (p.amount || 0);
+          if (p.paymentType !== 'PRINCIPAL') {
+            mInterest += (p.amount || 0);
+          }
         } else if (type === 'EMI') {
           const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
           mInterest += (p.amount || 0) * interestRatio;
@@ -523,7 +527,9 @@ router.get('/profit', authenticate, authorize('ADMIN'), async (req, res) => {
       const type = loan.interestType || 'FLAT';
       let profit = 0;
       if (type === 'FLAT') {
-        profit = p.amount || 0;
+        if (p.paymentType !== 'PRINCIPAL') {
+          profit = p.amount || 0;
+        }
       } else if (type === 'EMI') {
         const ratio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
         profit = (p.amount || 0) * ratio;
