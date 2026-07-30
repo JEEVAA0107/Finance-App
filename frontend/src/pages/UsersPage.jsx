@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { usersAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { UserCog, Plus, Edit2, X, Shield, Phone, Mail } from 'lucide-react';
+import { UserCog, Plus, Edit2, Trash2, X, Shield, Phone, Mail } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -67,6 +67,22 @@ export default function UsersPage() {
     } catch { toast.error('Update failed'); }
   };
 
+  const deleteUser = async (user) => {
+    if (user.role === 'ADMIN') {
+      toast.error('Admin users cannot be deleted.');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to completely delete the user "${user.name}"? This action cannot be undone.`)) {
+      try {
+        await usersAPI.delete(user.id);
+        toast.success('User deleted successfully');
+        load();
+      } catch (err) {
+        toast.error(err.message || 'Delete failed');
+      }
+    }
+  };
+
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
 
   return (
@@ -121,6 +137,11 @@ export default function UsersPage() {
                     <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(u)}>
                       {u.isActive ? 'Deactivate' : 'Activate'}
                     </button>
+                    {u.role !== 'ADMIN' && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => deleteUser(u)} style={{ padding: '6px 8px', color: 'var(--danger-600)' }} title="Delete User">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

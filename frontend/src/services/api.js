@@ -93,6 +93,7 @@ export const usersAPI = {
   create: (data) => api.post('/users', data).then(extractData),
   update: (id, data) => api.patch(`/users/${id}`, data).then(extractData),
   changePassword: (id, data) => api.patch(`/users/${id}/password`, data).then(extractData),
+  delete: (id) => api.delete(`/users/${id}`).then(extractData),
 };
 
 // ─── Customers ────────────────────────────────────────────────────────────────

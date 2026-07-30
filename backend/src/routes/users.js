@@ -93,4 +93,45 @@ router.patch('/:id/password', authenticate, async (req, res) => {
   }
 });
 
+// DELETE /api/users/:id
+router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    // Prevent deletion of ADMINs
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Admin users cannot be deleted.' });
+    }
+
+    // Re-assign payments collected by this user to the admin performing the deletion
+    await prisma.payment.updateMany({
+      where: { collectedById: req.params.id },
+      data: { collectedById: req.user.id }
+    });
+
+    // Unlink this user from any loans they are assigned to as agent
+    await prisma.loan.updateMany({
+      where: { agentId: req.params.id },
+      data: { agentId: null }
+    });
+
+    // Delete audit logs created by this user
+    await prisma.auditLog.deleteMany({
+      where: { userId: req.params.id }
+    });
+
+    // Now safe to delete the user
+    await prisma.user.delete({ where: { id: req.params.id } });
+    await auditLog(req.user.id, 'DELETE_USER', 'User', req.params.id, { role: user.role, email: user.email }, req);
+    
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({ success: false, message: 'Cannot delete this user because they have associated records (e.g., active loans). Please remove those first.' });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
