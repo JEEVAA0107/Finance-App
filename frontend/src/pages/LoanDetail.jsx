@@ -315,7 +315,14 @@ export default function LoanDetail() {
                     <input className="form-input" type="number" step="0.01" max={outstanding} value={principalForm.amount} onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })} required />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Accrued Interest (₹)</label>
+                    <label className="form-label">
+                      Accrued Interest (₹) 
+                      {preclosure?.unpaidPeriods > 0 && 
+                        <span style={{color: 'var(--danger-500)', marginLeft: 6, fontSize: 11}}>
+                          ({preclosure.unpaidPeriods} {preclosure.tenureUnitStr} Unpaid)
+                        </span>
+                      }
+                    </label>
                     <input className="form-input" type="number" step="0.01" value={principalForm.accruedInterest} onChange={e => setPrincipalForm({ ...principalForm, accruedInterest: e.target.value })} disabled={!preclosure} />
                   </div>
                 </div>

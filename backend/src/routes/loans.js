@@ -169,6 +169,8 @@ router.get('/:id/preclosure', authenticate, async (req, res) => {
 
     let principalOutstanding = loan.outstandingPrincipal ?? loan.principalAmount;
     let accruedInterest = 0;
+    let unpaidPeriods = 0;
+    let tenureUnitStr = loan.tenureUnit === 'MONTHS' ? 'Months' : loan.tenureUnit === 'WEEKS' ? 'Weeks' : 'Days';
 
     if (loan.interestType === 'FLAT') {
       const today = new Date();
@@ -194,6 +196,11 @@ router.get('/:id/preclosure', authenticate, async (req, res) => {
       }, 0);
 
       accruedInterest = Math.max(0, Math.round(totalAccrued - totalInterestPaid));
+      
+      const interestPerPeriod = loan.principalAmount * rate;
+      if (interestPerPeriod > 0) {
+        unpaidPeriods = (accruedInterest / interestPerPeriod).toFixed(1);
+      }
     } else if (loan.interestType === 'EMI') {
       // For EMI, interest is already fixed. Preclosure could optionally waive future interest, but usually they pay the full remaining.
       // For simplicity, we just use the remaining unpaid interest.
@@ -205,7 +212,7 @@ router.get('/:id/preclosure', authenticate, async (req, res) => {
       accruedInterest = 0;
     }
 
-    res.json({ success: true, data: { principalOutstanding, accruedInterest } });
+    res.json({ success: true, data: { principalOutstanding, accruedInterest, unpaidPeriods, tenureUnitStr } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

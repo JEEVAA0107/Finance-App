@@ -109,7 +109,7 @@ export default function Dashboard() {
         {/* Top Right Actions */}
         <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <Link to="/customers" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
-            <Plus size={13} style={{ marginRight: 2 }}/> Cust
+            <Plus size={13} style={{ marginRight: 2 }}/> Customer
           </Link>
           {isAdmin && (
             <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>

@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { notificationsAPI } from '../services/api';
 import {
-  LayoutDashboard, Users, Landmark, HandCoins, ChevronRight,
+  LayoutDashboard, Users, Landmark, HandCoins, ChevronRight, Plus,
   FileBarChart, Shield, UserCog, LogOut, Menu, X, Settings, Bell, History
 } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export default function AppLayout() {
         { section: 'Management', items: [
           { to: '/customers', icon: Users, label: 'Customers' },
           { to: '/loans', icon: Landmark, label: 'Loans' },
-          { to: '/loans/create', icon: ChevronRight, label: 'Create Loan' },
+          { to: '/loans/create', icon: Plus, label: 'Create Loan' },
         ]},
         { section: 'Operations', items: [
           { to: '/collections', icon: HandCoins, label: 'Collections' },
@@ -64,7 +64,7 @@ export default function AppLayout() {
         { section: 'Data', items: [
           { to: '/customers', icon: Users, label: 'Customers' },
           { to: '/loans', icon: Landmark, label: 'Loans' },
-          { to: '/loans/create', icon: ChevronRight, label: 'Create Loan' },
+          { to: '/loans/create', icon: Plus, label: 'Create Loan' },
         ]},
         { section: 'Tools', items: [
           { to: '/notifications', icon: Bell, label: 'Notifications' },
