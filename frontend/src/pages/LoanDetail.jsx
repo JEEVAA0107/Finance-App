@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { loansAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 const fmtShort = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-';
@@ -19,6 +20,12 @@ export default function LoanDetail() {
   const [payingPrincipal, setPayingPrincipal] = useState(false);
   const [preclosure, setPreclosure] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleOpenPrincipalModal = async () => {
     setPrincipalForm({ amount: String(loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0), accruedInterest: '0', penaltyAmount: '0', paymentMode: 'CASH', reference: '', notes: '' });
@@ -26,8 +33,8 @@ export default function LoanDetail() {
     setPrincipalModal(true);
     try {
       const res = await loansAPI.getPreclosure(id);
-      setPreclosure(res.data);
-      setPrincipalForm(prev => ({ ...prev, accruedInterest: String(res.data.accruedInterest || 0) }));
+      setPreclosure(res);
+      setPrincipalForm(prev => ({ ...prev, accruedInterest: String(res.accruedInterest || 0) }));
     } catch (e) {
       toast.error('Failed to get preclosure details');
     }
@@ -64,11 +71,24 @@ export default function LoanDetail() {
         reference: principalForm.reference,
         notes: principalForm.notes
       });
-      toast.success(res.data?.loanStatus === 'CLOSED' || res.loanStatus === 'CLOSED' ? '✓ Loan CLOSED!' : `✓ Principal paid! Remaining: ₹${res.data?.outstandingPrincipal?.toLocaleString('en-IN')}`);
+      toast.success(res.loanStatus === 'CLOSED' ? '✓ Loan CLOSED!' : `✓ Principal paid! Remaining: ₹${res.outstandingPrincipal?.toLocaleString('en-IN')}`);
       setPrincipalModal(false);
       load();
     } catch (err) { toast.error(err.message || 'Failed'); }
     finally { setPayingPrincipal(false); }
+  };
+
+  const handleDeleteLoan = async () => {
+    setDeleting(true);
+    try {
+      await loansAPI.delete(id);
+      toast.success('Loan permanently deleted!');
+      setDeleteModal(false);
+      navigate('/loans');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete loan');
+      setDeleting(false);
+    }
   };
 
   if (loading) return <div className="loading-page"><div className="spinner" /></div>;
@@ -157,6 +177,14 @@ export default function LoanDetail() {
           <button className="btn btn-ghost" style={{ width: '100%', marginTop: 12, borderColor: 'rgba(245,158,11,0.3)', color: 'var(--warning-600)' }}
             onClick={handleOpenPrincipalModal}>
             <Banknote size={15} /> Close Loan / Pay Principal
+          </button>
+        )}
+        
+        {/* Delete Loan Button */}
+        {user?.role === 'ADMIN' && (
+          <button className="btn btn-ghost" style={{ width: '100%', marginTop: 8, borderColor: 'rgba(239,68,68,0.3)', color: 'var(--danger-600)' }}
+            onClick={() => setDeleteModal(true)}>
+            <Trash2 size={15} /> Delete Loan
           </button>
         )}
       </div>
@@ -324,6 +352,31 @@ export default function LoanDetail() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Loan Modal */}
+      {deleteModal && (
+        <div className="modal-overlay" onClick={() => !deleting && setDeleteModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ fontWeight: 700, color: 'var(--danger-600)' }}>Delete Loan Permanently?</div>
+              <button className="modal-close" onClick={() => !deleting && setDeleteModal(false)}><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: 15 }}>Are you sure you want to delete loan <b>{loan.loanNumber}</b> for <b>{loan.customer?.name}</b>?</p>
+              <div style={{ padding: '10px 14px', background: 'var(--danger-50)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)', fontSize: 13, color: 'var(--danger-700)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>This action cannot be undone. All installments, payments, and history associated with this loan will be permanently erased.</div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={() => setDeleteModal(false)} disabled={deleting}>Cancel</button>
+              <button type="button" className="btn btn-danger" onClick={handleDeleteLoan} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Yes, Delete Permanently'}
+              </button>
+            </div>
           </div>
         </div>
       )}

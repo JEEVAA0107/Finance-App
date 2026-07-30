@@ -409,8 +409,24 @@ router.patch('/:id/status', authenticate, authorize('ADMIN'), async (req, res) =
 // DELETE /api/loans/:id
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
-    await prisma.loan.update({ where: { id: req.params.id }, data: { status: 'DEFAULTED' } });
-    res.json({ success: true, message: 'Loan marked as defaulted' });
+    const loanId = req.params.id;
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } });
+    if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+
+    // Cascade delete manually
+    const repayments = await prisma.repayment.findMany({ where: { loanId }, select: { id: true } });
+    const repaymentIds = repayments.map(r => r.id);
+
+    if (repaymentIds.length > 0) {
+      await prisma.notificationLog.deleteMany({ where: { repaymentId: { in: repaymentIds } } });
+      await prisma.payment.deleteMany({ where: { repaymentId: { in: repaymentIds } } });
+      await prisma.repayment.deleteMany({ where: { id: { in: repaymentIds } } });
+    }
+    
+    await prisma.loan.delete({ where: { id: loanId } });
+    await auditLog(req.user.id, 'DELETE_LOAN', 'Loan', loanId, { loanNumber: loan.loanNumber }, req);
+
+    res.json({ success: true, message: 'Loan permanently deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
