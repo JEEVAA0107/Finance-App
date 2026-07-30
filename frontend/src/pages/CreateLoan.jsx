@@ -32,14 +32,15 @@ export default function CreateLoan() {
       const disbursed = p - deduction;
       const due = tenureVal > 0 ? (p / tenureVal) : 0;
       const isDaily = form.tenureUnit === 'DAYS';
+      const isMonthly = form.tenureUnit === 'MONTHS';
       return {
         isWithoutInterest: true,
         disbursed: disbursed,
         due: due,
         tenure: tenureVal,
         totalRepayable: p,
-        unitLabel: isDaily ? 'daily' : 'weekly',
-        unitLabelPlural: isDaily ? 'days' : 'weeks'
+        unitLabel: isMonthly ? 'monthly' : isDaily ? 'daily' : 'weekly',
+        unitLabelPlural: isMonthly ? 'months' : isDaily ? 'days' : 'weeks'
       };
     } else if (form.interestType === 'EMI') {
       const r = parseFloat(form.interestRate);
@@ -119,9 +120,6 @@ export default function CreateLoan() {
               const val = e.target.value;
               setForm(f => {
                 const next = { ...f, interestType: val };
-                if (val === 'WITHOUT_INTEREST' && f.tenureUnit === 'MONTHS') {
-                  next.tenureUnit = 'WEEKS';
-                }
                 if (val === 'EMI' && f.tenureUnit === 'DAYS') {
                   next.tenureUnit = 'MONTHS';
                 }
@@ -149,14 +147,15 @@ export default function CreateLoan() {
               <div className="form-group">
                 <label className="form-label">Collection Frequency *</label>
                 <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
+                  <option value="MONTHS">Monthly</option>
                   <option value="WEEKS">Weekly</option>
                   <option value="DAYS">Daily</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label className="form-label">{form.tenureUnit === 'DAYS' ? 'Number of Days *' : 'Number of Weeks *'}</label>
-                <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'DAYS' ? 'e.g. 100' : 'e.g. 10'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
+                <label className="form-label">{form.tenureUnit === 'MONTHS' ? 'Number of Months *' : form.tenureUnit === 'DAYS' ? 'Number of Days *' : 'Number of Weeks *'}</label>
+                <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'MONTHS' ? 'e.g. 12' : form.tenureUnit === 'DAYS' ? 'e.g. 100' : 'e.g. 10'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
               </div>
             </>
           ) : form.interestType === 'EMI' ? (
