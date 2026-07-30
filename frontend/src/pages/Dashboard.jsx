@@ -100,26 +100,33 @@ export default function Dashboard() {
   return (
     <div className="animate-in" style={{ paddingBottom: '40px' }}>
       {/* Greeting & Quick Actions */}
-      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
-          <div className="color-muted" style={{ fontSize: 13, marginTop: 2 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
+          <div className="color-muted" style={{ fontSize: 12, marginTop: 2 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
         
-        {/* Responsive Quick Actions */}
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-          <Link to="/loans/create" className="btn btn-primary btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px' }}>
-            <Plus size={16}/> New Loan
-          </Link>
-          <Link to="/collections" className="btn btn-success btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px' }}>
-            <HandCoins size={16}/> Collect
+        {/* Top Right Actions */}
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Link to="/customers" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
+            <Plus size={13} style={{ marginRight: 2 }}/> Cust
           </Link>
           {isAdmin && (
-            <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)' }}>
-               History
+            <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
+               <FileText size={13} style={{ marginRight: 2 }}/> History
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Main Quick Actions below */}
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 16, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+        <Link to="/loans/create" className="btn btn-primary btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px' }}>
+          <Plus size={16}/> New Loan
+        </Link>
+        <Link to="/collections" className="btn btn-success btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px' }}>
+          <HandCoins size={16}/> Collect
+        </Link>
       </div>
 
       {isAdmin ? (
