@@ -44,7 +44,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [chartView, setChartView] = useState('AREA'); // 'BAR' | 'AREA'
 
   // Breakdown modal states
   const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
@@ -173,24 +172,6 @@ export default function Dashboard() {
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Last 6 Months performance (மாதாந்திர வளர்ச்சி)</div>
               </div>
-              <div style={{ display: 'flex', gap: 6, background: 'var(--bg-subtle, rgba(0,0,0,0.04))', padding: 4, borderRadius: 10 }}>
-                <button 
-                  type="button"
-                  className={`btn btn-sm ${chartView === 'BAR' ? 'btn-primary' : 'btn-ghost'}`} 
-                  style={{ padding: '4px 10px', fontSize: 12, borderRadius: 8 }}
-                  onClick={() => setChartView('BAR')}
-                >
-                  <BarChart3 size={13} style={{ marginRight: 4 }} /> Bar
-                </button>
-                <button 
-                  type="button"
-                  className={`btn btn-sm ${chartView === 'AREA' ? 'btn-primary' : 'btn-ghost'}`} 
-                  style={{ padding: '4px 10px', fontSize: 12, borderRadius: 8 }}
-                  onClick={() => setChartView('AREA')}
-                >
-                  <TrendingUp size={13} style={{ marginRight: 4 }} /> Trend
-                </button>
-              </div>
             </div>
 
             <div style={{ width: '100%', height: 260, minWidth: 0, position: 'relative' }}>
@@ -214,7 +195,7 @@ export default function Dashboard() {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'var(--text-muted)' }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} dx={-10} />
                   <Tooltip 
-                    cursor={false} 
+                    cursor={{ stroke: 'rgba(0,0,0,0.2)', strokeWidth: 1, strokeDasharray: '4 4' }} 
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
@@ -237,19 +218,9 @@ export default function Dashboard() {
                   />
                   <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 20 }} iconType="circle" />
                   
-                  {chartView === 'BAR' ? (
-                    <>
-                      <Bar dataKey="disbursed" name="Disbursed (வழங்கியது)" fill="#3B82F6" radius={[8, 8, 0, 0]} maxBarSize={30} />
-                      <Bar dataKey="collected" name="Collected (வசூலானது)" fill="#10B981" radius={[8, 8, 0, 0]} maxBarSize={30} />
-                      <Bar dataKey="profit" name="Profit (லாபம்)" fill="#F59E0B" radius={[8, 8, 0, 0]} maxBarSize={30} />
-                    </>
-                  ) : (
-                    <>
-                      <Area type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorDisbursed)" />
-                      <Area type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
-                      <Area type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-                    </>
-                  )}
+                  <Area type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorDisbursed)" />
+                  <Area type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
+                  <Area type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
