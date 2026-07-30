@@ -116,10 +116,26 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
       data: { agentId: null }
     });
 
-    // Delete audit logs created by this user
-    await prisma.auditLog.deleteMany({
-      where: { userId: req.params.id }
-    });
+    // Manually cascade delete for Customer profiles
+    const customerProfiles = await prisma.customer.findMany({ where: { userId: req.params.id } });
+    for (const profile of customerProfiles) {
+      const loans = await prisma.loan.findMany({ where: { customerId: profile.id } });
+      for (const loan of loans) {
+        const repayments = await prisma.repayment.findMany({ where: { loanId: loan.id } });
+        const repaymentIds = repayments.map(r => r.id);
+        if (repaymentIds.length > 0) {
+          await prisma.payment.deleteMany({ where: { repaymentId: { in: repaymentIds } } });
+          await prisma.notificationLog.deleteMany({ where: { repaymentId: { in: repaymentIds } } });
+          await prisma.repayment.deleteMany({ where: { loanId: loan.id } });
+        }
+      }
+      await prisma.loan.deleteMany({ where: { customerId: profile.id } });
+      await prisma.notificationLog.deleteMany({ where: { customerId: profile.id } });
+    }
+
+    // Delete refresh tokens and audit logs created by this user
+    await prisma.refreshToken.deleteMany({ where: { userId: req.params.id } });
+    await prisma.auditLog.deleteMany({ where: { userId: req.params.id } });
 
     // Now safe to delete the user
     await prisma.user.delete({ where: { id: req.params.id } });
