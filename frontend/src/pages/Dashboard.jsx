@@ -183,7 +183,7 @@ export default function Dashboard() {
 
             <div style={{ width: '100%', height: 260, minWidth: 0, position: 'relative' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                   <defs>
                     <linearGradient id="colorDisbursed" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
@@ -200,7 +200,7 @@ export default function Dashboard() {
                   </defs>
                   <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(0,0,0,0.06)" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'var(--text-muted)' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} dx={-10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
                   <Tooltip 
                     cursor={{ stroke: 'rgba(0,0,0,0.2)', strokeWidth: 1, strokeDasharray: '4 4' }} 
                     content={({ active, payload, label }) => {
