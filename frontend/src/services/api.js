@@ -111,6 +111,7 @@ export const loansAPI = {
   create: (data) => api.post('/loans', data).then(extractData),
   updateStatus: (id, data) => api.patch(`/loans/${id}/status`, data).then(extractData),
   delete: (id) => api.delete(`/loans/${id}`).then(extractData),
+  getPreclosure: (id) => api.get(`/loans/${id}/preclosure`).then(extractData),
   downloadReport: () => Promise.resolve({ data: 'Report available via backend only' }),
 };
 
@@ -124,6 +125,7 @@ export const repaymentsAPI = {
 export const paymentsAPI = {
   collect: (data) => api.post('/payments', data).then(extractData),
   collectPrincipal: (data) => api.post('/payments/principal', data).then(extractData),
+  close: (data) => api.post('/payments/close', data).then(extractData),
   list: (params) => api.get('/payments', { params }).then(extractData),
 };
 

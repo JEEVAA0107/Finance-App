@@ -217,7 +217,7 @@ router.post('/principal', authenticate, async (req, res) => {
       updateData.status = 'CLOSED';
       
       const repaymentsToDelete = await prisma.repayment.findMany({
-        where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, paidAmount: 0 },
+        where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, paidAmount: 0, id: { not: linkRepayment.id } },
         select: { id: true }
       });
       
@@ -247,6 +247,129 @@ router.post('/principal', authenticate, async (req, res) => {
       let message = newOutstanding <= 0
         ? `Dear ${loan.customer.name}, your loan is now FULLY CLOSED. Principal payment of Rs. ${payAmount} received. Thank you!`
         : `Dear ${loan.customer.name}, principal payment of Rs. ${payAmount} received. Remaining: Rs. ${newOutstanding}. Thank you.`;
+      sendSMS(loan.customer.phone, message);
+    } catch (_) { /* SMS failure non-blocking */ }
+
+    res.status(201).json({ success: true, data: { payment, outstandingPrincipal: newOutstanding, loanStatus: newOutstanding <= 0 ? 'CLOSED' : 'ACTIVE' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/payments/close — Close a loan by paying Principal + Accrued Interest + Penalty
+router.post('/close', authenticate, async (req, res) => {
+  try {
+    const { loanId, principalAmount, accruedInterestAmount, penaltyAmount, paymentMode = 'CASH', reference, notes } = req.body;
+
+    if (!loanId || !principalAmount) {
+      return res.status(400).json({ success: false, message: 'loanId and principalAmount required' });
+    }
+
+    const loan = await prisma.loan.findUnique({
+      where: { id: loanId },
+      include: { customer: true, repayments: { orderBy: { installmentNo: 'desc' }, take: 1 } },
+    });
+
+    if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (loan.status === 'CLOSED') {
+      return res.status(400).json({ success: false, message: 'Loan is already closed' });
+    }
+
+    const currentOutstanding = loan.outstandingPrincipal ?? loan.principalAmount;
+    const payPrincipal = parseFloat(principalAmount);
+    const payInterest = parseFloat(accruedInterestAmount || 0);
+    const payPenalty = parseFloat(penaltyAmount || 0);
+
+    if (payPrincipal > currentOutstanding) {
+      return res.status(400).json({ success: false, message: `Principal amount exceeds outstanding of Rs.${currentOutstanding}` });
+    }
+
+    const linkRepayment = loan.repayments[0];
+    if (!linkRepayment) {
+      return res.status(400).json({ success: false, message: 'No repayment entry found to link' });
+    }
+
+    // 1. Create Accrued Interest Payment
+    if (payInterest > 0) {
+      await prisma.payment.create({
+        data: {
+          repaymentId: linkRepayment.id,
+          collectedById: req.user.id,
+          amount: payInterest,
+          paymentMode,
+          paymentType: 'INTEREST',
+          reference,
+          notes: notes ? `Accrued Interest: ${notes}` : 'Pre-closure Accrued Interest',
+        },
+      });
+    }
+
+    // 2. Create Penalty Payment
+    if (payPenalty > 0) {
+      await prisma.payment.create({
+        data: {
+          repaymentId: linkRepayment.id,
+          collectedById: req.user.id,
+          amount: payPenalty,
+          paymentMode,
+          paymentType: 'PENALTY',
+          reference,
+          notes: notes ? `Overdue Penalty: ${notes}` : 'Pre-closure Overdue Penalty',
+        },
+      });
+    }
+
+    // 3. Create Principal Payment
+    const payment = await prisma.payment.create({
+      data: {
+        repaymentId: linkRepayment.id,
+        collectedById: req.user.id,
+        amount: payPrincipal,
+        paymentMode,
+        paymentType: 'PRINCIPAL',
+        reference,
+        notes: notes || 'Principal repayment (Closure)',
+      },
+    });
+
+    const newOutstanding = round2(currentOutstanding - payPrincipal);
+    const updateData = { outstandingPrincipal: newOutstanding };
+
+    if (newOutstanding <= 0) {
+      updateData.status = 'CLOSED';
+      
+      const repaymentsToDelete = await prisma.repayment.findMany({
+        where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, paidAmount: 0, id: { not: linkRepayment.id } },
+        select: { id: true }
+      });
+      
+      if (repaymentsToDelete.length > 0) {
+        const ids = repaymentsToDelete.map(r => r.id);
+        await prisma.notificationLog.deleteMany({
+          where: { repaymentId: { in: ids } }
+        });
+        await prisma.payment.deleteMany({
+          where: { repaymentId: { in: ids } }
+        });
+        await prisma.repayment.deleteMany({
+          where: { id: { in: ids } }
+        });
+      }
+      await prisma.repayment.updateMany({
+        where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+    }
+
+    await prisma.loan.update({ where: { id: loanId }, data: updateData });
+
+    const totalCollectedNow = payPrincipal + payInterest + payPenalty;
+    await auditLog(req.user.id, 'LOAN_CLOSURE', 'Payment', payment.id, { amount: totalCollectedNow, paymentMode, type: 'CLOSURE', newOutstanding }, req);
+
+    try {
+      let message = newOutstanding <= 0
+        ? `Dear ${loan.customer.name}, your loan is now FULLY CLOSED. Total payment of Rs. ${totalCollectedNow} (Prin: ${payPrincipal}, Int: ${payInterest}, Pen: ${payPenalty}) received. Thank you!`
+        : `Dear ${loan.customer.name}, payment of Rs. ${totalCollectedNow} received. Remaining: Rs. ${newOutstanding}. Thank you.`;
       sendSMS(loan.customer.phone, message);
     } catch (_) { /* SMS failure non-blocking */ }
 

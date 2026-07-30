@@ -157,6 +157,60 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/loans/:id/preclosure
+router.get('/:id/preclosure', authenticate, async (req, res) => {
+  try {
+    const loan = await prisma.loan.findUnique({
+      where: { id: req.params.id },
+      include: { repayments: { include: { payments: true } } }
+    });
+    if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (loan.status === 'CLOSED') return res.status(400).json({ success: false, message: 'Loan is already closed' });
+
+    let principalOutstanding = loan.outstandingPrincipal ?? loan.principalAmount;
+    let accruedInterest = 0;
+
+    if (loan.interestType === 'FLAT') {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      const start = new Date(loan.startDate);
+      
+      const diffTime = Math.max(0, today - start);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Calculate daily interest rate
+      let dailyInterest = 0;
+      const rate = loan.interestRate / 100;
+      if (loan.tenureUnit === 'MONTHS') dailyInterest = (loan.principalAmount * rate) / 30;
+      else if (loan.tenureUnit === 'WEEKS') dailyInterest = (loan.principalAmount * rate) / 7;
+      else dailyInterest = (loan.principalAmount * rate);
+
+      const totalAccrued = dailyInterest * diffDays;
+      
+      // Total interest paid so far
+      const totalInterestPaid = loan.repayments.reduce((acc, r) => {
+        const intPayments = r.payments.filter(p => p.paymentType === 'INTEREST').reduce((s, p) => s + p.amount, 0);
+        return acc + intPayments;
+      }, 0);
+
+      accruedInterest = Math.max(0, Math.round(totalAccrued - totalInterestPaid));
+    } else if (loan.interestType === 'EMI') {
+      // For EMI, interest is already fixed. Preclosure could optionally waive future interest, but usually they pay the full remaining.
+      // For simplicity, we just use the remaining unpaid interest.
+      const paid = loan.repayments.reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+      const totalRemaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
+      accruedInterest = Math.max(0, totalRemaining - principalOutstanding);
+    } else {
+      // WITHOUT_INTEREST
+      accruedInterest = 0;
+    }
+
+    res.json({ success: true, data: { principalOutstanding, accruedInterest } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/loans/:id
 router.get('/:id', authenticate, async (req, res) => {
   try {

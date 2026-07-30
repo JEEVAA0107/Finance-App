@@ -15,9 +15,23 @@ export default function LoanDetail() {
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
   const [principalModal, setPrincipalModal] = useState(false);
-  const [principalForm, setPrincipalForm] = useState({ amount: '', paymentMode: 'CASH' });
+  const [principalForm, setPrincipalForm] = useState({ amount: '', accruedInterest: '', penaltyAmount: '', paymentMode: 'CASH', reference: '', notes: '' });
   const [payingPrincipal, setPayingPrincipal] = useState(false);
+  const [preclosure, setPreclosure] = useState(null);
   const [showAll, setShowAll] = useState(false);
+
+  const handleOpenPrincipalModal = async () => {
+    setPrincipalForm({ amount: String(loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0), accruedInterest: '0', penaltyAmount: '0', paymentMode: 'CASH', reference: '', notes: '' });
+    setPreclosure(null);
+    setPrincipalModal(true);
+    try {
+      const res = await loansAPI.getPreclosure(id);
+      setPreclosure(res.data);
+      setPrincipalForm(prev => ({ ...prev, accruedInterest: String(res.data.accruedInterest || 0) }));
+    } catch (e) {
+      toast.error('Failed to get preclosure details');
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -41,8 +55,16 @@ export default function LoanDetail() {
     e.preventDefault();
     setPayingPrincipal(true);
     try {
-      const res = await paymentsAPI.collectPrincipal({ loanId: id, ...principalForm, amount: parseFloat(principalForm.amount) });
-      toast.success(res.loanStatus === 'CLOSED' ? '✓ Loan CLOSED!' : `✓ Principal paid! Remaining: ₹${res.outstandingPrincipal?.toLocaleString('en-IN')}`);
+      const res = await paymentsAPI.close({ 
+        loanId: id, 
+        principalAmount: parseFloat(principalForm.amount),
+        accruedInterestAmount: parseFloat(principalForm.accruedInterest || 0),
+        penaltyAmount: parseFloat(principalForm.penaltyAmount || 0),
+        paymentMode: principalForm.paymentMode,
+        reference: principalForm.reference,
+        notes: principalForm.notes
+      });
+      toast.success(res.data?.loanStatus === 'CLOSED' || res.loanStatus === 'CLOSED' ? '✓ Loan CLOSED!' : `✓ Principal paid! Remaining: ₹${res.data?.outstandingPrincipal?.toLocaleString('en-IN')}`);
       setPrincipalModal(false);
       load();
     } catch (err) { toast.error(err.message || 'Failed'); }
@@ -133,8 +155,8 @@ export default function LoanDetail() {
         {/* Pay Principal button */}
         {!isWithoutInt && loan.status === 'ACTIVE' && outstanding > 0 && (
           <button className="btn btn-ghost" style={{ width: '100%', marginTop: 12, borderColor: 'rgba(245,158,11,0.3)', color: 'var(--warning-600)' }}
-            onClick={() => { setPrincipalModal(true); setPrincipalForm({ amount: String(outstanding), paymentMode: 'CASH' }); }}>
-            <Banknote size={15} /> Pay Principal ₹{outstanding.toLocaleString('en-IN')}
+            onClick={handleOpenPrincipalModal}>
+            <Banknote size={15} /> Close Loan / Pay Principal
           </button>
         )}
       </div>
@@ -248,7 +270,7 @@ export default function LoanDetail() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontWeight: 700 }}>Pay Principal</div>
+                <div style={{ fontWeight: 700 }}>Loan Closure / Principal Payment</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Outstanding: ₹{outstanding?.toLocaleString('en-IN')}</div>
               </div>
               <button className="modal-close" onClick={() => setPrincipalModal(false)}><X size={18} /></button>
@@ -256,13 +278,26 @@ export default function LoanDetail() {
             <form onSubmit={handlePrincipalPay}>
               <div className="modal-body">
                 <div style={{ padding: '10px 14px', background: 'var(--warning-50)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.2)', marginBottom: 14, fontSize: 12, color: 'var(--warning-600)' }}>
-                  ⚠️ Full payment will CLOSE the loan automatically.
+                  ⚠️ Paying the full outstanding principal will <b>CLOSE</b> the loan automatically.
                 </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="form-group">
+                    <label className="form-label">Principal Amount *</label>
+                    <input className="form-input" type="number" step="0.01" max={outstanding} value={principalForm.amount} onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Accrued Interest (₹)</label>
+                    <input className="form-input" type="number" step="0.01" value={principalForm.accruedInterest} onChange={e => setPrincipalForm({ ...principalForm, accruedInterest: e.target.value })} disabled={!preclosure} />
+                  </div>
+                </div>
+
                 <div className="form-group">
-                  <label className="form-label">Amount *</label>
-                  <input className="form-input" type="number" step="0.01" max={outstanding} value={principalForm.amount} onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })} required />
+                  <label className="form-label">Overdue Penalty / Extra Charges (₹) - optional</label>
+                  <input className="form-input" type="number" step="0.01" min="0" value={principalForm.penaltyAmount} onChange={e => setPrincipalForm({ ...principalForm, penaltyAmount: e.target.value })} />
                 </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
+
+                <div className="form-group">
                   <label className="form-label">Payment Mode</label>
                   <select className="form-select" value={principalForm.paymentMode} onChange={e => setPrincipalForm({ ...principalForm, paymentMode: e.target.value })}>
                     <option value="CASH">Cash</option>
@@ -271,12 +306,22 @@ export default function LoanDetail() {
                     <option value="CHEQUE">Cheque</option>
                   </select>
                 </div>
+                
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Reference / Notes (optional)</label>
+                  <input className="form-input" placeholder="UPI / Txn ID or Notes" value={principalForm.notes} onChange={e => setPrincipalForm({ ...principalForm, notes: e.target.value })} />
+                </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setPrincipalModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ background: 'linear-gradient(135deg,var(--warning-500),var(--warning-600))' }} disabled={payingPrincipal}>
-                  {payingPrincipal ? 'Processing...' : `Pay ₹${principalForm.amount || '0'}`}
-                </button>
+              <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>
+                  Total: ₹{((parseFloat(principalForm.amount || 0) + parseFloat(principalForm.accruedInterest || 0) + parseFloat(principalForm.penaltyAmount || 0)).toLocaleString('en-IN'))}
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setPrincipalModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: 'linear-gradient(135deg,var(--warning-500),var(--warning-600))' }} disabled={payingPrincipal || !preclosure}>
+                    {payingPrincipal ? 'Processing...' : 'Confirm Closure'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
