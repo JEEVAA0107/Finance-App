@@ -131,7 +131,7 @@ export default function CollectionPage() {
           <option value="ALL">All Loan Types</option>
           <option value="FLAT">Regular Interest</option>
           <option value="WITHOUT_INTEREST">Deduction Based</option>
-          <option value="FIXED_FLAT">Reducing Principal</option>
+          <option value="EMI">Reducing Principal</option>
         </select>
       </div>
 

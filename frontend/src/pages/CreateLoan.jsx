@@ -41,17 +41,19 @@ export default function CreateLoan() {
         unitLabel: isDaily ? 'daily' : 'weekly',
         unitLabelPlural: isDaily ? 'days' : 'weeks'
       };
-    } else if (form.interestType === 'FIXED_FLAT') {
-      const r_flat = parseFloat(form.interestRate);
+    } else if (form.interestType === 'EMI') {
+      const r = parseFloat(form.interestRate);
       const tenureVal = parseInt(form.tenure || 12);
-      if (isNaN(r_flat)) return null;
+      if (isNaN(r)) return null;
       
-      const totalInterest = p * (r_flat / 100);
+      const interestPerPeriod = p * (r / 100);
+      const principalPerPeriod = tenureVal > 0 ? p / tenureVal : 0;
+      const installmentDue = interestPerPeriod + principalPerPeriod;
+      const totalInterest = interestPerPeriod * tenureVal;
       const totalPayable = p + totalInterest;
-      const installmentDue = tenureVal > 0 ? totalPayable / tenureVal : 0;
       
       return {
-        isFixedFlat: true,
+        isEMI: true,
         installmentDue: installmentDue,
         totalPayable: totalPayable,
         totalInterest: totalInterest,
@@ -76,11 +78,11 @@ export default function CreateLoan() {
     setLoading(true);
     try {
       const isWithoutInterest = form.interestType === 'WITHOUT_INTEREST';
-      const isFixedFlat = form.interestType === 'FIXED_FLAT';
+      const isEMI = form.interestType === 'EMI';
       const principal = parseFloat(form.principalAmount);
       const fee = isWithoutInterest ? parseFloat(form.advanceDeduction || 0) : 0;
       const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate);
-      const tenureVal = (isWithoutInterest || isFixedFlat) ? parseInt(form.tenure) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
+      const tenureVal = (isWithoutInterest || isEMI) ? parseInt(form.tenure) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
 
       const res = await loansAPI.create({
         ...form,
@@ -120,7 +122,7 @@ export default function CreateLoan() {
                 if (val === 'WITHOUT_INTEREST' && f.tenureUnit === 'MONTHS') {
                   next.tenureUnit = 'WEEKS';
                 }
-                if (val === 'FIXED_FLAT' && f.tenureUnit === 'DAYS') {
+                if (val === 'EMI' && f.tenureUnit === 'DAYS') {
                   next.tenureUnit = 'MONTHS';
                 }
                 return next;
@@ -128,7 +130,7 @@ export default function CreateLoan() {
             }}>
               <option value="FLAT">Regular Flat Interest</option>
               <option value="WITHOUT_INTEREST">Deduction Based (Without Interest)</option>
-              <option value="FIXED_FLAT">Fixed Interest with Reducing Principal</option>
+              <option value="EMI">EMI</option>
             </select>
           </div>
 
@@ -157,11 +159,11 @@ export default function CreateLoan() {
                 <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'DAYS' ? 'e.g. 100' : 'e.g. 10'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
               </div>
             </>
-          ) : form.interestType === 'FIXED_FLAT' ? (
+          ) : form.interestType === 'EMI' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Interest Rate (% flat total) *</label>
-                <input className="form-input" type="number" step="0.1" min="0" placeholder="e.g. 10" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
+                <label className="form-label">Interest Rate (% per period) *</label>
+                <input className="form-input" type="number" step="0.1" min="0" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
               </div>
 
               <div className="form-group">
@@ -225,7 +227,7 @@ export default function CreateLoan() {
                 Customer repays total **₹{preview.totalRepayable.toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
               </div>
             </div>
-          ) : preview.isFixedFlat ? (
+          ) : preview.isEMI ? (
             <div className="card" style={{ marginTop: 12, background: 'rgba(139,92,246,0.08)', borderColor: 'rgba(139,92,246,0.2)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, textAlign: 'center' }}>
                 <div>

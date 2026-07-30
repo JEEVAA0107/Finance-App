@@ -58,7 +58,7 @@ export default function LoansPage() {
           <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(139, 92, 246, 0.15)' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு)</div>
             <div style={{ fontWeight: 800, fontSize: 14, color: '#7C3AED' }}>
-              {fmtAmt(loans.filter(l => l.interestType === 'FIXED_FLAT').reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
+              {fmtAmt(loans.filter(l => l.interestType === 'EMI').reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
             </div>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function LoansPage() {
             <option value="ALL">All Loan Types</option>
             <option value="FLAT">Regular Interest</option>
             <option value="WITHOUT_INTEREST">Deduction Based</option>
-            <option value="FIXED_FLAT">Reducing Principal</option>
+            <option value="EMI">Reducing Principal</option>
           </select>
           <ChevronDown 
             size={15} 
@@ -168,7 +168,7 @@ export default function LoansPage() {
               .filter(r => r.status === 'OVERDUE' || (r.status === 'PENDING' && new Date(r.dueDate) <= startOfToday) || r.status === 'PARTIAL')
               .reduce((acc, r) => acc + Math.max(0, (r.dueAmount || 0) - (r.paidAmount || 0)), 0);
             outstanding = (loan.outstandingPrincipal ?? loan.principalAmount) + unpaidDueInt;
-          } else if (type === 'WITHOUT_INTEREST' || type === 'FIXED_FLAT') {
+          } else if (type === 'WITHOUT_INTEREST' || type === 'EMI') {
             const totalCollected = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
             outstanding = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
           }

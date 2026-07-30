@@ -14,13 +14,13 @@ function fmt(val) {
 const LOAN_TYPE_LABELS = {
   ALL: 'All Types',
   FLAT: 'வட்டி கடன் (Regular Interest)',
-  FIXED_FLAT: 'அசலோடு தவணை (Reducing)',
+  EMI: 'அசலோடு தவணை (Reducing)',
   WITHOUT_INTEREST: 'கழித்து தருவது (Deduction)',
 };
 
 const LOAN_TYPE_COLORS = {
   FLAT: { bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.18)', text: '#6366f1', badge: 'rgba(99,102,241,0.12)' },
-  FIXED_FLAT: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.18)', text: '#059669', badge: 'rgba(16,185,129,0.12)' },
+  EMI: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.18)', text: '#059669', badge: 'rgba(16,185,129,0.12)' },
   WITHOUT_INTEREST: { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.18)', text: '#d97706', badge: 'rgba(245,158,11,0.12)' },
 };
 
@@ -73,7 +73,7 @@ export default function ProfitPage() {
 
   const typeSummaryCards = [
     { key: 'FLAT', label: 'வட்டி கடன்', sublabel: 'Regular Interest' },
-    { key: 'FIXED_FLAT', label: 'அசலோடு தவணை', sublabel: 'Reducing Principal' },
+    { key: 'EMI', label: 'அசலோடு தவணை', sublabel: 'Reducing Principal' },
     { key: 'WITHOUT_INTEREST', label: 'கழித்து தருவது', sublabel: 'Deduction Based' },
   ];
 
@@ -124,7 +124,7 @@ export default function ProfitPage() {
                 transition: 'all 0.15s',
               }}
             >
-              {key === 'ALL' ? 'All Types' : key === 'FLAT' ? 'வட்டி கடன்' : key === 'FIXED_FLAT' ? 'அசலோடு தவணை' : 'கழித்து தருவது'}
+              {key === 'ALL' ? 'All Types' : key === 'FLAT' ? 'வட்டி கடன்' : key === 'EMI' ? 'அசலோடு தவணை' : 'கழித்து தருவது'}
             </button>
           ))}
         </div>
@@ -265,7 +265,7 @@ export default function ProfitPage() {
               <div>
                 {data.entries.map((entry, i) => {
                   const c = LOAN_TYPE_COLORS[entry.loanType] || LOAN_TYPE_COLORS.FLAT;
-                  const typeLabel = entry.loanType === 'FLAT' ? 'வட்டி கடன்' : entry.loanType === 'FIXED_FLAT' ? 'அசலோடு தவணை' : 'கழித்து தருவது';
+                  const typeLabel = entry.loanType === 'FLAT' ? 'வட்டி கடன்' : entry.loanType === 'EMI' ? 'அசலோடு தவணை' : 'கழித்து தருவது';
                   return (
                     <div
                       key={entry.loanId + i}

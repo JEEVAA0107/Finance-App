@@ -61,7 +61,7 @@ function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, ten
 async function autoExtendIfNeeded(loanId) {
   const loan = await prisma.loan.findUnique({ where: { id: loanId } });
   if (!loan || loan.status !== 'ACTIVE') return;
-  if (loan.interestType === 'WITHOUT_INTEREST' || loan.interestType === 'FIXED_FLAT') return; // Fixed tenure, no auto-extend
+  if (loan.interestType === 'WITHOUT_INTEREST' || loan.interestType === 'EMI') return; // Fixed tenure, no auto-extend
 
   // Count unpaid installments
   const unpaidCount = await prisma.repayment.count({
@@ -201,16 +201,16 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       installmentAmount = principalPerPeriod;
       totalPayable = parseFloat(principalAmount);
       totalInterest = 0;
-    } else if (interestType === 'FIXED_FLAT') {
+    } else if (interestType === 'EMI') {
       batchSize = tenure ? parseInt(tenure) : getBatchSize(tenureUnit);
-      const r_flat = parseFloat(interestRate);
+      const r_per_period = parseFloat(interestRate);
       
-      totalInterest = parseFloat(principalAmount) * (r_flat / 100);
-      totalPayable = parseFloat(principalAmount) + totalInterest;
-      installmentAmount = batchSize > 0 ? totalPayable / batchSize : 0;
-      
+      interestPerPeriod = batchSize > 0 ? parseFloat(principalAmount) * (r_per_period / 100) : 0;
       principalPerPeriod = batchSize > 0 ? parseFloat(principalAmount) / batchSize : 0;
-      interestPerPeriod = batchSize > 0 ? totalInterest / batchSize : 0;
+      installmentAmount = interestPerPeriod + principalPerPeriod;
+      
+      totalInterest = interestPerPeriod * batchSize;
+      totalPayable = parseFloat(principalAmount) + totalInterest;
     } else {
       batchSize = getBatchSize(tenureUnit);
       interestPerPeriod = parseFloat(principalAmount) * (parseFloat(interestRate) / 100);

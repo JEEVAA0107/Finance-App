@@ -48,7 +48,7 @@ export default function Dashboard() {
 
   // Breakdown modal states
   const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
-  const [modalLoanType, setModalLoanType] = useState('ALL'); // 'ALL' | 'FLAT' | 'WITHOUT_INTEREST' | 'FIXED_FLAT'
+  const [modalLoanType, setModalLoanType] = useState('ALL'); // 'ALL' | 'FLAT' | 'WITHOUT_INTEREST' | 'EMI'
   const [breakdownLoans, setBreakdownLoans] = useState([]);
   const [loadingLoans, setLoadingLoans] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -434,27 +434,27 @@ export default function Dashboard() {
 
                   {/* Reducing Principal Card */}
                   <div 
-                    onClick={() => setModalLoanType('FIXED_FLAT')}
+                    onClick={() => setModalLoanType('EMI')}
                     style={{ 
-                      background: modalLoanType === 'FIXED_FLAT' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(124, 58, 237, 0.04)', 
-                      border: modalLoanType === 'FIXED_FLAT' ? '2px solid #7C3AED' : '1px solid rgba(124, 58, 237, 0.18)', 
+                      background: modalLoanType === 'EMI' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(124, 58, 237, 0.04)', 
+                      border: modalLoanType === 'EMI' ? '2px solid #7C3AED' : '1px solid rgba(124, 58, 237, 0.18)', 
                       padding: '10px 12px', 
                       borderRadius: 12, 
                       cursor: 'pointer',
-                      boxShadow: modalLoanType === 'FIXED_FLAT' ? '0 2px 8px rgba(124, 58, 237, 0.2)' : 'none',
+                      boxShadow: modalLoanType === 'EMI' ? '0 2px 8px rgba(124, 58, 237, 0.2)' : 'none',
                       transition: 'all 0.2s ease'
                     }}
                   >
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Reducing (அசலோடு)</span>
-                      {modalLoanType === 'FIXED_FLAT' && <span style={{ fontSize: 9, background: '#7C3AED', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
+                      {modalLoanType === 'EMI' && <span style={{ fontSize: 9, background: '#7C3AED', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
                     </div>
                     <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 2 }}>
-                      {fmt(s?.outstandingByLoanType?.FIXED_FLAT?.amount)}
+                      {fmt(s?.outstandingByLoanType?.EMI?.amount)}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 4, fontSize: 10, color: 'var(--text-muted)', borderTop: '1px dashed rgba(124, 58, 237, 0.2)', paddingTop: 4 }}>
-                      <div>Principal: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.principal)}</b></div>
-                      <div>Interest: <b>{fmt(s?.outstandingByLoanType?.FIXED_FLAT?.interest)}</b></div>
+                      <div>Principal: <b>{fmt(s?.outstandingByLoanType?.EMI?.principal)}</b></div>
+                      <div>Interest: <b>{fmt(s?.outstandingByLoanType?.EMI?.interest)}</b></div>
                     </div>
                   </div>
                 </div>
@@ -465,7 +465,7 @@ export default function Dashboard() {
                     ['ALL', 'All Types'],
                     ['FLAT', 'Regular Interest (வட்டி)'],
                     ['WITHOUT_INTEREST', 'Deduction Based (கழித்து)'],
-                    ['FIXED_FLAT', 'Reducing Principal (அசலோடு)']
+                    ['EMI', 'Reducing Principal (அசலோடு)']
                   ].map(([val, label]) => (
                     <button 
                       key={val} 

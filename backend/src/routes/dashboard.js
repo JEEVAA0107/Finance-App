@@ -118,7 +118,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
           monthlyInterestIncome += amt;
           monthlyCashInterest += amt;
         }
-      } else if (type === 'FIXED_FLAT') {
+      } else if (type === 'EMI') {
         const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
         const intPortion = amt * interestRatio;
         const princPortion = amt - intPortion;
@@ -160,7 +160,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       const type = loan.interestType || 'FLAT';
       if (type === 'FLAT') {
         totalActualProfit += (p.amount || 0);
-      } else if (type === 'FIXED_FLAT') {
+      } else if (type === 'EMI') {
         const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
         totalActualProfit += (p.amount || 0) * interestRatio;
       }
@@ -227,7 +227,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         const type = loan.interestType || 'FLAT';
         if (type === 'FLAT') {
           mInterest += (p.amount || 0);
-        } else if (type === 'FIXED_FLAT') {
+        } else if (type === 'EMI') {
           const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
           mInterest += (p.amount || 0) * interestRatio;
         }
@@ -268,7 +268,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const outstandingByLoanType = {
       FLAT: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Regular Interest (வட்டி)' },
       WITHOUT_INTEREST: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Deduction Based (கழித்து தருவது)' },
-      FIXED_FLAT: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Reducing Principal (அசலோடு தவணை)' },
+      EMI: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Reducing Principal (அசலோடு தவணை)' },
     };
 
     activeLoanRecords.forEach(loan => {
@@ -294,7 +294,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         princRemaining = totalRemaining;
         intRemaining = 0;
       } else {
-        // FIXED_FLAT (Reducing Principal)
+        // EMI (Reducing Principal)
         const paid = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
         const totalRemaining = Math.max(0, (loan.totalPayable || loan.principalAmount) - paid);
         princRemaining = Math.min(totalRemaining, loan.outstandingPrincipal ?? loan.principalAmount);
@@ -513,7 +513,7 @@ router.get('/profit', authenticate, authorize('ADMIN'), async (req, res) => {
     const profitEntries = [];
     let totalProfit = 0;
 
-    // FLAT & FIXED_FLAT: profit comes from payments
+    // FLAT & EMI: profit comes from payments
     const byLoan = {};
     payments.forEach(p => {
       const loan = p.repayment?.loan;
@@ -522,7 +522,7 @@ router.get('/profit', authenticate, authorize('ADMIN'), async (req, res) => {
       let profit = 0;
       if (type === 'FLAT') {
         profit = p.amount || 0;
-      } else if (type === 'FIXED_FLAT') {
+      } else if (type === 'EMI') {
         const ratio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
         profit = (p.amount || 0) * ratio;
       } else {
@@ -568,7 +568,7 @@ router.get('/profit', authenticate, authorize('ADMIN'), async (req, res) => {
     totalProfit = Math.round(totalProfit * 100) / 100;
 
     // Summary by loan type
-    const byType = { FLAT: 0, FIXED_FLAT: 0, WITHOUT_INTEREST: 0 };
+    const byType = { FLAT: 0, EMI: 0, WITHOUT_INTEREST: 0 };
     profitEntries.forEach(e => {
       byType[e.loanType] = Math.round(((byType[e.loanType] || 0) + e.collectedInterest) * 100) / 100;
     });
