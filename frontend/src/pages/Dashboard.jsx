@@ -147,10 +147,10 @@ export default function Dashboard() {
           {/* Section 1: Overall Financials */}
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Overall Financials</div>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
-            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
+            <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed (வழங்கியது)" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல்)" value={fmt(s?.outstandingPrincipal)} color="purple" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
-            <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed (வழங்கியது)" value={fmt(s?.totalDisbursed)} color="green" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
             <StatCard to="/collections" icon={HandCoins} label="Total Collected (வசூலானது)" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/profit" icon={TrendingUp} label="Total Profit (லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
@@ -246,10 +246,7 @@ export default function Dashboard() {
                   <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Int: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.interestCollected)}</b></span>
                 </div>
               </Link>
-              <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Interest</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 4 }}>{fmt(s?.monthly?.interestIncome)}</div>
-              </Link>
+
               <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Profit</div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: '#D97706', marginTop: 4 }}>{fmt(s?.monthly?.profit)}</div>
