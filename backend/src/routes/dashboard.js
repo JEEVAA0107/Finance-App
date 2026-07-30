@@ -491,23 +491,25 @@ router.get('/profit', authenticate, authorize('ADMIN'), async (req, res) => {
     });
 
     // Deduction loans created in date range (interest realized at disbursement)
-    const deductionLoans = await prisma.loan.findMany({
-      where: {
-        disbursedAt: { gte: startDate, lte: endDate },
-        interestType: 'WITHOUT_INTEREST',
-        ...loanTypeFilter
-      },
-      select: {
-        id: true,
-        loanNumber: true,
-        interestType: true,
-        principalAmount: true,
-        totalInterest: true,
-        processingFee: true,
-        disbursedAt: true,
-        customer: { select: { name: true, phone: true } }
-      }
-    });
+    let deductionLoans = [];
+    if (!loanType || loanType === 'ALL' || loanType === 'WITHOUT_INTEREST') {
+      deductionLoans = await prisma.loan.findMany({
+        where: {
+          disbursedAt: { gte: startDate, lte: endDate },
+          interestType: 'WITHOUT_INTEREST'
+        },
+        select: {
+          id: true,
+          loanNumber: true,
+          interestType: true,
+          principalAmount: true,
+          totalInterest: true,
+          processingFee: true,
+          disbursedAt: true,
+          customer: { select: { name: true, phone: true } }
+        }
+      });
+    }
 
     // Build profit entries
     const profitEntries = [];
