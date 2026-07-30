@@ -34,11 +34,24 @@ router.get('/me', authenticate, async (req, res) => {
 router.get('/emergency-reset', async (req, res) => {
   try {
     const hash = await bcrypt.hash('Admin@123456', 10);
-    await prisma.user.updateMany({
-      where: { phone: '6380372501' },
-      data: { passwordHash: hash }
-    });
-    res.json({ success: true, message: 'Password reset to Admin@123456 for 6380372501' });
+    let admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    if (admin) {
+      await prisma.user.update({
+        where: { id: admin.id },
+        data: { passwordHash: hash, phone: '9999999999' }
+      });
+    } else {
+      await prisma.user.create({
+        data: {
+          name: 'Super Admin',
+          email: 'admin@loanflow.com',
+          phone: '9999999999',
+          passwordHash: hash,
+          role: 'ADMIN'
+        }
+      });
+    }
+    res.json({ success: true, message: 'Admin phone set to 9999999999, password Admin@123456' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
