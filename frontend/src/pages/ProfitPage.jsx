@@ -13,9 +13,9 @@ function fmt(val) {
 
 const LOAN_TYPE_LABELS = {
   ALL: 'All Types',
-  FLAT: 'வட்டி கடன் (Regular Interest)',
-  EMI: 'அசலோடு தவணை (Reducing)',
-  WITHOUT_INTEREST: 'கழித்து தருவது (Deduction)',
+  FLAT: 'Regular Flat Interest (வட்டி கடன்)',
+  EMI: 'EMI (அசலோடு தவணை)',
+  WITHOUT_INTEREST: 'Deduction Based (கந்து வட்டி)',
 };
 
 const LOAN_TYPE_COLORS = {
@@ -71,10 +71,17 @@ export default function ProfitPage() {
     }
   }, [load, period, dateFrom, dateTo]);
 
+  const loanTypeOptions = [
+    { key: 'ALL', label: 'All Types', sublabel: 'View Everything' },
+    { key: 'FLAT', label: 'Regular Flat Interest', sublabel: '(வட்டி கடன்)' },
+    { key: 'EMI', label: 'EMI', sublabel: '(அசலோடு தவணை)' },
+    { key: 'WITHOUT_INTEREST', label: 'Deduction Based', sublabel: '(கந்து வட்டி)' },
+  ];
+
   const typeSummaryCards = [
-    { key: 'FLAT', label: 'வட்டி கடன்', sublabel: 'Regular Interest' },
-    { key: 'EMI', label: 'அசலோடு தவணை', sublabel: 'Reducing Principal' },
-    { key: 'WITHOUT_INTEREST', label: 'கழித்து தருவது', sublabel: 'Deduction Based' },
+    { key: 'FLAT', label: 'Regular Flat Interest', sublabel: '(வட்டி கடன்)' },
+    { key: 'EMI', label: 'EMI', sublabel: '(அசலோடு தவணை)' },
+    { key: 'WITHOUT_INTEREST', label: 'Deduction Based', sublabel: '(கந்து வட்டி)' },
   ];
 
   return (
@@ -107,24 +114,24 @@ export default function ProfitPage() {
         {/* Loan Type Tabs */}
         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6 }}>Loan Type (கடன் வகை)</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-          {Object.entries(LOAN_TYPE_LABELS).map(([key, label]) => (
+          {loanTypeOptions.map(({ key, label, sublabel }) => (
             <button
               key={key}
               type="button"
               onClick={() => setLoanType(key)}
               style={{
-                padding: '5px 12px',
-                borderRadius: 20,
+                padding: '8px 12px',
+                borderRadius: 12,
                 border: `1.5px solid ${loanType === key ? (LOAN_TYPE_COLORS[key]?.text || 'var(--primary-400)') : 'var(--border-subtle)'}`,
                 background: loanType === key ? (LOAN_TYPE_COLORS[key]?.badge || 'rgba(99,102,241,0.1)') : 'transparent',
                 color: loanType === key ? (LOAN_TYPE_COLORS[key]?.text || 'var(--primary-400)') : 'var(--text-muted)',
-                fontSize: 12,
-                fontWeight: loanType === key ? 700 : 500,
+                textAlign: 'left',
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
             >
-              {key === 'ALL' ? 'All Types' : key === 'FLAT' ? 'வட்டி கடன்' : key === 'EMI' ? 'அசலோடு தவணை' : 'கழித்து தருவது'}
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>{label}</div>
+              <div style={{ fontSize: 10, opacity: 0.8 }}>{sublabel}</div>
             </button>
           ))}
         </div>
@@ -265,7 +272,7 @@ export default function ProfitPage() {
               <div>
                 {data.entries.map((entry, i) => {
                   const c = LOAN_TYPE_COLORS[entry.loanType] || LOAN_TYPE_COLORS.FLAT;
-                  const typeLabel = entry.loanType === 'FLAT' ? 'வட்டி கடன்' : entry.loanType === 'EMI' ? 'அசலோடு தவணை' : 'கழித்து தருவது';
+                  const typeLabel = entry.loanType === 'FLAT' ? 'Regular Flat Interest (வட்டி கடன்)' : entry.loanType === 'EMI' ? 'EMI (அசலோடு தவணை)' : 'Deduction Based (கந்து வட்டி)';
                   return (
                     <div
                       key={entry.loanId + i}

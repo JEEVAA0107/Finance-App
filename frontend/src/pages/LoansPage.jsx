@@ -44,19 +44,19 @@ export default function LoansPage() {
       {filter === 'ACTIVE' && loans.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 14 }}>
           <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(59, 130, 246, 0.15)' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Interest (வட்டி)</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Regular Flat Interest (வட்டி கடன்)</div>
             <div style={{ fontWeight: 800, fontSize: 14, color: '#2563EB' }}>
               {fmtAmt(loans.filter(l => l.interestType === 'FLAT' || !l.interestType).reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
             </div>
           </div>
           <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கழித்து)</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Deduction Based (கந்து வட்டி)</div>
             <div style={{ fontWeight: 800, fontSize: 14, color: '#059669' }}>
               {fmtAmt(loans.filter(l => l.interestType === 'WITHOUT_INTEREST').reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
             </div>
           </div>
           <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(139, 92, 246, 0.15)' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Reducing Principal (அசலோடு)</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>EMI (அசலோடு தவணை)</div>
             <div style={{ fontWeight: 800, fontSize: 14, color: '#7C3AED' }}>
               {fmtAmt(loans.filter(l => l.interestType === 'EMI').reduce((acc, l) => acc + (l.outstandingPrincipal ?? l.principalAmount), 0))}
             </div>
@@ -92,9 +92,9 @@ export default function LoansPage() {
             onChange={e => setLoanTypeFilter(e.target.value)}
           >
             <option value="ALL">All Loan Types</option>
-            <option value="FLAT">Regular Interest</option>
-            <option value="WITHOUT_INTEREST">Deduction Based</option>
-            <option value="EMI">Reducing Principal</option>
+            <option value="FLAT">Regular Flat Interest (வட்டி கடன்)</option>
+            <option value="WITHOUT_INTEREST">Deduction Based (கந்து வட்டி)</option>
+            <option value="EMI">EMI (அசலோடு தவணை)</option>
           </select>
           <ChevronDown 
             size={15} 

@@ -129,9 +129,9 @@ export default function CollectionPage() {
           onChange={e => setLoanType(e.target.value)}
         >
           <option value="ALL">All Loan Types</option>
-          <option value="FLAT">Regular Interest</option>
-          <option value="WITHOUT_INTEREST">Deduction Based</option>
-          <option value="EMI">Reducing Principal</option>
+          <option value="FLAT">Regular Flat Interest (வட்டி கடன்)</option>
+          <option value="WITHOUT_INTEREST">Deduction Based (கந்து வட்டி)</option>
+          <option value="EMI">EMI (அசலோடு தவணை)</option>
         </select>
       </div>
 
