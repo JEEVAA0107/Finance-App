@@ -11,6 +11,7 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP', latitude: null, longitude: null });
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -101,15 +102,18 @@ export default function CustomersPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!editCustomer && !form.idProofUrl) {
       toast.error('Please upload an ID proof image (Aadhar / PAN / Driving License)');
       return;
     }
+    setIsSubmitting(true);
     try {
       editCustomer ? await customersAPI.update(editCustomer.id, form) : await customersAPI.create(form);
       toast.success(editCustomer ? 'Updated!' : 'Customer added!');
       setShowModal(false); load();
     } catch (err) { toast.error(err.message || 'Failed'); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleDelete = async (c) => {
@@ -306,8 +310,10 @@ export default function CustomersPage() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editCustomer ? 'Update' : 'Add Customer'}</button>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)} disabled={isSubmitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : editCustomer ? 'Update' : 'Add Customer'}
+                </button>
               </div>
             </form>
           </div>

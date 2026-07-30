@@ -128,9 +128,9 @@ export default function CreateLoan() {
                 return next;
               });
             }}>
-              <option value="FLAT">Regular Flat Interest</option>
-              <option value="WITHOUT_INTEREST">Deduction Based (Without Interest)</option>
-              <option value="EMI">EMI</option>
+              <option value="FLAT">Regular Flat Interest (வட்டி கடன்)</option>
+              <option value="WITHOUT_INTEREST">Deduction Based (கந்து வட்டி)</option>
+              <option value="EMI">EMI (அசலோடு தவணை)</option>
             </select>
           </div>
 
