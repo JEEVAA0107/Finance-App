@@ -377,29 +377,27 @@ router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res)
     const paymentWhere = { collectedAt: { gte: today } };
     if (agentId) paymentWhere.collectedById = agentId;
 
-    const [assignedLoans, todayDue, collectedToday] = await Promise.all([
-      prisma.loan.count({ where: loanWhere }),
-      prisma.repayment.findMany({
-        where: repaymentWhere,
-        include: {
-          loan: { select: { loanNumber: true, customer: { select: { name: true, phone: true, address: true } } } },
-        },
-        orderBy: { dueDate: 'asc' },
-        take: 50,
-      }),
+    const paymentWhereAll = {};
+    if (agentId) paymentWhereAll.collectedById = agentId;
+
+    const [collectedToday, totalCollected] = await Promise.all([
       prisma.payment.aggregate({
         where: paymentWhere,
         _sum: { amount: true },
         _count: true,
       }),
+      prisma.payment.aggregate({
+        where: paymentWhereAll,
+        _sum: { amount: true },
+        _count: true,
+      })
     ]);
 
     res.json({
       success: true,
       data: {
-        assignedLoans,
-        todayDue,
         collectedToday: { amount: collectedToday._sum.amount || 0, count: collectedToday._count },
+        totalCollected: { amount: totalCollected._sum.amount || 0, count: totalCollected._count },
       },
     });
   } catch (error) {

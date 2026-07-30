@@ -259,49 +259,30 @@ export default function Dashboard() {
         <>
           {/* Default Agent View */}
           <div className="stats-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <Link to="/loans" className="stat-card blue" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div className="stat-icon blue"><Landmark size={18} /></div>
-              <div className="stat-value">{a?.assignedLoans || 0}</div>
-              <div className="stat-label">Assigned Loans</div>
-            </Link>
             <Link to="/collections" className="stat-card green" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div className="stat-icon green"><IndianRupee size={18} /></div>
-              <div className="stat-value">{fmt(a?.collectedToday?.amount || 0)}</div>
-              <div className="stat-label">Collected Today</div>
+              <div className="stat-icon green" style={{ marginBottom: 10 }}><IndianRupee size={18} /></div>
+              <div className="stat-value" style={{ fontSize: '1.2rem', fontWeight: 800 }}>{fmt(a?.collectedToday?.amount || 0)}</div>
+              <div className="stat-label" style={{ fontSize: '11px' }}>Collected Today</div>
+            </Link>
+            <Link to="/collections" className="stat-card blue" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="stat-icon blue" style={{ marginBottom: 10 }}><Landmark size={18} /></div>
+              <div className="stat-value" style={{ fontSize: '1.2rem', fontWeight: 800 }}>{fmt(a?.totalCollected?.amount || 0)}</div>
+              <div className="stat-label" style={{ fontSize: '11px' }}>Total Collected</div>
             </Link>
           </div>
-
-          {a?.todayDue?.length > 0 && (
-            <div className="card">
-              <div className="card-header">
-                <div className="card-title">Today's Due</div>
-                <span className="badge badge-warning">{a.todayDue.length}</span>
-              </div>
-              {a.todayDue.slice(0, 5).map(item => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div className="sidebar-avatar" style={{ width: 34, height: 34, fontSize: 13 }}>{item.loan?.customer?.name?.charAt(0)}</div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{item.loan?.customer?.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.loan?.loanNumber}</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: item.status === 'PAID' ? 'var(--accent-400)' : 'var(--warning-400)' }}>₹{item.dueAmount?.toLocaleString('en-IN')}</div>
-                    <span className={`badge ${item.status === 'PAID' ? 'badge-success' : item.status === 'OVERDUE' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: 9 }}>{item.status}</span>
-                  </div>
-                </div>
-              ))}
+          
+          <div className="stats-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            <div className="stat-card orange" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="stat-icon orange" style={{ marginBottom: 10 }}><Users size={18} /></div>
+              <div className="stat-value" style={{ fontSize: '1.2rem', fontWeight: 800 }}>{a?.collectedToday?.count || 0}</div>
+              <div className="stat-label" style={{ fontSize: '11px' }}>Customers Seen Today</div>
             </div>
-          )}
-
-          {a?.todayDue?.length === 0 && (
-            <div className="card" style={{ textAlign: 'center', padding: '24px 16px' }}>
-              <CheckCircle size={36} style={{ color: 'var(--accent-400)', opacity: 0.6, marginBottom: 8 }} />
-              <div style={{ fontWeight: 600, fontSize: 14 }}>All clear today!</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No collections due</div>
+            <div className="stat-card purple" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="stat-icon purple" style={{ marginBottom: 10 }}><CheckCircle size={18} /></div>
+              <div className="stat-value" style={{ fontSize: '1.2rem', fontWeight: 800 }}>{a?.totalCollected?.count || 0}</div>
+              <div className="stat-label" style={{ fontSize: '11px' }}>Total Collections Made</div>
             </div>
-          )}
+          </div>
         </>
       )}
 
