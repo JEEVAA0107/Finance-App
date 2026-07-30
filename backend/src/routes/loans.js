@@ -32,7 +32,11 @@ function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, ten
 
   for (let i = 0; i < count; i++) {
     const dueDate = new Date(startFrom);
-    const offset = i + 1; // offset from startFrom
+    
+    // If it's the very first batch of the loan, the first installment starts ON the start date (offset 0).
+    // If it's an auto-extended batch, it continues from the previous installment's due date (offset 1).
+    const offset = (startNo === 1) ? i : (i + 1);
+
     if (tenureUnit === 'MONTHS') dueDate.setMonth(dueDate.getMonth() + offset);
     else if (tenureUnit === 'WEEKS') dueDate.setDate(dueDate.getDate() + offset * 7);
     else dueDate.setDate(dueDate.getDate() + offset);
