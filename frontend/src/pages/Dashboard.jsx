@@ -108,7 +108,7 @@ export default function Dashboard() {
         
         {/* Top Right Actions */}
         <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Link to="/customers" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
+          <Link to="/customers?new=true" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
             <Plus size={13} style={{ marginRight: 2 }}/> Customer
           </Link>
           {isAdmin && (
@@ -151,7 +151,7 @@ export default function Dashboard() {
             <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல்)" value={fmt(s?.outstandingPrincipal)} color="purple" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
-            <StatCard to="/collections" icon={HandCoins} label="Total Collected (வசூலானது)" value={fmt(s?.totalCollected)} color="purple" />
+            <StatCard to="/payment-history" icon={HandCoins} label="Total Collected (வசூலானது)" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/profit" icon={TrendingUp} label="Total Profit (லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
           </div>
 

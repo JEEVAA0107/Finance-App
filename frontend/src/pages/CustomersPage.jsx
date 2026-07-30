@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { customersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Eye, Edit2, Trash2, X, Phone, Camera, Upload, RefreshCw, MapPin } from 'lucide-react';
@@ -15,6 +15,9 @@ export default function CustomersPage() {
   const [editCustomer, setEditCustomer] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP', latitude: null, longitude: null });
   const [showMapPicker, setShowMapPicker] = useState(false);
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Camera states & refs
   const [showCamera, setShowCamera] = useState(false);
@@ -37,6 +40,14 @@ export default function CustomersPage() {
 
   const openAdd = () => { setForm({ name: '', phone: '', address: '', city: '', idType: 'AADHAR', idNumber: '', idProofUrl: '', notificationPref: 'WHATSAPP', latitude: null, longitude: null }); setEditCustomer(null); setShowModal(true); };
   const openEdit = (c) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone, address: c.address, city: c.city, idType: c.idType, idNumber: c.idNumber, idProofUrl: c.idProofUrl || '', notificationPref: c.notificationPref === 'NONE' ? 'NONE' : 'WHATSAPP', latitude: c.latitude || null, longitude: c.longitude || null }); setShowModal(true); };
+
+  useEffect(() => {
+    if (location.search.includes('new=true')) {
+      openAdd();
+      // Remove query param to avoid re-opening on refresh
+      navigate('/customers', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   const startCamera = async (mode = facingMode) => {
     setShowCamera(true);
