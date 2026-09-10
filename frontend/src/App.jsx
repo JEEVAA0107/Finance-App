@@ -20,6 +20,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
 import ScrollToTop from './components/ScrollToTop';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 
 function AppRoutes() {
@@ -80,7 +81,9 @@ export default function App() {
           containerStyle={{ top: 60 }}
           visibleToasts={2}
         />
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </AuthProvider>
     </BrowserRouter>
   );

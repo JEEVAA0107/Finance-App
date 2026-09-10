@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { dashboardAPI, loansAPI } from '../services/api';
 import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Calendar, Clock, BarChart3, ChevronRight, PieChart, X, Search, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ResponsiveContainer, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 function fmt(val) {
   if (!val && val !== 0) return '₹0';
@@ -181,7 +182,7 @@ export default function Dashboard() {
             </div>
 
             <div style={{ width: '100%', height: 260, minWidth: 0, position: 'relative' }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
                 <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                   <defs>
                     <linearGradient id="colorDisbursed" x1="0" y1="0" x2="0" y2="1">
