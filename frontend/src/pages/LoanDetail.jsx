@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { loansAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2, User, ShieldCheck, Phone, Eye } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2, User, ShieldCheck, Phone, Eye, FileText } from 'lucide-react';
+import { isPdfDocument } from '../utils/imageCompressor';
 import { useAuth } from '../contexts/AuthContext';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
@@ -483,7 +484,7 @@ export default function LoanDetail() {
         </div>
       )}
 
-      {/* Fullscreen Photo Zoom Modal */}
+      {/* Fullscreen Photo or PDF Zoom Modal */}
       {previewImage && (
         <div
           className="modal-overlay"
@@ -491,14 +492,43 @@ export default function LoanDetail() {
           onClick={() => setPreviewImage(null)}
         >
           <div
-            style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}
+            style={{
+              maxWidth: isPdfDocument(previewImage) ? '820px' : '90vw',
+              width: isPdfDocument(previewImage) ? '92vw' : 'auto',
+              maxHeight: '90vh',
+              position: 'relative'
+            }}
             onClick={e => e.stopPropagation()}
           >
-            <img
-              src={previewImage}
-              alt="Zoomed Preview"
-              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
-            />
+            {isPdfDocument(previewImage) ? (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '80vh', background: '#fff', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1e293b', color: '#fff' }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={16} color="#ef4444" /> Attached PDF Document
+                  </span>
+                  <a
+                    href={previewImage}
+                    target="_blank"
+                    rel="noreferrer"
+                    download="Document.pdf"
+                    style={{ color: '#38bdf8', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}
+                  >
+                    Open in New Tab / Download
+                  </a>
+                </div>
+                <iframe
+                  src={previewImage}
+                  title="Document Preview"
+                  style={{ width: '100%', flex: 1, border: 'none' }}
+                />
+              </div>
+            ) : (
+              <img
+                src={previewImage}
+                alt="Zoomed Preview"
+                style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
+              />
+            )}
             <button
               type="button"
               onClick={() => setPreviewImage(null)}

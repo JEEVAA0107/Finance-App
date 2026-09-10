@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { customersAPI } from '../services/api';
 import AddCustomerModal from '../components/AddCustomerModal';
+import { isPdfDocument } from '../utils/imageCompressor';
 import {
   User, Phone, MapPin, CreditCard, Landmark, ArrowLeft,
-  ShieldCheck, Edit2, MessageCircle, Eye, ExternalLink, X
+  ShieldCheck, Edit2, MessageCircle, Eye, ExternalLink, X, FileText
 } from 'lucide-react';
 
 function formatDate(d) {
@@ -149,35 +150,77 @@ export default function CustomerDetail() {
 
             {/* Attached Customer ID Proof document preview */}
             {customer.idProofUrl && (
-              <div style={{ marginTop: 6 }}>
-                <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6 }}>
+              <div style={{ marginTop: 8 }}>
+                <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>
                   ATTACHED {customer.idType} DOCUMENT PROOF
                 </span>
-                <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)' }}>
-                  <img
-                    src={customer.idProofUrl}
-                    alt={`${customer.idType} Proof`}
-                    style={{ width: '100%', maxHeight: 200, objectFit: 'contain', cursor: 'pointer', display: 'block' }}
-                    onClick={() => setPreviewImage(customer.idProofUrl)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPreviewImage(customer.idProofUrl)}
-                    className="btn btn-ghost btn-sm"
-                    style={{
-                      position: 'absolute',
-                      bottom: 8,
-                      right: 8,
-                      background: 'rgba(0,0,0,0.65)',
-                      color: '#fff',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      padding: '4px 8px',
-                    }}
-                  >
-                    <Eye size={13} style={{ marginRight: 4 }} /> View Full Proof
-                  </button>
-                </div>
+                {isPdfDocument(customer.idProofUrl) ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    background: 'rgba(239, 68, 68, 0.05)',
+                    border: '1px solid rgba(239, 68, 68, 0.22)',
+                    gap: 10
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <div style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 8,
+                        background: 'rgba(239, 68, 68, 0.12)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <FileText size={20} color="#ef4444" />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
+                          {customer.idType} Document (PDF)
+                        </div>
+                        <div style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>Verified Document Proof</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImage(customer.idProofUrl)}
+                      className="btn btn-primary btn-sm"
+                      style={{ gap: 5, fontSize: 11, padding: '5px 10px', flexShrink: 0 }}
+                    >
+                      <Eye size={13} /> View PDF
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)' }}>
+                    <img
+                      src={customer.idProofUrl}
+                      alt={`${customer.idType} Proof`}
+                      style={{ width: '100%', maxHeight: 200, objectFit: 'contain', cursor: 'pointer', display: 'block' }}
+                      onClick={() => setPreviewImage(customer.idProofUrl)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImage(customer.idProofUrl)}
+                      className="btn btn-ghost btn-sm"
+                      style={{
+                        position: 'absolute',
+                        bottom: 8,
+                        right: 8,
+                        background: 'rgba(0,0,0,0.65)',
+                        color: '#fff',
+                        borderRadius: 6,
+                        fontSize: 11,
+                        padding: '4px 8px',
+                      }}
+                    >
+                      <Eye size={13} style={{ marginRight: 4 }} /> View Full Proof
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -283,35 +326,77 @@ export default function CustomerDetail() {
 
               {/* Jamin ID Proof document preview */}
               {customer.jaminIdProofUrl && (
-                <div style={{ marginTop: 6 }}>
-                  <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6 }}>
+                <div style={{ marginTop: 8 }}>
+                  <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>
                     ATTACHED JAMIN ID DOCUMENT PROOF
                   </span>
-                  <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)' }}>
-                    <img
-                      src={customer.jaminIdProofUrl}
-                      alt="Jamin ID Proof"
-                      style={{ width: '100%', maxHeight: 180, objectFit: 'contain', cursor: 'pointer', display: 'block' }}
-                      onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
-                      className="btn btn-ghost btn-sm"
-                      style={{
-                        position: 'absolute',
-                        bottom: 8,
-                        right: 8,
-                        background: 'rgba(0,0,0,0.65)',
-                        color: '#fff',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        padding: '4px 8px',
-                      }}
-                    >
-                      <Eye size={13} style={{ marginRight: 4 }} /> View Jamin Proof
-                    </button>
-                  </div>
+                  {isPdfDocument(customer.jaminIdProofUrl) ? (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: 'rgba(239, 68, 68, 0.05)',
+                      border: '1px solid rgba(239, 68, 68, 0.22)',
+                      gap: 10
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <div style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 8,
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <FileText size={20} color="#ef4444" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
+                            Jamin {customer.jaminIdType || 'ID'} Document (PDF)
+                          </div>
+                          <div style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>Verified Guarantor Document</div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
+                        className="btn btn-primary btn-sm"
+                        style={{ gap: 5, fontSize: 11, padding: '5px 10px', flexShrink: 0 }}
+                      >
+                        <Eye size={13} /> View PDF
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)' }}>
+                      <img
+                        src={customer.jaminIdProofUrl}
+                        alt="Jamin ID Proof"
+                        style={{ width: '100%', maxHeight: 180, objectFit: 'contain', cursor: 'pointer', display: 'block' }}
+                        onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
+                        className="btn btn-ghost btn-sm"
+                        style={{
+                          position: 'absolute',
+                          bottom: 8,
+                          right: 8,
+                          background: 'rgba(0,0,0,0.65)',
+                          color: '#fff',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          padding: '4px 8px',
+                        }}
+                      >
+                        <Eye size={13} style={{ marginRight: 4 }} /> View Jamin Proof
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -402,7 +487,7 @@ export default function CustomerDetail() {
         editCustomer={customer}
       />
 
-      {/* Fullscreen Photo Zoom Modal */}
+      {/* Fullscreen Photo or PDF Zoom Modal */}
       {previewImage && (
         <div
           className="modal-overlay"
@@ -410,14 +495,43 @@ export default function CustomerDetail() {
           onClick={() => setPreviewImage(null)}
         >
           <div
-            style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}
+            style={{
+              maxWidth: isPdfDocument(previewImage) ? '820px' : '90vw',
+              width: isPdfDocument(previewImage) ? '92vw' : 'auto',
+              maxHeight: '90vh',
+              position: 'relative'
+            }}
             onClick={e => e.stopPropagation()}
           >
-            <img
-              src={previewImage}
-              alt="Zoomed Preview"
-              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
-            />
+            {isPdfDocument(previewImage) ? (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '80vh', background: '#fff', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1e293b', color: '#fff' }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={16} color="#ef4444" /> Attached PDF Document
+                  </span>
+                  <a
+                    href={previewImage}
+                    target="_blank"
+                    rel="noreferrer"
+                    download="Document.pdf"
+                    style={{ color: '#38bdf8', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}
+                  >
+                    Open in New Tab / Download
+                  </a>
+                </div>
+                <iframe
+                  src={previewImage}
+                  title="Document Preview"
+                  style={{ width: '100%', flex: 1, border: 'none' }}
+                />
+              </div>
+            ) : (
+              <img
+                src={previewImage}
+                alt="Zoomed Preview"
+                style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
+              />
+            )}
             <button
               type="button"
               onClick={() => setPreviewImage(null)}

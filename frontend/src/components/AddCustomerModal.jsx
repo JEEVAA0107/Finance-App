@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { customersAPI } from '../services/api';
-import { compressImageFile } from '../utils/imageCompressor';
+import { compressImageFile, isPdfDocument } from '../utils/imageCompressor';
 import MapPickerModal from './MapPickerModal';
 import toast from 'react-hot-toast';
 import {
   X, User, Phone, MapPin, CreditCard, Camera, Upload, Trash2, Eye,
-  RefreshCw, CheckCircle2, ShieldCheck, Users, Sparkles
+  RefreshCw, CheckCircle2, ShieldCheck, Users, Sparkles, FileText
 } from 'lucide-react';
 
 const RELATIONSHIPS = [
@@ -165,14 +165,17 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
   };
 
   const handleFileUpload = async (e, field) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const compressed = await compressImageFile(file, 1280, 0.82);
-      update(field, compressed);
-      toast.success('Image ready!');
+      const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
+      const processed = await compressImageFile(file, 1280, 0.82);
+      update(field, processed);
+      toast.success(isPdf ? 'PDF Document attached successfully!' : 'Photo attached successfully!');
     } catch (err) {
-      toast.error('Failed to process image');
+      toast.error(err.message || 'Failed to process document');
+    } finally {
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -228,9 +231,11 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
 
   if (!isOpen) return null;
 
-  // Reusable Image Upload & Preview Box
+  // Reusable Image / Document Upload & Preview Box
   const renderImageUploader = (field, label, iconText, isAvatar = false) => {
     const val = form[field];
+    const isPdf = isPdfDocument(val);
+
     return (
       <div style={{
         background: 'var(--card-bg, #ffffff)',
@@ -246,58 +251,136 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
             {label}
           </span>
           {val && (
-            <span style={{ fontSize: 11, color: '#10b981', display: 'flex', alignItems: 'center', gap: 3 }}>
-              <CheckCircle2 size={13} /> Attached
+            <span style={{ fontSize: 11, color: '#10b981', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
+              <CheckCircle2 size={13} /> {isPdf ? 'PDF Attached' : 'Attached'}
             </span>
           )}
         </div>
 
         {val ? (
-          <div style={{ position: 'relative', width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.1)' }}>
-            <img
-              src={val}
-              alt={label}
-              style={{
-                width: '100%',
-                height: isAvatar ? 120 : 150,
-                objectFit: isAvatar ? 'cover' : 'contain',
-                background: '#f8fafc',
-                display: 'block',
-              }}
-            />
+          isPdf ? (
+            /* PDF Document Attached Card */
             <div style={{
-              position: 'absolute',
-              bottom: 6,
-              right: 6,
-              display: 'flex',
-              gap: 6,
-              background: 'rgba(0,0,0,0.6)',
-              padding: '4px 8px',
+              position: 'relative',
+              width: '100%',
               borderRadius: 8,
-              backdropFilter: 'blur(4px)',
+              padding: '12px 14px',
+              background: 'rgba(239, 68, 68, 0.05)',
+              border: '1px solid rgba(239, 68, 68, 0.22)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
             }}>
-              <button
-                type="button"
-                onClick={() => setPreviewImage(val)}
-                title="View Fullscreen"
-                style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 2 }}
-              >
-                <Eye size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={() => update(field, '')}
-                title="Remove Image"
-                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 2 }}
-              >
-                <Trash2 size={15} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <FileText size={20} color="#ef4444" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-color, #0f172a)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>PDF Document Attached</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(val)}
+                  title="View PDF Document"
+                  style={{
+                    background: 'var(--primary-600, #4f46e5)',
+                    border: 'none',
+                    color: '#fff',
+                    borderRadius: 6,
+                    padding: '5px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <Eye size={13} /> View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => update(field, '')}
+                  title="Remove Document"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: 'none',
+                    color: '#ef4444',
+                    borderRadius: 6,
+                    padding: '5px 8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Image Preview */
+            <div style={{ position: 'relative', width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.1)' }}>
+              <img
+                src={val}
+                alt={label}
+                style={{
+                  width: '100%',
+                  height: isAvatar ? 120 : 150,
+                  objectFit: isAvatar ? 'cover' : 'contain',
+                  background: '#f8fafc',
+                  display: 'block',
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                bottom: 6,
+                right: 6,
+                display: 'flex',
+                gap: 6,
+                background: 'rgba(0,0,0,0.6)',
+                padding: '4px 8px',
+                borderRadius: 8,
+                backdropFilter: 'blur(4px)',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(val)}
+                  title="View Fullscreen"
+                  style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 2 }}
+                >
+                  <Eye size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => update(field, '')}
+                  title="Remove Image"
+                  style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 2 }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: isAvatar ? '1fr 1fr' : '1fr 1fr',
             gap: 8,
             padding: '12px 6px',
             background: 'var(--bg-subtle, #f8fafc)',
@@ -320,10 +403,11 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
               background: 'rgba(99, 102, 241, 0.08)',
             }}>
               <Upload size={16} />
-              Upload {iconText}
+              {isAvatar ? `Upload ${iconText}` : 'Upload Doc (Image/PDF)'}
               <input
                 type="file"
-                accept="image/*"
+                accept={isAvatar ? "image/*" : "image/*,application/pdf"}
+                onClick={e => { e.target.value = ''; }}
                 onChange={e => handleFileUpload(e, field)}
                 style={{ display: 'none' }}
               />
@@ -817,21 +901,51 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
       )}
 
       {/* Fullscreen Photo Preview Modal */}
+      {/* Fullscreen Photo or PDF Preview Modal */}
       {previewImage && (
         <div
           className="modal-overlay"
-          style={{ zIndex: 10002, background: 'rgba(0,0,0,0.9)' }}
+          style={{ zIndex: 10002, background: 'rgba(0,0,0,0.92)' }}
           onClick={() => setPreviewImage(null)}
         >
           <div
-            style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}
+            style={{
+              maxWidth: isPdfDocument(previewImage) ? '820px' : '90vw',
+              width: isPdfDocument(previewImage) ? '92vw' : 'auto',
+              maxHeight: '90vh',
+              position: 'relative'
+            }}
             onClick={e => e.stopPropagation()}
           >
-            <img
-              src={previewImage}
-              alt="Preview"
-              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
-            />
+            {isPdfDocument(previewImage) ? (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '80vh', background: '#fff', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1e293b', color: '#fff' }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={16} color="#ef4444" /> Attached PDF Document
+                  </span>
+                  <a
+                    href={previewImage}
+                    target="_blank"
+                    rel="noreferrer"
+                    download="Document.pdf"
+                    style={{ color: '#38bdf8', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}
+                  >
+                    Open in New Tab / Download
+                  </a>
+                </div>
+                <iframe
+                  src={previewImage}
+                  title="Document Preview"
+                  style={{ width: '100%', flex: 1, border: 'none' }}
+                />
+              </div>
+            ) : (
+              <img
+                src={previewImage}
+                alt="Preview"
+                style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
+              />
+            )}
             <button
               type="button"
               onClick={() => setPreviewImage(null)}

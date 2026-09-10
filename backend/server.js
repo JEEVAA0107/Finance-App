@@ -72,6 +72,21 @@ app.get('/health', (req, res) => res.json({
   timestamp: new Date().toISOString()
 }));
 
+// Safe database schema synchronizer route
+app.get('/api/sync-db', async (req, res) => {
+  try {
+    await syncDatabaseSchema();
+    res.json({
+      success: true,
+      message: 'Customer & Jamin database columns synchronized successfully',
+      version: '2.2.0-customer-jamin-edit',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err.stack);
