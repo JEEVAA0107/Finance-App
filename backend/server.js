@@ -68,7 +68,7 @@ app.use('/api/notifications', require('./src/routes/notifications'));
 app.get('/health', (req, res) => res.json({
   status: 'ok',
   app: process.env.APP_NAME || 'Finova',
-  version: '2.3.0-penalty-carryforward',
+  version: '2.3.1-fix-render-build',
   timestamp: new Date().toISOString()
 }));
 

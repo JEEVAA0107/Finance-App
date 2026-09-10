@@ -5,12 +5,17 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 WORKDIR /app
 
+# Copy dependency definitions and prisma schema first
 COPY package*.json ./
-RUN npm install --omit=dev
+COPY prisma ./prisma/
 
+# Install dependencies cleanly without script failures
+RUN npm install --ignore-scripts --omit=dev
+
+# Copy the rest of the application code
 COPY . .
 
-# Generate Prisma client
+# Explicitly generate Prisma Client
 RUN npx prisma generate
 
 EXPOSE 5000
