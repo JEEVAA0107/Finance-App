@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Hardcoding the production URL directly to avoid any environment variable issues
-const API_URL = 'https://finance-app-awae.onrender.com/api';
+const API_URL = (typeof window !== 'undefined' && localStorage.getItem('finova_api_url')) || 'https://finance-app-awae.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,

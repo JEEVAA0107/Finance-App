@@ -5,10 +5,10 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm install --omit=dev
 
-COPY . .
+COPY backend/ ./
 
 # Generate Prisma client
 RUN npx prisma generate

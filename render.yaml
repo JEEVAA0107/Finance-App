@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: finance-app-awae
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: "true"
+      - key: DISABLE_WHATSAPP
+        value: "true"
