@@ -1,78 +1,354 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { customersAPI } from '../services/api';
-import { User, Phone, MapPin, CreditCard, Landmark, ArrowLeft } from 'lucide-react';
+import AddCustomerModal from '../components/AddCustomerModal';
+import {
+  User, Phone, MapPin, CreditCard, Landmark, ArrowLeft,
+  ShieldCheck, Edit2, MessageCircle, Eye, ExternalLink, X
+} from 'lucide-react';
 
-function formatDate(d) { return d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; }
+function formatDate(d) {
+  return d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+}
 
 export default function CustomerDetail() {
   const { id } = useParams();
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
+  const fetchCustomer = () => {
+    customersAPI.get(id)
+      .then(r => setCustomer(r))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    customersAPI.get(id).then(r => setCustomer(r)).catch(console.error).finally(() => setLoading(false));
+    fetchCustomer();
   }, [id]);
 
-  if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
+  if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading Customer...</p></div>;
   if (!customer) return <div className="card empty-state"><h3>Customer not found</h3></div>;
 
   return (
     <div className="animate-in">
-      <Link to="/customers" className="btn btn-ghost mb-24"><ArrowLeft size={16} />Back to Customers</Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <Link to="/customers" className="btn btn-ghost" style={{ gap: 6 }}>
+          <ArrowLeft size={16} /> Back to Customers
+        </Link>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={() => setShowEditModal(true)}
+          style={{ gap: 6 }}
+        >
+          <Edit2 size={14} /> Edit Profile & Jamin
+        </button>
+      </div>
 
-      <div className="grid-2 mb-24">
+      <div className="grid-2 mb-24" style={{ alignItems: 'start' }}>
+        {/* Customer Details Card */}
         <div className="card">
-          <div className="card-header"><div className="card-title"><User size={18} style={{ marginRight: 8 }} />Customer Details</div></div>
-          <div style={{ display: 'grid', gap: 16 }}>
-            <div><span className="color-muted fs-12">NAME</span><div className="fw-600">{customer.name}</div></div>
-            <div className="form-row">
-              <div><span className="color-muted fs-12">PHONE</span><div><Phone size={14} style={{verticalAlign:'middle',marginRight:4}} /><a href={`tel:${customer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{customer.phone}</a></div></div>
-              <div><span className="color-muted fs-12">EMAIL</span><div>{customer.email || '-'}</div></div>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title">
+              <User size={18} style={{ marginRight: 8, color: 'var(--primary-500)' }} />
+              Customer Information
             </div>
-            <div><span className="color-muted fs-12">ADDRESS</span><div><MapPin size={14} style={{verticalAlign:'middle',marginRight:4}} />{customer.address}, {customer.city}</div></div>
-            <div className="form-row">
-              <div><span className="color-muted fs-12">ID PROOF</span><div><CreditCard size={14} style={{verticalAlign:'middle',marginRight:4}} /><span className="badge badge-info">{customer.idType}</span> {customer.idNumber}</div></div>
-              <div><span className="color-muted fs-12">SINCE</span><div>{formatDate(customer.createdAt)}</div></div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
+            {customer.photoUrl ? (
+              <img
+                src={customer.photoUrl}
+                alt={customer.name}
+                onClick={() => setPreviewImage(customer.photoUrl)}
+                title="Click to zoom"
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 16,
+                  objectFit: 'cover',
+                  border: '2px solid var(--primary-400)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 16,
+                  background: 'rgba(99,102,241,0.1)',
+                  color: 'var(--primary-600)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: 28,
+                  flexShrink: 0,
+                }}
+              >
+                {customer.name?.charAt(0)}
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>{customer.name}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Phone size={12} />
+                <a href={`tel:${customer.phone}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                  {customer.phone}
+                </a>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                Customer Since: {formatDate(customer.createdAt)}
+              </div>
             </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div className="form-row">
+              <div>
+                <span className="color-muted fs-12">EMAIL</span>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{customer.email || 'N/A'}</div>
+              </div>
+              <div>
+                <span className="color-muted fs-12">CITY / TOWN</span>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{customer.city}</div>
+              </div>
+            </div>
+
+            <div>
+              <span className="color-muted fs-12">COMPLETE RESIDENCE ADDRESS</span>
+              <div style={{ fontSize: 13, marginTop: 2, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                <MapPin size={14} style={{ flexShrink: 0, marginTop: 2, color: 'var(--primary-500)' }} />
+                <span>{customer.address}, {customer.city}</span>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div>
+                <span className="color-muted fs-12">IDENTITY PROOF</span>
+                <div style={{ fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  <CreditCard size={14} style={{ color: 'var(--primary-500)' }} />
+                  <span className="badge badge-info">{customer.idType}</span>
+                  <span>{customer.idNumber}</span>
+                </div>
+              </div>
+              {customer.latitude && customer.longitude && (
+                <div>
+                  <span className="color-muted fs-12">GPS PIN</span>
+                  <div style={{ fontSize: 12, color: '#10b981', fontWeight: 600, marginTop: 2 }}>
+                    📍 {customer.latitude.toFixed(4)}, {customer.longitude.toFixed(4)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Attached Customer ID Proof document preview */}
             {customer.idProofUrl && (
-              <div style={{ marginTop: 8 }}>
-                <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6 }}>ATTACHED ID PROOF DOCUMENT</span>
-                <img 
-                  src={customer.idProofUrl} 
-                  alt={`${customer.idType} Proof`} 
-                  style={{ width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)', cursor: 'pointer' }} 
-                  onClick={() => {
-                    const w = window.open('');
-                    w.document.write(`<img src="${customer.idProofUrl}" style="max-width:100%;height:auto;" />`);
-                  }}
-                />
+              <div style={{ marginTop: 6 }}>
+                <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6 }}>
+                  ATTACHED {customer.idType} DOCUMENT PROOF
+                </span>
+                <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)' }}>
+                  <img
+                    src={customer.idProofUrl}
+                    alt={`${customer.idType} Proof`}
+                    style={{ width: '100%', maxHeight: 200, objectFit: 'contain', cursor: 'pointer', display: 'block' }}
+                    onClick={() => setPreviewImage(customer.idProofUrl)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage(customer.idProofUrl)}
+                    className="btn btn-ghost btn-sm"
+                    style={{
+                      position: 'absolute',
+                      bottom: 8,
+                      right: 8,
+                      background: 'rgba(0,0,0,0.65)',
+                      color: '#fff',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      padding: '4px 8px',
+                    }}
+                  >
+                    <Eye size={13} style={{ marginRight: 4 }} /> View Full Proof
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
 
+        {/* Jamin Person (Guarantor) Card */}
         <div className="card">
-          <div className="card-header"><div className="card-title"><Landmark size={18} style={{ marginRight: 8 }} />Loan Summary</div></div>
-          <div className="stats-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div className="stat-value" style={{ fontSize: 32, color: 'var(--primary-400)' }}>{customer.loans?.length || 0}</div>
-              <div className="stat-label">Total Loans</div>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-title">
+              <ShieldCheck size={18} style={{ marginRight: 8, color: '#10b981' }} />
+              Jamin Person (ஜாமீன் நபர் / Guarantor)
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div className="stat-value" style={{ fontSize: 32, color: 'var(--accent-400)' }}>
-                {customer.loans?.filter(l => l.status === 'ACTIVE').length || 0}
-              </div>
-              <div className="stat-label">Active</div>
-            </div>
+            {customer.jaminName && (
+              <span className="badge badge-success" style={{ fontSize: 11 }}>Linked Guarantor</span>
+            )}
           </div>
+
+          {customer.jaminName ? (
+            <div style={{ display: 'grid', gap: 14 }}>
+              {/* Jamin Avatar / Photo & Contact */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
+                {customer.jaminPhotoUrl ? (
+                  <img
+                    src={customer.jaminPhotoUrl}
+                    alt={customer.jaminName}
+                    onClick={() => setPreviewImage(customer.jaminPhotoUrl)}
+                    title="Click to zoom"
+                    style={{
+                      width: 68,
+                      height: 68,
+                      borderRadius: 16,
+                      objectFit: 'cover',
+                      border: '2px solid #10b981',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 68,
+                      height: 68,
+                      borderRadius: 16,
+                      background: 'rgba(16,185,129,0.1)',
+                      color: '#059669',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: 26,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {customer.jaminName?.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800 }}>{customer.jaminName}</div>
+                  <div style={{ fontSize: 12, color: '#059669', fontWeight: 600, marginTop: 2 }}>
+                    Relationship: {customer.jaminRelationship || 'Guarantor'}
+                  </div>
+                  {customer.jaminPhone && (
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Phone size={12} />
+                      <a href={`tel:${customer.jaminPhone}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                        {customer.jaminPhone}
+                      </a>
+                      <a
+                        href={`https://wa.me/91${customer.jaminPhone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Chat on WhatsApp"
+                        style={{ color: '#10b981', display: 'flex', alignItems: 'center' }}
+                      >
+                        <MessageCircle size={14} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Jamin Details */}
+              {customer.jaminAddress && (
+                <div>
+                  <span className="color-muted fs-12">JAMIN RESIDENCE ADDRESS</span>
+                  <div style={{ fontSize: 13, marginTop: 2, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                    <MapPin size={14} style={{ flexShrink: 0, marginTop: 2, color: '#10b981' }} />
+                    <span>{customer.jaminAddress}</span>
+                  </div>
+                </div>
+              )}
+
+              {customer.jaminIdNumber && (
+                <div>
+                  <span className="color-muted fs-12">JAMIN IDENTITY CARD</span>
+                  <div style={{ fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <CreditCard size={14} style={{ color: '#10b981' }} />
+                    <span className="badge badge-info">{customer.jaminIdType || 'ID'}</span>
+                    <span>{customer.jaminIdNumber}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Jamin ID Proof document preview */}
+              {customer.jaminIdProofUrl && (
+                <div style={{ marginTop: 6 }}>
+                  <span className="color-muted fs-12" style={{ display: 'block', marginBottom: 6 }}>
+                    ATTACHED JAMIN ID DOCUMENT PROOF
+                  </span>
+                  <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.02)' }}>
+                    <img
+                      src={customer.jaminIdProofUrl}
+                      alt="Jamin ID Proof"
+                      style={{ width: '100%', maxHeight: 180, objectFit: 'contain', cursor: 'pointer', display: 'block' }}
+                      onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImage(customer.jaminIdProofUrl)}
+                      className="btn btn-ghost btn-sm"
+                      style={{
+                        position: 'absolute',
+                        bottom: 8,
+                        right: 8,
+                        background: 'rgba(0,0,0,0.65)',
+                        color: '#fff',
+                        borderRadius: 6,
+                        fontSize: 11,
+                        padding: '4px 8px',
+                      }}
+                    >
+                      <Eye size={13} style={{ marginRight: 4 }} /> View Jamin Proof
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.1)', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+                <ShieldCheck size={24} />
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>No Jamin Person (Guarantor) Added</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+                Add a guarantor for this customer to secure future loans and track collateral verification.
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowEditModal(true)}
+              >
+                + Add Jamin Person Now
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Loan History */}
-      {customer.loans?.length > 0 && (
-        <div className="card">
-          <div className="card-header"><div className="card-title">Loan History</div></div>
+      {/* Loan History Card */}
+      <div className="card">
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card-title">
+            <Landmark size={18} style={{ marginRight: 8, color: 'var(--primary-500)' }} />
+            Loan History ({customer.loans?.length || 0})
+          </div>
+          <Link to="/loans/create" className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>
+            + Create New Loan
+          </Link>
+        </div>
+
+        {customer.loans?.length > 0 ? (
           <div className="table-container" style={{ border: 'none' }}>
             <table className="data-table">
               <thead>
@@ -107,6 +383,59 @@ export default function CustomerDetail() {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
+            No loans have been disbursed to this customer yet.
+          </div>
+        )}
+      </div>
+
+      {/* Edit Customer & Jamin Modal */}
+      <AddCustomerModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSuccess={fetchCustomer}
+        editCustomer={customer}
+      />
+
+      {/* Fullscreen Photo Zoom Modal */}
+      {previewImage && (
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 10002, background: 'rgba(0,0,0,0.92)' }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="Zoomed Preview"
+              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
+            />
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              style={{
+                position: 'absolute',
+                top: -36,
+                right: 0,
+                background: 'rgba(255,255,255,0.2)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50%',
+                width: 32,
+                height: 32,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
       )}

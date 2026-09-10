@@ -62,6 +62,16 @@ model Customer {
   latitude   Float?   // GPS latitude for map pinning
   longitude  Float?   // GPS longitude for map pinning
 
+  // Jamin (Guarantor / ஜாமீன்) details
+  jaminName         String?
+  jaminPhone        String?
+  jaminAddress      String?
+  jaminRelationship String?
+  jaminIdType       String?
+  jaminIdNumber     String?
+  jaminPhotoUrl     String?
+  jaminIdProofUrl   String?
+
   loans       Loan[]
   notificationLogs NotificationLog[]
 

@@ -88,10 +88,41 @@ const { startCronJobs } = require('./src/jobs/cron');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+async function syncDatabaseSchema() {
+  try {
+    const columns = [
+      'photoUrl',
+      'jaminName',
+      'jaminPhone',
+      'jaminAddress',
+      'jaminRelationship',
+      'jaminIdType',
+      'jaminIdNumber',
+      'jaminPhotoUrl',
+      'jaminIdProofUrl',
+    ];
+    for (const col of columns) {
+      try {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "${col}" TEXT;`);
+      } catch (_) {
+        try {
+          await prisma.$executeRawUnsafe(`ALTER TABLE "Customer" ADD COLUMN "${col}" TEXT;`);
+        } catch (sqliteErr) {
+          // Column may already exist
+        }
+      }
+    }
+    console.log('✅ Customer & Jamin schema columns verified');
+  } catch (err) {
+    console.warn('⚠️ Schema check note:', err.message);
+  }
+}
+
 async function start() {
   try {
     await prisma.$connect();
     console.log('✅ Database connected');
+    await syncDatabaseSchema();
     await seedAdmin();
     startCronJobs();
     app.listen(PORT, '0.0.0.0', () => {

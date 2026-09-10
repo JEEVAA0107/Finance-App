@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { loansAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2, User, ShieldCheck, Phone, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
@@ -20,6 +20,7 @@ export default function LoanDetail() {
   const [payingPrincipal, setPayingPrincipal] = useState(false);
   const [preclosure, setPreclosure] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -187,6 +188,100 @@ export default function LoanDetail() {
             <Trash2 size={15} /> Delete Loan
           </button>
         )}
+      </div>
+
+      {/* Borrower & Jamin Summary Card */}
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          {/* Borrower */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {loan.customer?.photoUrl ? (
+              <img
+                src={loan.customer.photoUrl}
+                alt={loan.customer.name}
+                onClick={() => setPreviewImage(loan.customer.photoUrl)}
+                title="Click to zoom"
+                style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover', border: '2px solid var(--primary-400)', cursor: 'pointer', flexShrink: 0 }}
+              />
+            ) : (
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(99,102,241,0.1)', color: 'var(--primary-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
+                {loan.customer?.name?.charAt(0)}
+              </div>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Borrower (வாடிக்கையாளர்)</div>
+              <Link to={`/customers/${loan.customer?.id}`} style={{ fontWeight: 800, fontSize: 14, color: 'inherit', textDecoration: 'none' }}>
+                {loan.customer?.name}
+              </Link>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Phone size={11} />
+                <a href={`tel:${loan.customer?.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{loan.customer?.phone}</a>
+              </div>
+            </div>
+            {loan.customer?.idProofUrl && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setPreviewImage(loan.customer.idProofUrl)}
+                title="View Borrower ID Proof"
+                style={{ fontSize: 11, padding: '4px 8px' }}
+              >
+                <Eye size={13} /> Proof
+              </button>
+            )}
+          </div>
+
+          {/* Jamin Person */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderLeft: '1px solid var(--border-subtle)', paddingLeft: 16 }}>
+            {loan.customer?.jaminName ? (
+              <>
+                {loan.customer.jaminPhotoUrl ? (
+                  <img
+                    src={loan.customer.jaminPhotoUrl}
+                    alt={loan.customer.jaminName}
+                    onClick={() => setPreviewImage(loan.customer.jaminPhotoUrl)}
+                    title="Click to zoom"
+                    style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover', border: '2px solid #10b981', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                ) : (
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(16,185,129,0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
+                    {loan.customer.jaminName?.charAt(0)}
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: '#059669', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Jamin Person (ஜாமீன்)
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: 14 }}>{loan.customer.jaminName}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Phone size={11} />
+                    {loan.customer.jaminPhone ? (
+                      <a href={`tel:${loan.customer.jaminPhone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{loan.customer.jaminPhone}</a>
+                    ) : (
+                      <span>{loan.customer.jaminRelationship || 'Guarantor'}</span>
+                    )}
+                  </div>
+                </div>
+                {loan.customer?.jaminIdProofUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setPreviewImage(loan.customer.jaminIdProofUrl)}
+                    title="View Jamin ID Proof"
+                    style={{ fontSize: 11, padding: '4px 8px' }}
+                  >
+                    <Eye size={13} /> Proof
+                  </button>
+                )}
+              </>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 12 }}>
+                <ShieldCheck size={20} style={{ color: '#94a3b8' }} />
+                <span>No Jamin guarantor registered for this borrower.</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Installments */}
@@ -384,6 +479,47 @@ export default function LoanDetail() {
                 {deleting ? 'Deleting...' : 'Yes, Delete Permanently'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Photo Zoom Modal */}
+      {previewImage && (
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 10002, background: 'rgba(0,0,0,0.92)' }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            style={{ maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="Zoomed Preview"
+              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8 }}
+            />
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              style={{
+                position: 'absolute',
+                top: -36,
+                right: 0,
+                background: 'rgba(255,255,255,0.2)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50%',
+                width: 32,
+                height: 32,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
       )}

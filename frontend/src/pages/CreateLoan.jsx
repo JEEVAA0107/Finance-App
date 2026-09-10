@@ -1,24 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loansAPI, customersAPI } from '../services/api';
+import AddCustomerModal from '../components/AddCustomerModal';
 import toast from 'react-hot-toast';
-import { Landmark } from 'lucide-react';
+import { Landmark, UserPlus, User, ShieldCheck, Phone, CheckCircle2 } from 'lucide-react';
 
 export default function CreateLoan() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [form, setForm] = useState({
     customerId: '', principalAmount: '', interestRate: '',
     interestType: 'FLAT', tenure: '10', advanceDeduction: '', alreadyCollectedAmount: '',
     tenureUnit: 'WEEKS', startDate: new Date().toISOString().split('T')[0],
   });
 
-  useEffect(() => {
+  const loadCustomers = () => {
     customersAPI.list({ limit: 200 }).then(r => setCustomers(r)).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadCustomers();
   }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleCustomerCreated = (newCust) => {
+    setCustomers(prev => {
+      const exists = prev.some(c => c.id === newCust.id);
+      return exists ? prev.map(c => c.id === newCust.id ? newCust : c) : [newCust, ...prev];
+    });
+    set('customerId', newCust.id);
+    toast.success(`Selected customer: ${newCust.name}`);
+  };
+
+  const selectedCustomer = customers.find(c => c.id === form.customerId);
 
   const preview = (() => {
     const isWithoutInterest = form.interestType === 'WITHOUT_INTEREST';
@@ -107,12 +124,120 @@ export default function CreateLoan() {
       <form onSubmit={handleSubmit}>
         <div className="card">
           <div className="form-group">
-            <label className="form-label">Customer *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label className="form-label" style={{ marginBottom: 0, fontWeight: 700 }}>Customer *</label>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowAddCustomer(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--primary-600, #4f46e5)',
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                  padding: '4px 10px',
+                  borderRadius: 8,
+                }}
+              >
+                <UserPlus size={14} /> + New Customer
+              </button>
+            </div>
             <select className="form-select" value={form.customerId} onChange={e => set('customerId', e.target.value)} required>
               <option value="">Select customer...</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>)}
+              {customers.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {c.phone} {c.jaminName ? `(Jamin: ${c.jaminName})` : ''}
+                </option>
+              ))}
             </select>
           </div>
+
+          {/* Selected Customer & Jamin preview card */}
+          {selectedCustomer && (
+            <div style={{
+              background: 'var(--bg-subtle, #f8fafc)',
+              border: '1px solid var(--border-subtle, #e2e8f0)',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {selectedCustomer.photoUrl ? (
+                    <img
+                      src={selectedCustomer.photoUrl}
+                      alt={selectedCustomer.name}
+                      style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary-400)' }}
+                    />
+                  ) : (
+                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(99,102,241,0.1)', color: 'var(--primary-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                      {selectedCustomer.name?.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14 }}>{selectedCustomer.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedCustomer.phone} · {selectedCustomer.city}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {selectedCustomer.idProofUrl && (
+                    <span className="badge badge-info" style={{ fontSize: 10 }}>ID Verified</span>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowAddCustomer(true)}
+                    style={{ fontSize: 11, padding: '3px 8px' }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+
+              {/* Jamin summary row if present */}
+              {selectedCustomer.jaminName ? (
+                <div style={{
+                  borderTop: '1px solid var(--border-subtle, #e2e8f0)',
+                  paddingTop: 8,
+                  marginTop: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: 12,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {selectedCustomer.jaminPhotoUrl ? (
+                      <img
+                        src={selectedCustomer.jaminPhotoUrl}
+                        alt={selectedCustomer.jaminName}
+                        style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid #10b981' }}
+                      />
+                    ) : (
+                      <ShieldCheck size={18} style={{ color: '#10b981' }} />
+                    )}
+                    <div>
+                      <span style={{ fontWeight: 700, color: '#0f172a' }}>Jamin: {selectedCustomer.jaminName}</span>
+                      <span style={{ color: '#64748b', marginLeft: 6 }}>({selectedCustomer.jaminRelationship || 'Guarantor'})</span>
+                    </div>
+                  </div>
+                  {selectedCustomer.jaminPhone && (
+                    <span style={{ color: '#64748b' }}>{selectedCustomer.jaminPhone}</span>
+                  )}
+                </div>
+              ) : (
+                <div style={{ borderTop: '1px solid var(--border-subtle, #e2e8f0)', paddingTop: 6, fontSize: 11, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>⚠️ No Jamin (Guarantor) added yet for this customer.</span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label">Loan Type *</label>
@@ -258,6 +383,14 @@ export default function CreateLoan() {
           </button>
         </div>
       </form>
+
+      {/* Add / Edit Customer Modal */}
+      <AddCustomerModal
+        isOpen={showAddCustomer}
+        onClose={() => setShowAddCustomer(false)}
+        onSuccess={handleCustomerCreated}
+        editCustomer={selectedCustomer && form.customerId ? selectedCustomer : null}
+      />
     </div>
   );
 }

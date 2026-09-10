@@ -73,7 +73,13 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/customers
 router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
-    const { name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref, latitude, longitude } = req.body;
+    const {
+      name, phone, email, address, city, idType, idNumber,
+      idProofUrl, photoUrl,
+      notificationPref, latitude, longitude,
+      jaminName, jaminPhone, jaminAddress, jaminRelationship,
+      jaminIdType, jaminIdNumber, jaminPhotoUrl, jaminIdProofUrl
+    } = req.body;
 
     // Create or find user account for customer (allow sharing User profile if same phone)
     let user = await prisma.user.findFirst({ where: { phone } });
@@ -94,10 +100,32 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     }
 
     const customer = await prisma.customer.create({
-      data: { userId: user.id, name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref: notificationPref || 'WHATSAPP', latitude, longitude },
+      data: {
+        userId: user.id,
+        name,
+        phone,
+        email,
+        address,
+        city,
+        idType,
+        idNumber,
+        idProofUrl,
+        photoUrl,
+        notificationPref: notificationPref || 'WHATSAPP',
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        jaminName,
+        jaminPhone,
+        jaminAddress,
+        jaminRelationship,
+        jaminIdType,
+        jaminIdNumber,
+        jaminPhotoUrl,
+        jaminIdProofUrl,
+      },
     });
 
-    await auditLog(req.user.id, 'CREATE_CUSTOMER', 'Customer', customer.id, { name, phone }, req);
+    await auditLog(req.user.id, 'CREATE_CUSTOMER', 'Customer', customer.id, { name, phone, jaminName }, req);
     res.status(201).json({ success: true, data: customer });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -107,12 +135,40 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 // PUT /api/customers/:id
 router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
-    const { name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref, latitude, longitude } = req.body;
+    const {
+      name, phone, email, address, city, idType, idNumber,
+      idProofUrl, photoUrl,
+      notificationPref, latitude, longitude,
+      jaminName, jaminPhone, jaminAddress, jaminRelationship,
+      jaminIdType, jaminIdNumber, jaminPhotoUrl, jaminIdProofUrl
+    } = req.body;
+
     const customer = await prisma.customer.update({
       where: { id: req.params.id },
-      data: { name, phone, email, address, city, idType, idNumber, idProofUrl, notificationPref, latitude, longitude },
+      data: {
+        name,
+        phone,
+        email,
+        address,
+        city,
+        idType,
+        idNumber,
+        idProofUrl,
+        photoUrl,
+        notificationPref,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        jaminName,
+        jaminPhone,
+        jaminAddress,
+        jaminRelationship,
+        jaminIdType,
+        jaminIdNumber,
+        jaminPhotoUrl,
+        jaminIdProofUrl,
+      },
     });
-    await auditLog(req.user.id, 'UPDATE_CUSTOMER', 'Customer', customer.id, {}, req);
+    await auditLog(req.user.id, 'UPDATE_CUSTOMER', 'Customer', customer.id, { jaminName }, req);
     res.json({ success: true, data: customer });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
