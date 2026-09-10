@@ -28,6 +28,8 @@ export default function LoanDetail() {
   
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [expandedWeeks, setExpandedWeeks] = useState({});
+  const toggleWeek = (w) => setExpandedWeeks(prev => ({ ...prev, [w]: prev[w] !== undefined ? !prev[w] : false }));
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -153,9 +155,6 @@ export default function LoanDetail() {
     weekMap[w].push(r);
   });
   const weekNumbers = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
-
-  const [expandedWeeks, setExpandedWeeks] = useState({});
-  const toggleWeek = (w) => setExpandedWeeks(prev => ({ ...prev, [w]: prev[w] !== undefined ? !prev[w] : false }));
 
   return (
     <div className="animate-in">
