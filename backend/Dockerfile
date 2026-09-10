@@ -22,4 +22,4 @@ RUN npx prisma generate
 
 EXPOSE 5000
 
-CMD npx prisma db push && npm start
+CMD npx prisma db push --accept-data-loss && npm start

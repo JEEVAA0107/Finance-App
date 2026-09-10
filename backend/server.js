@@ -65,7 +65,12 @@ app.use('/api/audit',      require('./src/routes/audit'));
 app.use('/api/notifications', require('./src/routes/notifications'));
 
 // Health check
-app.get('/health', (req, res) => res.json({ status: 'ok', app: process.env.APP_NAME }));
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  app: process.env.APP_NAME || 'Finova',
+  version: '2.2.0-customer-jamin-edit',
+  timestamp: new Date().toISOString()
+}));
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
@@ -102,14 +107,18 @@ async function syncDatabaseSchema() {
       'jaminIdProofUrl',
     ];
     for (const col of columns) {
-      try {
-        await prisma.$executeRawUnsafe(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "${col}" TEXT;`);
-      } catch (_) {
+      const attempts = [
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "${col}" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN "${col}" TEXT;`,
+        `ALTER TABLE customer ADD COLUMN IF NOT EXISTS "${col}" TEXT;`,
+        `ALTER TABLE customer ADD COLUMN "${col}" TEXT;`,
+        `ALTER TABLE customers ADD COLUMN IF NOT EXISTS "${col}" TEXT;`
+      ];
+      for (const sql of attempts) {
         try {
-          await prisma.$executeRawUnsafe(`ALTER TABLE "Customer" ADD COLUMN "${col}" TEXT;`);
-        } catch (sqliteErr) {
-          // Column may already exist
-        }
+          await prisma.$executeRawUnsafe(sql);
+          break;
+        } catch (_) {}
       }
     }
     console.log('✅ Customer & Jamin schema columns verified');

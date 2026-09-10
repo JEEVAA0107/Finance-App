@@ -185,9 +185,31 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
 
     setSubmitting(true);
     try {
-      const payload = { ...form };
+      const payload = {
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email?.trim() || null,
+        address: form.address.trim(),
+        city: form.city.trim(),
+        idType: form.idType || 'AADHAR',
+        idNumber: form.idNumber.trim(),
+        idProofUrl: form.idProofUrl || null,
+        photoUrl: form.photoUrl || null,
+        notificationPref: form.notificationPref || 'WHATSAPP',
+        latitude: form.latitude !== null && form.latitude !== undefined && form.latitude !== '' ? parseFloat(form.latitude) : null,
+        longitude: form.longitude !== null && form.longitude !== undefined && form.longitude !== '' ? parseFloat(form.longitude) : null,
+        jaminName: form.jaminName?.trim() || null,
+        jaminPhone: form.jaminPhone?.trim() || null,
+        jaminAddress: form.jaminAddress?.trim() || null,
+        jaminRelationship: form.jaminRelationship || null,
+        jaminIdType: form.jaminIdType || 'AADHAR',
+        jaminIdNumber: form.jaminIdNumber?.trim() || null,
+        jaminPhotoUrl: form.jaminPhotoUrl || null,
+        jaminIdProofUrl: form.jaminIdProofUrl || null,
+      };
+
       let res;
-      if (editCustomer) {
+      if (editCustomer && editCustomer.id) {
         res = await customersAPI.update(editCustomer.id, payload);
         toast.success('Customer details updated successfully!');
       } else {

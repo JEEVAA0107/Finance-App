@@ -40,9 +40,28 @@ export default function CustomersPage() {
     setShowModal(true);
   };
 
-  const openEdit = (c) => {
+  const openEdit = async (c) => {
     setEditCustomer(c);
     setShowModal(true);
+    try {
+      const full = await customersAPI.get(c.id);
+      if (full) setEditCustomer(full);
+    } catch (_) {}
+  };
+
+  const handleCustomerSaved = (saved) => {
+    if (saved && saved.id) {
+      setCustomers(prev => {
+        const idx = prev.findIndex(c => c.id === saved.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...saved };
+          return next;
+        }
+        return [saved, ...prev];
+      });
+    }
+    load();
   };
 
   useEffect(() => {
@@ -186,7 +205,7 @@ export default function CustomersPage() {
       <AddCustomerModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onSuccess={load}
+        onSuccess={handleCustomerSaved}
         editCustomer={editCustomer}
       />
     </div>

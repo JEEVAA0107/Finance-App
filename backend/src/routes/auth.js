@@ -57,6 +57,45 @@ router.get('/emergency-reset', async (req, res) => {
   }
 });
 
+// GET /api/auth/sync-db - Sync customer & jamin schema columns
+router.get('/sync-db', async (req, res) => {
+  try {
+    const columns = [
+      'photoUrl',
+      'jaminName',
+      'jaminPhone',
+      'jaminAddress',
+      'jaminRelationship',
+      'jaminIdType',
+      'jaminIdNumber',
+      'jaminPhotoUrl',
+      'jaminIdProofUrl',
+    ];
+    const results = [];
+    for (const col of columns) {
+      const attempts = [
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "${col}" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN "${col}" TEXT;`,
+        `ALTER TABLE customer ADD COLUMN IF NOT EXISTS "${col}" TEXT;`,
+        `ALTER TABLE customer ADD COLUMN "${col}" TEXT;`,
+        `ALTER TABLE customers ADD COLUMN IF NOT EXISTS "${col}" TEXT;`
+      ];
+      let colSuccess = false;
+      for (const sql of attempts) {
+        try {
+          await prisma.$executeRawUnsafe(sql);
+          colSuccess = true;
+          break;
+        } catch (_) {}
+      }
+      results.push({ column: col, success: colSuccess });
+    }
+    res.json({ success: true, message: 'DB columns checked and synced', results });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {

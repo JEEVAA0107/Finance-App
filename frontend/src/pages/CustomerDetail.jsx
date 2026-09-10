@@ -395,7 +395,10 @@ export default function CustomerDetail() {
       <AddCustomerModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        onSuccess={fetchCustomer}
+        onSuccess={(updated) => {
+          if (updated) setCustomer(prev => ({ ...prev, ...updated }));
+          fetchCustomer();
+        }}
         editCustomer={customer}
       />
 

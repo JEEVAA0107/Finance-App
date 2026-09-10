@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { loansAPI, customersAPI } from '../services/api';
 import AddCustomerModal from '../components/AddCustomerModal';
 import toast from 'react-hot-toast';
-import { Landmark, UserPlus, User, ShieldCheck, Phone, CheckCircle2 } from 'lucide-react';
+import { Landmark, UserPlus, User, ShieldCheck, Phone, CheckCircle2, Edit2 } from 'lucide-react';
 
 export default function CreateLoan() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [form, setForm] = useState({
     customerId: '', principalAmount: '', interestRate: '',
     interestType: 'FLAT', tenure: '10', advanceDeduction: '', alreadyCollectedAmount: '',
@@ -126,25 +127,48 @@ export default function CreateLoan() {
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <label className="form-label" style={{ marginBottom: 0, fontWeight: 700 }}>Customer *</label>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => setShowAddCustomer(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: 'var(--primary-600, #4f46e5)',
-                  background: 'rgba(99, 102, 241, 0.08)',
-                  border: '1px solid rgba(99, 102, 241, 0.2)',
-                  padding: '4px 10px',
-                  borderRadius: 8,
-                }}
-              >
-                <UserPlus size={14} /> + New Customer
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {selectedCustomer && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => { setEditingCustomer(selectedCustomer); setShowAddCustomer(true); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: '#059669',
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      padding: '4px 8px',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Edit2 size={13} /> Edit Details & Jamin
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => { setEditingCustomer(null); setShowAddCustomer(true); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: 'var(--primary-600, #4f46e5)',
+                    background: 'rgba(99, 102, 241, 0.08)',
+                    border: '1px solid rgba(99, 102, 241, 0.2)',
+                    padding: '4px 10px',
+                    borderRadius: 8,
+                  }}
+                >
+                  <UserPlus size={14} /> + New Customer
+                </button>
+              </div>
             </div>
             <select className="form-select" value={form.customerId} onChange={e => set('customerId', e.target.value)} required>
               <option value="">Select customer...</option>
@@ -387,9 +411,9 @@ export default function CreateLoan() {
       {/* Add / Edit Customer Modal */}
       <AddCustomerModal
         isOpen={showAddCustomer}
-        onClose={() => setShowAddCustomer(false)}
+        onClose={() => { setShowAddCustomer(false); setEditingCustomer(null); }}
         onSuccess={handleCustomerCreated}
-        editCustomer={selectedCustomer && form.customerId ? selectedCustomer : null}
+        editCustomer={editingCustomer}
       />
     </div>
   );
