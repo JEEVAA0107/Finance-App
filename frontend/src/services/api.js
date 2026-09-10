@@ -125,6 +125,7 @@ export const repaymentsAPI = {
 // ─── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsAPI = {
   collect: (data) => api.post('/payments', data).then(extractData),
+  collectPenalty: (data) => api.post('/payments/penalty', data).then(extractData),
   collectPrincipal: (data) => api.post('/payments/principal', data).then(extractData),
   close: (data) => api.post('/payments/close', data).then(extractData),
   list: (params) => api.get('/payments', { params }).then(extractData),

@@ -137,6 +137,33 @@ async function syncDatabaseSchema() {
       }
     }
     console.log('✅ Customer & Jamin schema columns verified');
+
+    // Repayment table schema updates for Weekly & Daily Carry-Forward
+    const repaymentCols = [
+      { col: 'weekNo', type: 'INTEGER' },
+      { col: 'dayNo', type: 'INTEGER' },
+      { col: 'penaltyAmount', type: 'DOUBLE PRECISION DEFAULT 0' },
+      { col: 'penaltyPaid', type: 'DOUBLE PRECISION DEFAULT 0' },
+      { col: 'penaltyStatus', type: "TEXT DEFAULT 'NONE'" },
+      { col: 'originalDueDate', type: 'TIMESTAMP' },
+      { col: 'carriedToInstNo', type: 'INTEGER' }
+    ];
+
+    for (const item of repaymentCols) {
+      const attempts = [
+        `ALTER TABLE "Repayment" ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE "Repayment" ADD COLUMN "${item.col}" ${item.type};`,
+        `ALTER TABLE repayment ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE repayments ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`
+      ];
+      for (const sql of attempts) {
+        try {
+          await prisma.$executeRawUnsafe(sql);
+          break;
+        } catch (_) {}
+      }
+    }
+    console.log('✅ Repayment carry-forward columns verified');
   } catch (err) {
     console.warn('⚠️ Schema check note:', err.message);
   }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { loansAPI, paymentsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2, User, ShieldCheck, Phone, Eye, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, HandCoins, X, Banknote, Lock, Trash2, User, ShieldCheck, Phone, Eye, FileText, Calendar, ArrowRight, CornerDownRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { isPdfDocument } from '../utils/imageCompressor';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,6 +16,9 @@ export default function LoanDetail() {
   const [payModal, setPayModal] = useState(null);
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
+  const [penaltyModal, setPenaltyModal] = useState(null);
+  const [penaltyForm, setPenaltyForm] = useState({ amount: '100', paymentMode: 'CASH', reference: '', notes: '' });
+  const [payingPenalty, setPayingPenalty] = useState(false);
   const [principalModal, setPrincipalModal] = useState(false);
   const [principalForm, setPrincipalForm] = useState({ amount: '', accruedInterest: '', penaltyAmount: '', paymentMode: 'CASH', reference: '', notes: '' });
   const [payingPrincipal, setPayingPrincipal] = useState(false);
@@ -60,6 +63,37 @@ export default function LoanDetail() {
     finally { setPaying(false); }
   };
 
+  const handleOpenPenaltyModal = (r) => {
+    setPenaltyModal(r);
+    setPenaltyForm({
+      amount: String(r.penaltyAmount > 0 ? r.penaltyAmount : 100),
+      paymentMode: 'CASH',
+      reference: '',
+      notes: ''
+    });
+  };
+
+  const handlePayPenalty = async (e) => {
+    e.preventDefault();
+    setPayingPenalty(true);
+    try {
+      const res = await paymentsAPI.collectPenalty({
+        repaymentId: penaltyModal.id,
+        amount: parseFloat(penaltyForm.amount),
+        paymentMode: penaltyForm.paymentMode,
+        reference: penaltyForm.reference,
+        notes: penaltyForm.notes,
+      });
+      toast.success(res.message || '✓ Penalty collected & Installment carried forward!');
+      setPenaltyModal(null);
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to collect penalty');
+    } finally {
+      setPayingPenalty(false);
+    }
+  };
+
   const handlePrincipalPay = async (e) => {
     e.preventDefault();
     setPayingPrincipal(true);
@@ -98,19 +132,30 @@ export default function LoanDetail() {
 
   const outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
   const isWithoutInt = loan.interestType === 'WITHOUT_INTEREST';
+  const isDaily = loan.tenureUnit === 'DAYS' || loan.repayments?.some(r => r.dayNo != null);
   const paidCount = loan.repayments?.filter(r => r.status === 'PAID').length || 0;
+  const carriedCount = loan.repayments?.filter(r => r.status === 'CARRIED_FORWARD').length || 0;
+  const overdueCount = loan.repayments?.filter(r => r.status === 'OVERDUE').length || 0;
   const totalCount = loan.repayments?.length || 1;
   const progress = Math.round((paidCount / totalCount) * 100);
 
-  // Show unpaid first, then recent paid — limit to 20 unless showAll
-  const unpaid = loan.repayments?.filter(r => r.status !== 'PAID') || [];
-  const paid = loan.repayments?.filter(r => r.status === 'PAID').slice(-5) || [];
-  const displayList = showAll ? loan.repayments : [...unpaid, ...paid].slice(0, 20);
-
-  // Sequential lock: find lowest installmentNo that is not PAID
-  const lowestUnpaidInstNo = unpaid.length > 0
-    ? Math.min(...unpaid.map(r => r.installmentNo))
+  // Active unpaid: only installments that are neither PAID nor CARRIED_FORWARD
+  const activeUnpaid = loan.repayments?.filter(r => r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD') || [];
+  const lowestUnpaidInstNo = activeUnpaid.length > 0
+    ? Math.min(...activeUnpaid.map(r => r.installmentNo))
     : null;
+
+  // Group all repayments by weekNo
+  const weekMap = {};
+  (loan.repayments || []).forEach(r => {
+    const w = r.weekNo || (r.installmentNo ? Math.floor((r.installmentNo - 1) / (isDaily ? 7 : 1)) + 1 : 1);
+    if (!weekMap[w]) weekMap[w] = [];
+    weekMap[w].push(r);
+  });
+  const weekNumbers = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
+
+  const [expandedWeeks, setExpandedWeeks] = useState({});
+  const toggleWeek = (w) => setExpandedWeeks(prev => ({ ...prev, [w]: prev[w] !== undefined ? !prev[w] : false }));
 
   return (
     <div className="animate-in">
@@ -285,55 +330,286 @@ export default function LoanDetail() {
         </div>
       </div>
 
-      {/* Installments */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>Installments</div>
-          <span className="badge badge-muted">{unpaid.length} pending</span>
-        </div>
-
-        {displayList.map(r => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: r.status === 'PAID' ? 'rgba(16,185,129,0.15)' : r.status === 'OVERDUE' ? 'rgba(244,63,94,0.15)' : 'rgba(0,0,0,0.05)' }}>
-                {r.status === 'PAID' ? <CheckCircle size={14} style={{ color: 'var(--accent-600)' }} /> : r.status === 'OVERDUE' ? <AlertTriangle size={14} style={{ color: 'var(--danger-600)' }} /> : <Clock size={14} style={{ color: 'var(--text-muted)' }} />}
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>#{r.installmentNo} · {fmtShort(r.dueDate)}</div>
-                {r.paidAmount > 0 && r.status !== 'PAID' && <div style={{ fontSize: 11, color: 'var(--accent-600)' }}>Partial: ₹{r.paidAmount?.toLocaleString('en-IN')}</div>}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>₹{r.dueAmount?.toLocaleString('en-IN')}</div>
-              </div>
-              {r.status !== 'PAID' && loan.status !== 'CLOSED' && (
-                lowestUnpaidInstNo !== null && r.installmentNo > lowestUnpaidInstNo ? (
-                  // Blocked — earlier installment not paid yet
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ padding: '6px 10px', cursor: 'not-allowed', opacity: 0.45 }}
-                    disabled
-                    title={`முதலில் #${lowestUnpaidInstNo} collect செய்யுங்கள்`}
-                  >
-                    <Lock size={13} />
-                  </button>
-                ) : (
-                  <button className="btn btn-success btn-sm" style={{ padding: '6px 10px' }}
-                    onClick={() => { setPayModal(r); setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '', penaltyAmount: '' }); }}>
-                    <HandCoins size={13} />
-                  </button>
-                )
-              )}
+      {/* Weekly Repayment Schedule */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>Weekly Repayment Schedule</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              {weekNumbers.length} Weeks · {totalCount} Installments {isDaily ? '(Daily Collections)' : '(Weekly Collections)'}
             </div>
           </div>
-        ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {overdueCount > 0 && (
+              <span className="badge badge-danger" style={{ fontSize: 11 }}>
+                ⚠️ {overdueCount} Overdue
+              </span>
+            )}
+            {carriedCount > 0 && (
+              <span className="badge" style={{ fontSize: 11, background: 'rgba(139,92,246,0.15)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.3)' }}>
+                ↺ {carriedCount} Carried Forward
+              </span>
+            )}
+            <span className="badge badge-success" style={{ fontSize: 11 }}>
+              ✓ {paidCount} Paid
+            </span>
+          </div>
+        </div>
 
-        {!showAll && loan.repayments?.length > 20 && (
-          <button className="btn btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => setShowAll(true)}>
-            Show all {loan.repayments.length} installments
-          </button>
-        )}
+        {/* Weeks Accordion List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {weekNumbers.map(w => {
+            const weekList = weekMap[w] || [];
+            const isWeekPaid = weekList.every(r => r.status === 'PAID');
+            const hasOverdue = weekList.some(r => r.status === 'OVERDUE');
+            const hasCarried = weekList.some(r => r.status === 'CARRIED_FORWARD');
+            const isWeekCleared = weekList.every(r => r.status === 'PAID' || r.status === 'CARRIED_FORWARD');
+            const weekDueSum = weekList.reduce((sum, r) => sum + r.dueAmount, 0);
+            const weekPaidSum = weekList.reduce((sum, r) => sum + (r.paidAmount || 0), 0);
+            
+            // Expanded by default unless all items are paid
+            const isExpanded = expandedWeeks[w] !== undefined ? expandedWeeks[w] : (!isWeekPaid || weekNumbers.length <= 10);
+
+            return (
+              <div
+                key={w}
+                style={{
+                  border: hasOverdue
+                    ? '1.5px solid rgba(239, 68, 68, 0.4)'
+                    : isWeekPaid
+                    ? '1px solid rgba(16, 185, 129, 0.3)'
+                    : hasCarried
+                    ? '1px solid rgba(139, 92, 246, 0.3)'
+                    : '1px solid var(--border-subtle)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  background: 'var(--bg-glass, rgba(255,255,255,0.02))',
+                }}
+              >
+                {/* Week Header */}
+                <div
+                  onClick={() => toggleWeek(w)}
+                  style={{
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    background: hasOverdue
+                      ? 'rgba(239, 68, 68, 0.06)'
+                      : isWeekPaid
+                      ? 'rgba(16, 185, 129, 0.05)'
+                      : hasCarried
+                      ? 'rgba(139, 92, 246, 0.05)'
+                      : 'rgba(0,0,0,0.02)',
+                    userSelect: 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: 13,
+                      background: hasOverdue ? '#fee2e2' : isWeekPaid ? '#d1fae5' : hasCarried ? '#ede9fe' : 'rgba(99,102,241,0.1)',
+                      color: hasOverdue ? '#b91c1c' : isWeekPaid ? '#047857' : hasCarried ? '#6d28d9' : 'var(--primary-600)',
+                    }}>
+                      W{w}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>Week {w}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {weekList.length} installments {weekList.length > 0 && `(${fmtShort(weekList[0].dueDate)} – ${fmtShort(weekList[weekList.length - 1].dueDate)})`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 800, fontSize: 13 }}>
+                        ₹{weekPaidSum.toLocaleString('en-IN')} / ₹{weekDueSum.toLocaleString('en-IN')}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                        {isWeekPaid ? 'Fully Paid' : hasOverdue ? 'Overdue Pending' : isWeekCleared ? 'Carried Forward' : 'In Progress'}
+                      </div>
+                    </div>
+
+                    {hasOverdue ? (
+                      <span className="badge badge-danger" style={{ fontSize: 10 }}>⚠️ Overdue</span>
+                    ) : isWeekPaid ? (
+                      <span className="badge badge-success" style={{ fontSize: 10 }}>✓ Paid</span>
+                    ) : isWeekCleared ? (
+                      <span className="badge" style={{ fontSize: 10, background: 'rgba(139,92,246,0.15)', color: '#7c3aed' }}>↺ Moved</span>
+                    ) : (
+                      <span className="badge badge-muted" style={{ fontSize: 10 }}>Pending</span>
+                    )}
+
+                    {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+                  </div>
+                </div>
+
+                {/* Week Installments Content */}
+                {isExpanded && (
+                  <div style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                    {weekList.map(r => {
+                      const isBlocked = lowestUnpaidInstNo !== null && r.installmentNo > lowestUnpaidInstNo && r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD';
+                      const isCarriedForward = r.status === 'CARRIED_FORWARD';
+                      const isOverdue = r.status === 'OVERDUE';
+                      const isPaid = r.status === 'PAID';
+
+                      return (
+                        <div
+                          key={r.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 16px',
+                            borderBottom: '1px solid var(--border-subtle)',
+                            background: isCarriedForward
+                              ? 'rgba(139,92,246,0.03)'
+                              : isOverdue
+                              ? 'rgba(239,68,68,0.03)'
+                              : 'transparent',
+                          }}
+                        >
+                          {/* Left: icon & details */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              background: isPaid
+                                ? 'rgba(16,185,129,0.15)'
+                                : isCarriedForward
+                                ? 'rgba(139,92,246,0.15)'
+                                : isOverdue
+                                ? 'rgba(239,68,68,0.15)'
+                                : 'rgba(0,0,0,0.05)',
+                            }}>
+                              {isPaid ? (
+                                <CheckCircle size={14} style={{ color: 'var(--accent-600)' }} />
+                              ) : isCarriedForward ? (
+                                <CornerDownRight size={14} style={{ color: '#7c3aed' }} />
+                              ) : isOverdue ? (
+                                <AlertTriangle size={14} style={{ color: '#ef4444' }} />
+                              ) : (
+                                <Clock size={14} style={{ color: 'var(--text-muted)' }} />
+                              )}
+                            </div>
+
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>#{r.installmentNo} {r.dayNo ? `· Day ${r.dayNo}` : ''}</span>
+                                <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>({fmtShort(r.dueDate)})</span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                {isPaid ? (
+                                  <span className="badge badge-success" style={{ fontSize: 10, padding: '1px 6px' }}>
+                                    Paid ₹{r.paidAmount?.toLocaleString('en-IN')}
+                                  </span>
+                                ) : isCarriedForward ? (
+                                  <span className="badge" style={{ fontSize: 10, padding: '1px 6px', background: 'rgba(139,92,246,0.15)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.3)' }}>
+                                    ↺ Carried Forward · Penalty Paid ₹{r.penaltyPaid || r.penaltyAmount} {r.carriedToInstNo ? `→ Inst #${r.carriedToInstNo}` : ''}
+                                  </span>
+                                ) : isOverdue ? (
+                                  <span className="badge badge-danger" style={{ fontSize: 10, padding: '1px 6px' }}>
+                                    Overdue · Penalty Due: ₹{r.penaltyAmount > 0 ? r.penaltyAmount : 100}
+                                  </span>
+                                ) : r.paidAmount > 0 ? (
+                                  <span className="badge badge-warning" style={{ fontSize: 10, padding: '1px 6px' }}>
+                                    Partial: ₹{r.paidAmount?.toLocaleString('en-IN')}
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-muted" style={{ fontSize: 10, padding: '1px 6px' }}>
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: amount and action buttons */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 800, fontSize: 14 }}>₹{r.dueAmount?.toLocaleString('en-IN')}</div>
+                            </div>
+
+                            {/* Actions */}
+                            {!isPaid && !isCarriedForward && loan.status !== 'CLOSED' && (
+                              isBlocked ? (
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ padding: '5px 8px', cursor: 'not-allowed', opacity: 0.45 }}
+                                  disabled
+                                  title={`முதலில் Installment #${lowestUnpaidInstNo} collect செய்யுங்கள் அல்லது Penalty செலுத்தி Carry Forward செய்யுங்கள்`}
+                                >
+                                  <Lock size={13} />
+                                </button>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  {/* Normal collection */}
+                                  <button
+                                    className="btn btn-success btn-sm"
+                                    style={{ padding: '5px 8px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                                    title="Collect Installment Amount"
+                                    onClick={() => {
+                                      setPayModal(r);
+                                      setPayForm({
+                                        amount: String(r.dueAmount - r.paidAmount),
+                                        paymentMode: 'CASH',
+                                        reference: '',
+                                        penaltyAmount: isOverdue ? String(r.penaltyAmount || 100) : ''
+                                      });
+                                    }}
+                                  >
+                                    <HandCoins size={13} /> Collect
+                                  </button>
+
+                                  {/* Overdue Case B: Pay Penalty Only & Carry Forward */}
+                                  {isOverdue && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-warning btn-sm"
+                                      style={{
+                                        padding: '5px 8px',
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        background: 'rgba(245,158,11,0.15)',
+                                        color: '#d97706',
+                                        border: '1px solid rgba(245,158,11,0.35)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 3,
+                                      }}
+                                      title="Pay Penalty Only & Carry Forward to End of Loan Schedule"
+                                      onClick={() => handleOpenPenaltyModal(r)}
+                                    >
+                                      <Clock size={12} /> Carry Fwd
+                                    </button>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Interest payment modal */}
@@ -382,6 +658,107 @@ export default function LoanDetail() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setPayModal(null)}>Cancel</button>
                 <button type="submit" className="btn btn-success" disabled={paying}>{paying ? 'Processing...' : `Collect ₹${(parseFloat(payForm.amount || 0) + parseFloat(payForm.penaltyAmount || 0)).toLocaleString('en-IN')}`}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Penalty / Carry-Forward Modal */}
+      {penaltyModal && (
+        <div className="modal-overlay" onClick={() => setPenaltyModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Pay Penalty & Carry Forward</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Installment #{penaltyModal.installmentNo} {penaltyModal.weekNo ? `(Week ${penaltyModal.weekNo})` : ''} · {loan.customer?.name}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setPenaltyModal(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handlePayPenalty}>
+              <div className="modal-body">
+                {/* Visual notice explaining Case B carry forward */}
+                <div style={{
+                  padding: '12px 14px',
+                  background: 'rgba(139,92,246,0.08)',
+                  border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: 10,
+                  marginBottom: 16,
+                  fontSize: 12,
+                  color: '#6d28d9',
+                  lineHeight: 1.5,
+                }}>
+                  <div style={{ fontWeight: 800, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Clock size={14} /> Penalty Carry-Forward System
+                  </div>
+                  <div>
+                    Paying the overdue penalty of <b>₹{penaltyForm.amount || 100}</b> will mark this installment as <b>CARRIED FORWARD (Penalty Paid)</b> and unlock subsequent collections.
+                    The unpaid installment amount of <b>₹{(penaltyModal.dueAmount - penaltyModal.paidAmount).toLocaleString('en-IN')}</b> will be dynamically appended to the end of the loan schedule, shifting the loan end date.
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                  <div style={{ background: 'var(--bg-glass)', padding: '10px 12px', borderRadius: 8, textAlign: 'center' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>UNPAID INSTALLMENT</div>
+                    <div style={{ fontWeight: 800, fontSize: 15 }}>₹{(penaltyModal.dueAmount - penaltyModal.paidAmount).toLocaleString('en-IN')}</div>
+                    <div style={{ fontSize: 10, color: '#7c3aed' }}>Carried to Schedule End</div>
+                  </div>
+                  <div style={{ background: 'var(--bg-glass)', padding: '10px 12px', borderRadius: 8, textAlign: 'center' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>PENALTY TO PAY NOW</div>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: '#d97706' }}>₹{penaltyForm.amount || 0}</div>
+                    <div style={{ fontSize: 10, color: '#059669' }}>Unlocks Carry Forward</div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Penalty Amount (₹) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={penaltyForm.amount}
+                    onChange={e => setPenaltyForm({ ...penaltyForm, amount: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Payment Mode</label>
+                  <select
+                    className="form-select"
+                    value={penaltyForm.paymentMode}
+                    onChange={e => setPenaltyForm({ ...penaltyForm, paymentMode: e.target.value })}
+                  >
+                    <option value="CASH">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="BANK">Bank Transfer</option>
+                    <option value="CHEQUE">Cheque</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Reference / Notes (optional)</label>
+                  <input
+                    className="form-input"
+                    placeholder="UPI Ref ID or reason"
+                    value={penaltyForm.notes}
+                    onChange={e => setPenaltyForm({ ...penaltyForm, notes: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setPenaltyModal(null)}>Cancel</button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                  disabled={payingPenalty}
+                >
+                  {payingPenalty ? 'Processing...' : `Pay ₹${penaltyForm.amount} & Carry Forward`}
+                </button>
               </div>
             </form>
           </div>

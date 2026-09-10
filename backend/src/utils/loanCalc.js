@@ -104,13 +104,42 @@ async function syncOverdueStatus(prisma) {
   });
 
   // 2. Mark repayments as OVERDUE ONLY IF due date is strictly BEFORE start of today (i.e. yesterday or earlier)
-  await prisma.repayment.updateMany({
+  const overdueReps = await prisma.repayment.findMany({
     where: {
       status: { in: ['PENDING', 'PARTIAL'] },
       dueDate: { lt: startOfToday },
     },
-    data: { status: 'OVERDUE' },
+    include: { loan: true },
   });
+
+  for (const rep of overdueReps) {
+    const penAmt = rep.penaltyAmount > 0 ? rep.penaltyAmount : 100;
+    await prisma.repayment.update({
+      where: { id: rep.id },
+      data: {
+        status: 'OVERDUE',
+        penaltyStatus: rep.penaltyStatus === 'PAID' ? 'PAID' : 'PENDING',
+        penaltyAmount: penAmt,
+      },
+    });
+  }
+
+  // 3. One-time backfill for missing weekNo/dayNo on any repayments
+  const missingScheduleReps = await prisma.repayment.findMany({
+    where: { weekNo: null },
+    include: { loan: true },
+    take: 100,
+  });
+
+  for (const r of missingScheduleReps) {
+    const isDaily = r.loan?.tenureUnit === 'DAYS';
+    const weekNo = isDaily ? Math.floor((r.installmentNo - 1) / 7) + 1 : r.installmentNo;
+    const dayNo = isDaily ? ((r.installmentNo - 1) % 7) + 1 : 1;
+    await prisma.repayment.update({
+      where: { id: r.id },
+      data: { weekNo, dayNo, originalDueDate: r.dueDate },
+    });
+  }
 }
 
 module.exports = {

@@ -3,7 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
-const { generateLoanNumber } = require('../utils/loanCalc');
+const { generateLoanNumber, syncOverdueStatus } = require('../utils/loanCalc');
 const prisma = new PrismaClient();
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -19,27 +19,39 @@ function getBatchSize(tenureUnit) {
 }
 
 /**
- * Generate interest-only installment records.
+ * Generate installment records with weekly/daily schedule metadata.
  * @param {string} loanId
- * @param {number} interestPerPeriod - interest amount per installment
+ * @param {number} principalPerPeriod
+ * @param {number} interestPerPeriod
  * @param {string} tenureUnit - WEEKS | MONTHS | DAYS
- * @param {Date} startFrom - the date to start generating from
- * @param {number} startNo - installment number to start from
- * @param {number} count - how many installments to generate
+ * @param {Date} startFrom - starting date
+ * @param {number} startNo - starting installment number
+ * @param {number} count - number of installments
+ * @param {string} frequency - DAILY | WEEKLY | MONTHLY
  */
-function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, tenureUnit, startFrom, startNo, count) {
+function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, tenureUnit, startFrom, startNo, count, frequency = null) {
   const installments = [];
+  const isDaily = frequency === 'DAILY' || tenureUnit === 'DAYS';
 
   for (let i = 0; i < count; i++) {
     const dueDate = new Date(startFrom);
-    
-    // If it's the very first batch of the loan, the first installment starts ON the start date (offset 0).
-    // If it's an auto-extended batch, it continues from the previous installment's due date (offset 1).
     const offset = (startNo === 1) ? i : (i + 1);
 
-    if (tenureUnit === 'MONTHS') dueDate.setMonth(dueDate.getMonth() + offset);
-    else if (tenureUnit === 'WEEKS') dueDate.setDate(dueDate.getDate() + offset * 7);
-    else dueDate.setDate(dueDate.getDate() + offset);
+    let weekNo, dayNo;
+    if (isDaily) {
+      dueDate.setDate(dueDate.getDate() + offset);
+      const absIndex = (startNo - 1) + i;
+      weekNo = Math.floor(absIndex / 7) + 1;
+      dayNo = (absIndex % 7) + 1;
+    } else if (tenureUnit === 'WEEKS' || frequency === 'WEEKLY') {
+      dueDate.setDate(dueDate.getDate() + offset * 7);
+      weekNo = (startNo - 1) + i + 1;
+      dayNo = 1;
+    } else {
+      dueDate.setMonth(dueDate.getMonth() + offset);
+      weekNo = (startNo - 1) + i + 1;
+      dayNo = 1;
+    }
 
     let prin = round2(principalPerPeriod);
     let intst = round2(interestPerPeriod);
@@ -48,10 +60,16 @@ function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, ten
     installments.push({
       loanId,
       installmentNo: startNo + i,
+      weekNo,
+      dayNo,
       dueDate,
+      originalDueDate: dueDate,
       dueAmount: due,
       principal: prin,
       interest: intst,
+      penaltyAmount: 0,
+      penaltyPaid: 0,
+      penaltyStatus: 'NONE',
       status: 'PENDING',
     });
   }
@@ -221,6 +239,9 @@ router.get('/:id/preclosure', authenticate, async (req, res) => {
 // GET /api/loans/:id
 router.get('/:id', authenticate, async (req, res) => {
   try {
+    // Auto-sync overdue statuses and penalty amounts
+    await syncOverdueStatus(prisma);
+
     // Auto-extend installments if running low (before fetching)
     await autoExtendIfNeeded(req.params.id);
 
@@ -242,13 +263,13 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/loans — Create loan (ALL loans are continuous / interest-only until principal is paid)
+// POST /api/loans — Create loan
 router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
     const {
       customerId, agentId, principalAmount, interestRate,
       interestType = 'FLAT', tenure, tenureUnit = 'MONTHS',
-      processingFee = 0, startDate, alreadyCollectedAmount = 0,
+      processingFee = 0, advanceDeduction, repaymentFrequency, startDate, alreadyCollectedAmount = 0,
     } = req.body;
 
     if (!customerId || !principalAmount || interestRate === undefined || !startDate) {
@@ -256,11 +277,17 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     }
 
     const start = new Date(startDate);
+    const fee = parseFloat(advanceDeduction || processingFee || 0);
     
     let batchSize, interestPerPeriod, principalPerPeriod, installmentAmount, totalPayable, totalInterest;
+    let frequency = repaymentFrequency || (tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY');
 
     if (interestType === 'WITHOUT_INTEREST') {
-      batchSize = tenure ? parseInt(tenure) : getBatchSize(tenureUnit);
+      const isDaily = frequency === 'DAILY' || tenureUnit === 'DAYS';
+      const weeksOrDays = tenure ? parseInt(tenure) : 10;
+      
+      // If daily frequency, 10 weeks = 70 daily installments
+      batchSize = isDaily ? (tenureUnit === 'DAYS' ? weeksOrDays : weeksOrDays * 7) : weeksOrDays;
       interestPerPeriod = 0;
       principalPerPeriod = parseFloat(principalAmount) / batchSize;
       installmentAmount = principalPerPeriod;
@@ -291,10 +318,11 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       installmentAmount: round2(installmentAmount),
     };
 
-    // End date = last installment of initial batch (will auto-extend)
+    // End date calculation
     const end = new Date(start);
-    if (tenureUnit === 'MONTHS') end.setMonth(end.getMonth() + batchSize);
-    else if (tenureUnit === 'WEEKS') end.setDate(end.getDate() + batchSize * 7);
+    if (frequency === 'DAILY' || tenureUnit === 'DAYS') end.setDate(end.getDate() + batchSize);
+    else if (tenureUnit === 'MONTHS') end.setMonth(end.getMonth() + batchSize);
+    else if (tenureUnit === 'WEEKS' || frequency === 'WEEKLY') end.setDate(end.getDate() + batchSize * 7);
     else end.setDate(end.getDate() + batchSize);
 
     // Generate sequential loan number
@@ -322,9 +350,9 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
         principalAmount: parseFloat(principalAmount),
         interestRate: parseFloat(interestRate),
         interestType,
-        tenure: batchSize,  // Initial batch count (will grow as we auto-extend)
+        tenure: batchSize,
         tenureUnit,
-        processingFee: parseFloat(processingFee),
+        processingFee: fee,
         ...calc,
         interestCollected: 0,
         outstandingPrincipal: parseFloat(principalAmount),
@@ -337,7 +365,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 
     // Generate initial installment batch
     const installments = generateInstallments(
-      loan.id, principalPerPeriod, interestPerPeriod, tenureUnit, start, 1, batchSize
+      loan.id, principalPerPeriod, interestPerPeriod, tenureUnit, start, 1, batchSize, frequency
     );
     await prisma.repayment.createMany({ data: installments });
 

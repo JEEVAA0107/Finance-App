@@ -24,27 +24,28 @@ export default function CollectionPage() {
   const [payModal, setPayModal] = useState(null);
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
+  const [penaltyModal, setPenaltyModal] = useState(null);
+  const [penaltyForm, setPenaltyForm] = useState({ amount: '100', paymentMode: 'CASH', reference: '', notes: '' });
+  const [payingPenalty, setPayingPenalty] = useState(false);
   const [search, setSearch] = useState('');
   const [loanType, setLoanType] = useState('ALL');
 
   // Group repayments by loanId to detect blocked installments
-  // A repayment is BLOCKED if any earlier installmentNo for same loan is not PAID
+  // An installment is blocked ONLY if an earlier installment is NOT PAID and NOT CARRIED_FORWARD
   const getBlockedMap = (list) => {
-    // For each loanId, find the lowest unpaid installmentNo
     const lowestUnpaid = {};
     list.forEach(r => {
-      if (r.status !== 'PAID') {
+      if (r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD') {
         if (lowestUnpaid[r.loan?.id] === undefined || r.installmentNo < lowestUnpaid[r.loan?.id]) {
           lowestUnpaid[r.loan?.id] = r.installmentNo;
         }
       }
     });
-    // A repayment is blocked if its installmentNo > lowestUnpaid for that loan
     const blocked = {};
     list.forEach(r => {
       const loanId = r.loan?.id;
-      if (r.status !== 'PAID' && lowestUnpaid[loanId] !== undefined && r.installmentNo > lowestUnpaid[loanId]) {
-        blocked[r.id] = lowestUnpaid[loanId]; // value = the blocking installmentNo
+      if (r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD' && lowestUnpaid[loanId] !== undefined && r.installmentNo > lowestUnpaid[loanId]) {
+        blocked[r.id] = lowestUnpaid[loanId];
       }
     });
     return blocked;
@@ -88,9 +89,45 @@ export default function CollectionPage() {
     finally { setPaying(false); }
   };
 
+  const handleOpenPenaltyModal = (r) => {
+    setPenaltyModal(r);
+    setPenaltyForm({
+      amount: String(r.penaltyAmount > 0 ? r.penaltyAmount : 100),
+      paymentMode: 'CASH',
+      reference: '',
+      notes: ''
+    });
+  };
+
+  const handlePayPenalty = async (e) => {
+    e.preventDefault();
+    setPayingPenalty(true);
+    try {
+      const res = await paymentsAPI.collectPenalty({
+        repaymentId: penaltyModal.id,
+        amount: parseFloat(penaltyForm.amount),
+        paymentMode: penaltyForm.paymentMode,
+        reference: penaltyForm.reference,
+        notes: penaltyForm.notes,
+      });
+      toast.success(res.message || '✓ Penalty collected & Carried forward!');
+      setPenaltyModal(null);
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to collect penalty');
+    } finally {
+      setPayingPenalty(false);
+    }
+  };
+
   const openPay = (r) => {
     setPayModal(r);
-    setPayForm({ amount: String(r.dueAmount - r.paidAmount), paymentMode: 'CASH', reference: '', penaltyAmount: '' });
+    setPayForm({
+      amount: String(r.dueAmount - r.paidAmount),
+      paymentMode: 'CASH',
+      reference: '',
+      penaltyAmount: r.status === 'OVERDUE' ? String(r.penaltyAmount || 100) : ''
+    });
   };
 
   return (
@@ -201,7 +238,7 @@ export default function CollectionPage() {
                     </div>
                   )}
                 </div>
-                {r.status !== 'PAID' && (
+                {r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD' && (
                   isBlocked ? (
                     // Locked button — cannot collect out of order
                     <button
@@ -213,9 +250,30 @@ export default function CollectionPage() {
                       <Lock size={14} /> Locked
                     </button>
                   ) : (
-                    <button className="btn btn-success" style={{ minWidth: 90 }} onClick={() => openPay(r)}>
-                      <HandCoins size={15} /> Collect
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button className="btn btn-success btn-sm" style={{ minWidth: 80 }} onClick={() => openPay(r)}>
+                        <HandCoins size={14} /> Collect
+                      </button>
+                      {r.status === 'OVERDUE' && (
+                        <button
+                          type="button"
+                          className="btn btn-warning btn-sm"
+                          style={{
+                            minWidth: 80,
+                            background: 'rgba(245,158,11,0.15)',
+                            color: '#d97706',
+                            border: '1px solid rgba(245,158,11,0.35)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                          title="Pay Penalty Only & Carry Forward"
+                          onClick={() => handleOpenPenaltyModal(r)}
+                        >
+                          <Clock size={13} /> Carry Fwd
+                        </button>
+                      )}
+                    </div>
                   )
                 )}
               </div>
@@ -275,7 +333,7 @@ export default function CollectionPage() {
                     <option value="CHEQUE">Cheque</option>
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Reference (optional)</label>
                   <input className="form-input" placeholder="UPI / Txn ID" value={payForm.reference}
                     onChange={e => setPayForm({ ...payForm, reference: e.target.value })} />
@@ -285,6 +343,91 @@ export default function CollectionPage() {
                 <button type="button" className="btn btn-ghost" onClick={() => setPayModal(null)}>Cancel</button>
                 <button type="submit" className="btn btn-success" disabled={paying}>
                   {paying ? 'Processing...' : `Collect ₹${(parseFloat(payForm.amount || 0) + parseFloat(payForm.penaltyAmount || 0)).toLocaleString('en-IN')}`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Penalty Only / Carry-Forward Modal */}
+      {penaltyModal && (
+        <div className="modal-overlay" onClick={() => setPenaltyModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Pay Penalty & Carry Forward</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {penaltyModal.loan?.customer?.name} · {penaltyModal.loan?.loanNumber} #{penaltyModal.installmentNo}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setPenaltyModal(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handlePayPenalty}>
+              <div className="modal-body">
+                <div style={{
+                  padding: '12px 14px',
+                  background: 'rgba(139,92,246,0.08)',
+                  border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: 10,
+                  marginBottom: 16,
+                  fontSize: 12,
+                  color: '#6d28d9',
+                  lineHeight: 1.5,
+                }}>
+                  <div style={{ fontWeight: 800, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Clock size={14} /> Penalty Carry-Forward System
+                  </div>
+                  <div>
+                    Collecting penalty <b>₹{penaltyForm.amount}</b> marks this installment as <b>CARRIED FORWARD</b> and pushes the unpaid balance of <b>₹{(penaltyModal.dueAmount - penaltyModal.paidAmount).toLocaleString('en-IN')}</b> to a newly appended installment at the end of the loan schedule.
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Penalty Amount (₹) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="1"
+                    value={penaltyForm.amount}
+                    onChange={e => setPenaltyForm({ ...penaltyForm, amount: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Payment Mode</label>
+                  <select
+                    className="form-select"
+                    value={penaltyForm.paymentMode}
+                    onChange={e => setPenaltyForm({ ...penaltyForm, paymentMode: e.target.value })}
+                  >
+                    <option value="CASH">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="BANK">Bank Transfer</option>
+                    <option value="CHEQUE">Cheque</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Reference / Notes (optional)</label>
+                  <input
+                    className="form-input"
+                    placeholder="UPI Ref ID or reason"
+                    value={penaltyForm.notes}
+                    onChange={e => setPenaltyForm({ ...penaltyForm, notes: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setPenaltyModal(null)}>Cancel</button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                  disabled={payingPenalty}
+                >
+                  {payingPenalty ? 'Processing...' : `Collect ₹${penaltyForm.amount} & Carry Forward`}
                 </button>
               </div>
             </form>

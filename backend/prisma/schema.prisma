@@ -131,10 +131,21 @@ model Repayment {
   principal     Float
   interest      Float
   
+  // Weekly & Daily schedule tracking
+  weekNo        Int?     // e.g. Week 1, Week 2...
+  dayNo         Int?     // e.g. Day 1 to Day 7 for daily frequency
+  
+  // Overdue Penalty & Carry Forward
+  penaltyAmount Float    @default(0)
+  penaltyPaid   Float    @default(0)
+  penaltyStatus String   @default("NONE") // NONE | PENDING | PAID
+  originalDueDate DateTime? // Preserves original scheduled due date
+  carriedToInstNo Int?     // Installment number this was carried forward to
+  
   // Payment
   paidAmount    Float    @default(0)
   paidAt        DateTime?
-  status        String   @default("PENDING") // PENDING | PAID | OVERDUE | PARTIAL
+  status        String   @default("PENDING") // PENDING | PAID | OVERDUE | PARTIAL | CARRIED_FORWARD
   
   payments      Payment[]
   notificationLogs NotificationLog[]
@@ -142,6 +153,7 @@ model Repayment {
   @@index([loanId])
   @@index([dueDate])
   @@index([status])
+  @@index([weekNo])
 }
 
 model Payment {

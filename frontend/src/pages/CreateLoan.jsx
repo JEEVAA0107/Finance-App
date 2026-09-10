@@ -13,8 +13,8 @@ export default function CreateLoan() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [form, setForm] = useState({
     customerId: '', principalAmount: '', interestRate: '',
-    interestType: 'FLAT', tenure: '10', advanceDeduction: '', alreadyCollectedAmount: '',
-    tenureUnit: 'WEEKS', startDate: new Date().toISOString().split('T')[0],
+    interestType: 'WITHOUT_INTEREST', tenure: '10', advanceDeduction: '', alreadyCollectedAmount: '',
+    tenureUnit: 'WEEKS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
   });
 
   const loadCustomers = () => {
@@ -46,19 +46,23 @@ export default function CreateLoan() {
 
     if (isWithoutInterest) {
       const deduction = parseFloat(form.advanceDeduction || 0);
-      const tenureVal = parseInt(form.tenure || 10);
+      const weeksVal = parseInt(form.tenure || 10);
       const disbursed = p - deduction;
-      const due = tenureVal > 0 ? (p / tenureVal) : 0;
-      const isDaily = form.tenureUnit === 'DAYS';
-      const isMonthly = form.tenureUnit === 'MONTHS';
+      const isDaily = form.repaymentFrequency === 'DAILY';
+      const totalInstallments = isDaily ? (weeksVal * 7) : weeksVal;
+      const due = totalInstallments > 0 ? (p / totalInstallments) : 0;
       return {
         isWithoutInterest: true,
         disbursed: disbursed,
+        deduction: deduction,
         due: due,
-        tenure: tenureVal,
+        tenure: weeksVal,
+        totalInstallments: totalInstallments,
         totalRepayable: p,
-        unitLabel: isMonthly ? 'monthly' : isDaily ? 'daily' : 'weekly',
-        unitLabelPlural: isMonthly ? 'months' : isDaily ? 'days' : 'weeks'
+        isDaily: isDaily,
+        unitLabel: isDaily ? 'daily' : 'weekly',
+        unitLabelPlural: 'weeks',
+        frequencyLabel: isDaily ? 'Daily (7 days/week)' : 'Weekly (1 payment/week)',
       };
     } else if (form.interestType === 'EMI') {
       const r = parseFloat(form.interestRate);
@@ -100,7 +104,7 @@ export default function CreateLoan() {
       const isEMI = form.interestType === 'EMI';
       const principal = parseFloat(form.principalAmount);
       const fee = isWithoutInterest ? parseFloat(form.advanceDeduction || 0) : 0;
-      const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate);
+      const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate || 0);
       const tenureVal = (isWithoutInterest || isEMI) ? parseInt(form.tenure) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
 
       const res = await loansAPI.create({
@@ -108,6 +112,8 @@ export default function CreateLoan() {
         principalAmount: principal,
         interestRate: rate,
         processingFee: fee,
+        advanceDeduction: fee,
+        repaymentFrequency: form.repaymentFrequency || (isWithoutInterest ? 'DAILY' : (form.tenureUnit === 'DAYS' ? 'DAILY' : form.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY')),
         tenure: tenureVal,
         tenureUnit: form.tenureUnit,
         alreadyCollectedAmount: parseFloat(form.alreadyCollectedAmount || 0),
@@ -289,22 +295,23 @@ export default function CreateLoan() {
           {form.interestType === 'WITHOUT_INTEREST' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Advance Deduction (₹) *</label>
+                <label className="form-label">Initial Advance Deduction (₹) *</label>
                 <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.advanceDeduction} onChange={e => set('advanceDeduction', e.target.value)} required />
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amount subtracted upfront before disbursing to the borrower</span>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Collection Frequency *</label>
-                <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
-                  <option value="MONTHS">Monthly</option>
-                  <option value="WEEKS">Weekly</option>
-                  <option value="DAYS">Daily</option>
+                <label className="form-label">Repayment Period (Weeks) *</label>
+                <input className="form-input" type="number" min="1" placeholder="e.g. 10" value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total schedule length in weeks (e.g. 10 weeks)</span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Repayment Frequency *</label>
+                <select className="form-select" value={form.repaymentFrequency} onChange={e => set('repaymentFrequency', e.target.value)}>
+                  <option value="DAILY">Daily Repayment (7 days/week organized by Week 1 to 10)</option>
+                  <option value="WEEKLY">Weekly Repayment (1 collection/week)</option>
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{form.tenureUnit === 'MONTHS' ? 'Number of Months *' : form.tenureUnit === 'DAYS' ? 'Number of Days *' : 'Number of Weeks *'}</label>
-                <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'MONTHS' ? 'e.g. 12' : form.tenureUnit === 'DAYS' ? 'e.g. 100' : 'e.g. 10'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
               </div>
             </>
           ) : form.interestType === 'EMI' ? (
@@ -361,18 +368,29 @@ export default function CreateLoan() {
         {preview && (
           preview.isWithoutInterest ? (
             <div className="card" style={{ marginTop: 12, background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.2)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, textAlign: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>DISBURSED AMOUNT</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent-400)' }}>₹{preview.disbursed.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>LOAN AMOUNT</div>
+                  <div style={{ fontSize: 16, fontWeight: 800 }}>₹{preview.totalRepayable.toLocaleString('en-IN')}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{preview.unitLabel.toUpperCase()} DUE</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning-400)' }}>₹{Math.round(preview.due).toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 10, color: '#ef4444' }}>DEDUCTED UPFRONT</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#ef4444' }}>- ₹{preview.deduction.toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>ACTUAL DISBURSED</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--accent-400)' }}>₹{preview.disbursed.toLocaleString('en-IN')}</div>
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-                Customer repays total **₹{preview.totalRepayable.toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
+              <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: 12, fontWeight: 700 }}>{preview.frequencyLabel}</span>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{preview.totalInstallments} installments across {preview.tenure} weeks</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>PER {preview.unitLabel.toUpperCase()} DUE</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>₹{Math.round(preview.due).toLocaleString('en-IN')}</div>
+                </div>
               </div>
             </div>
           ) : preview.isEMI ? (
