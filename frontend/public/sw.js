@@ -27,8 +27,12 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and API calls
-  if (request.method !== 'GET' || url.pathname.startsWith('/api/')) {
+  // Skip non-GET requests, non-http schemes (chrome-extension, etc.), and API calls
+  if (
+    request.method !== 'GET' ||
+    !url.protocol.startsWith('http') ||
+    url.pathname.startsWith('/api/')
+  ) {
     return;
   }
 
@@ -38,17 +42,26 @@ self.addEventListener('fetch', (event) => {
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
+          caches.open(CACHE_NAME).then((cache) => {
+            if (url.protocol.startsWith('http')) {
+              cache.put(request, responseToCache).catch(() => {});
+            }
+          });
         }
         return networkResponse;
       })
-      .catch(() => {
+      .catch(async () => {
         // Return cached version if offline
-        return caches.match(request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (request.mode === 'navigate') {
-            return caches.match('/index.html') || caches.match('/');
-          }
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) return cachedResponse;
+        if (request.mode === 'navigate') {
+          const fallback = await caches.match('/index.html') || await caches.match('/');
+          if (fallback) return fallback;
+        }
+        return new Response('Finova Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Content-Type': 'text/plain' }),
         });
       })
   );

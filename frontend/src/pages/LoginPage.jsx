@@ -37,29 +37,29 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Phone Number</label>
+            <label className="form-label">Phone Number, Email, or Username</label>
             <div style={{ position: 'relative' }}>
               <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 className="form-input input-with-icon-left"
-                type="tel"
-                placeholder="Enter registered mobile number"
+                type="text"
+                placeholder="Mobile number, email, or admin"
                 value={form.userId}
                 onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                autoComplete="tel"
+                autoComplete="username"
                 required
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Agent ID (Password)</label>
+            <label className="form-label">Password or Agent ID</label>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 className="form-input input-with-icon-both"
                 type={showPass ? 'text' : 'password'}
-                placeholder="e.g., AGT-1234 or Password"
+                placeholder="Password or Agent ID (e.g., AGT-8767)"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 autoComplete="current-password"

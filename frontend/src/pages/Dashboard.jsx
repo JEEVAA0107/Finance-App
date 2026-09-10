@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { dashboardAPI, loansAPI } from '../services/api';
 import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Calendar, Clock, BarChart3, ChevronRight, PieChart, X, Search, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Legend } from 'recharts';
 
 function fmt(val) {
   if (!val && val !== 0) return '₹0';

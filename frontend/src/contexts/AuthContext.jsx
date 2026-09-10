@@ -43,8 +43,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (phone, agentId) => {
-    // Note: API now expects { phone, agentId }
-    const response = await authAPI.login({ phone, agentId });
+    const response = await authAPI.login({
+      phone,
+      email: phone,
+      userId: phone,
+      username: phone,
+      agentId,
+      password: agentId
+    });
     if (response.accessToken) {
       localStorage.setItem('token', response.accessToken);
     }
