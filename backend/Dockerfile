@@ -1,5 +1,8 @@
 FROM node:22-slim
 
+# Install OpenSSL - REQUIRED by Prisma schema engine to run
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_SKIP_DOWNLOAD=true \
     NODE_ENV=production
@@ -17,7 +20,7 @@ RUN npm ci --ignore-scripts --omit=optional
 # Copy the rest of the application code
 COPY . .
 
-# Explicitly generate Prisma Client (needs binaryTargets in schema for slim/alpine)
+# Generate Prisma Client for debian-openssl-3.0.x
 RUN npx prisma generate
 
 EXPOSE 5000
