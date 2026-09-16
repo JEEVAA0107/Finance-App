@@ -13,8 +13,8 @@ export default function CreateLoan() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [form, setForm] = useState({
     customerId: '', principalAmount: '', interestRate: '',
-    interestType: 'WITHOUT_INTEREST', tenure: '10', advanceDeduction: '', alreadyCollectedAmount: '',
-    tenureUnit: 'WEEKS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
+    interestType: 'WITHOUT_INTEREST', tenure: '100', advanceDeduction: '', alreadyCollectedAmount: '',
+    tenureUnit: 'DAYS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
   });
 
   const loadCustomers = () => {
@@ -46,23 +46,52 @@ export default function CreateLoan() {
 
     if (isWithoutInterest) {
       const deduction = parseFloat(form.advanceDeduction || 0);
-      const weeksVal = parseInt(form.tenure || 10);
+      const tenureVal = parseInt(form.tenure || 0);
       const disbursed = p - deduction;
       const isDaily = form.repaymentFrequency === 'DAILY';
-      const totalInstallments = isDaily ? (weeksVal * 7) : weeksVal;
+      const isMonthly = form.repaymentFrequency === 'MONTHLY';
+      const isWeekly = form.repaymentFrequency === 'WEEKLY';
+
+      let totalInstallments = 0;
+      let unitLabel = 'day';
+      let freqLabel = 'Daily Repayment';
+      let subtitle = '';
+
+      if (isDaily) {
+        const isWeeks = form.tenureUnit === 'WEEKS';
+        totalInstallments = isWeeks ? (tenureVal * 7) : tenureVal;
+        unitLabel = 'day';
+        freqLabel = isWeeks ? 'Daily (7 days/week organized by week)' : 'Daily Repayment (தினசரி தவணை)';
+        subtitle = isWeeks
+          ? `${totalInstallments} daily installments across ${tenureVal} weeks`
+          : `${totalInstallments} daily installments`;
+      } else if (isMonthly) {
+        totalInstallments = tenureVal;
+        unitLabel = 'month';
+        freqLabel = 'Monthly Repayment (மாதத் தவணை)';
+        subtitle = `${totalInstallments} monthly installments across ${tenureVal} months`;
+      } else {
+        totalInstallments = tenureVal;
+        unitLabel = 'week';
+        freqLabel = 'Weekly Repayment (வாரத் தவணை)';
+        subtitle = `${totalInstallments} weekly installments across ${tenureVal} weeks`;
+      }
+
       const due = totalInstallments > 0 ? (p / totalInstallments) : 0;
       return {
         isWithoutInterest: true,
-        disbursed: disbursed,
-        deduction: deduction,
-        due: due,
-        tenure: weeksVal,
-        totalInstallments: totalInstallments,
+        disbursed,
+        deduction,
+        due,
+        tenure: tenureVal,
+        totalInstallments,
         totalRepayable: p,
-        isDaily: isDaily,
-        unitLabel: isDaily ? 'daily' : 'weekly',
-        unitLabelPlural: 'weeks',
-        frequencyLabel: isDaily ? 'Daily (7 days/week)' : 'Weekly (1 payment/week)',
+        isDaily,
+        isMonthly,
+        isWeekly,
+        unitLabel,
+        frequencyLabel: freqLabel,
+        subtitle,
       };
     } else if (form.interestType === 'EMI') {
       const r = parseFloat(form.interestRate);
@@ -277,6 +306,11 @@ export default function CreateLoan() {
                 const next = { ...f, interestType: val };
                 if (val === 'EMI' && f.tenureUnit === 'DAYS') {
                   next.tenureUnit = 'MONTHS';
+                  next.tenure = '12';
+                } else if (val === 'WITHOUT_INTEREST') {
+                  if (!next.repaymentFrequency) next.repaymentFrequency = 'DAILY';
+                  if (!next.tenureUnit) next.tenureUnit = 'DAYS';
+                  if (!next.tenure || next.tenure === '12') next.tenure = '100';
                 }
                 return next;
               });
@@ -297,22 +331,133 @@ export default function CreateLoan() {
               <div className="form-group">
                 <label className="form-label">Initial Advance Deduction (₹) *</label>
                 <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.advanceDeduction} onChange={e => set('advanceDeduction', e.target.value)} required />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amount subtracted upfront before disbursing to the borrower</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amount subtracted upfront before disbursing to the borrower (முன்பணம் பிடித்தம்)</span>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Repayment Period (Weeks) *</label>
-                <input className="form-input" type="number" min="1" placeholder="e.g. 10" value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total schedule length in weeks (e.g. 10 weeks)</span>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Repayment Frequency *</label>
-                <select className="form-select" value={form.repaymentFrequency} onChange={e => set('repaymentFrequency', e.target.value)}>
-                  <option value="DAILY">Daily Repayment (7 days/week organized by Week 1 to 10)</option>
-                  <option value="WEEKLY">Weekly Repayment (1 collection/week)</option>
+                <label className="form-label">Repayment Frequency (தவணை முறை) *</label>
+                <select
+                  className="form-select"
+                  value={form.repaymentFrequency}
+                  onChange={e => {
+                    const freq = e.target.value;
+                    setForm(f => ({
+                      ...f,
+                      repaymentFrequency: freq,
+                      tenureUnit: freq === 'DAILY' ? 'DAYS' : freq === 'WEEKLY' ? 'WEEKS' : 'MONTHS',
+                      tenure: freq === 'DAILY' ? '100' : '10',
+                    }));
+                  }}
+                >
+                  <option value="DAILY">Daily Repayment (தினசரி தவணை)</option>
+                  <option value="WEEKLY">Weekly Repayment (வாரத் தவணை)</option>
+                  <option value="MONTHLY">Monthly Repayment (மாதத் தவணை)</option>
                 </select>
               </div>
+
+              {form.repaymentFrequency === 'DAILY' ? (
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>
+                      Repayment Period ({form.tenureUnit === 'WEEKS' ? 'Weeks' : 'Days'}) *
+                    </label>
+                    <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.04)', padding: 2, borderRadius: 8, border: '1px solid var(--border-subtle, #e2e8f0)' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(f => ({
+                            ...f,
+                            tenureUnit: 'DAYS',
+                            tenure: f.tenureUnit === 'WEEKS' ? String((parseInt(f.tenure) || 10) * 7) : (f.tenure || '100')
+                          }));
+                        }}
+                        style={{
+                          border: 'none',
+                          padding: '3px 10px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          background: form.tenureUnit === 'DAYS' ? 'var(--primary-600, #2563eb)' : 'transparent',
+                          color: form.tenureUnit === 'DAYS' ? '#ffffff' : 'var(--text-muted, #64748b)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        Days (நாட்கள்)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(f => ({
+                            ...f,
+                            tenureUnit: 'WEEKS',
+                            tenure: f.tenureUnit === 'DAYS' && parseInt(f.tenure) >= 7 ? String(Math.round(parseInt(f.tenure) / 7)) : (f.tenure || '10')
+                          }));
+                        }}
+                        style={{
+                          border: 'none',
+                          padding: '3px 10px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          background: form.tenureUnit === 'WEEKS' ? 'var(--primary-600, #2563eb)' : 'transparent',
+                          color: form.tenureUnit === 'WEEKS' ? '#ffffff' : 'var(--text-muted, #64748b)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        Weeks (வாரங்கள்)
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="1"
+                    placeholder={form.tenureUnit === 'WEEKS' ? 'e.g. 10' : 'e.g. 100'}
+                    value={form.tenure}
+                    onChange={e => set('tenure', e.target.value)}
+                    required
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    {form.tenureUnit === 'WEEKS'
+                      ? `Total ${parseInt(form.tenure || 0) * 7} daily installments across ${form.tenure || 0} weeks`
+                      : `Total ${form.tenure || 0} daily installments`}
+                  </span>
+                </div>
+              ) : form.repaymentFrequency === 'WEEKLY' ? (
+                <div className="form-group">
+                  <label className="form-label">Repayment Period (Weeks) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 10"
+                    value={form.tenure}
+                    onChange={e => set('tenure', e.target.value)}
+                    required
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    Total schedule length in weeks (1 collection per week, e.g. 10 weeks)
+                  </span>
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Repayment Period (Months) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 10"
+                    value={form.tenure}
+                    onChange={e => set('tenure', e.target.value)}
+                    required
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    Total schedule length in months (1 collection per month, e.g. 10 months)
+                  </span>
+                </div>
+              )}
             </>
           ) : form.interestType === 'EMI' ? (
             <>
@@ -385,7 +530,7 @@ export default function CreateLoan() {
               <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <span style={{ fontSize: 12, fontWeight: 700 }}>{preview.frequencyLabel}</span>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{preview.totalInstallments} installments across {preview.tenure} weeks</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{preview.subtitle}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>PER {preview.unitLabel.toUpperCase()} DUE</div>

@@ -145,7 +145,9 @@ export default function LoanDetail() {
 
   const outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
   const isWithoutInt = loan.interestType === 'WITHOUT_INTEREST';
-  const isDaily = loan.tenureUnit === 'DAYS' || loan.repayments?.some(r => r.dayNo != null);
+  const isMonthly = loan.tenureUnit === 'MONTHS';
+  const isDaily = loan.tenureUnit === 'DAYS' || loan.repayments?.some(r => r.dayNo != null && r.dayNo > 1);
+  const isWeekly = !isDaily && !isMonthly;
   const paidCount = loan.repayments?.filter(r => r.status === 'PAID').length || 0;
   const carriedCount = loan.repayments?.filter(r => r.status === 'CARRIED_FORWARD').length || 0;
   const overdueCount = loan.repayments?.filter(r => r.status === 'OVERDUE').length || 0;
@@ -205,7 +207,7 @@ export default function LoanDetail() {
             <div style={{ fontWeight: 800, fontSize: 14 }}>₹{loan.principalAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? (loan.tenureUnit === 'DAYS' ? 'Daily Due' : 'Weekly Due') : 'Per Period'}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? (loan.tenureUnit === 'DAYS' ? 'Daily Due' : loan.tenureUnit === 'MONTHS' ? 'Monthly Due' : 'Weekly Due') : 'Per Period'}</div>
             <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
@@ -361,7 +363,9 @@ export default function LoanDetail() {
           <div>
             <div style={{ fontWeight: 800, fontSize: 16 }}>Repayment Schedule</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {weekNumbers.length} Weeks · {totalCount} Installments {isDaily ? '(Daily Collections)' : '(Weekly Collections)'}
+              {isMonthly
+                ? `${weekNumbers.length} Months · ${totalCount} Installments (Monthly Collections)`
+                : `${weekNumbers.length} Weeks · ${totalCount} Installments ${isDaily ? '(Daily Collections)' : '(Weekly Collections)'}`}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -499,11 +503,11 @@ export default function LoanDetail() {
                         background: hasOverdue ? '#fee2e2' : isWeekPaid ? '#d1fae5' : hasCarried ? '#ede9fe' : 'rgba(99,102,241,0.1)',
                         color: hasOverdue ? '#b91c1c' : isWeekPaid ? '#047857' : hasCarried ? '#6d28d9' : 'var(--primary-600)',
                       }}>
-                        W{w}
+                        {isMonthly ? `M${w}` : `W${w}`}
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>Week {w}</span>
+                          <span>{isMonthly ? `Month ${w}` : `Week ${w}`}</span>
                           <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>
                             ({weekList.length} {weekList.length === 1 ? 'inst' : 'insts'})
                           </span>

@@ -110,7 +110,7 @@ router.post('/', authenticate, async (req, res) => {
       });
       if (unpaidCount < 4) {
         const loan = await prisma.loan.findUnique({ where: { id: repayment.loanId } });
-        if (loan && loan.status === 'ACTIVE') {
+        if (loan && loan.status === 'ACTIVE' && loan.interestType !== 'WITHOUT_INTEREST' && loan.interestType !== 'EMI') {
           const lastInst = await prisma.repayment.findFirst({
             where: { loanId: repayment.loanId },
             orderBy: { installmentNo: 'desc' },

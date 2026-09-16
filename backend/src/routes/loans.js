@@ -32,6 +32,8 @@ function getBatchSize(tenureUnit) {
 function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, tenureUnit, startFrom, startNo, count, frequency = null) {
   const installments = [];
   const isDaily = frequency === 'DAILY' || tenureUnit === 'DAYS';
+  const isWeekly = frequency === 'WEEKLY' || tenureUnit === 'WEEKS';
+  const isMonthly = frequency === 'MONTHLY' || tenureUnit === 'MONTHS';
 
   for (let i = 0; i < count; i++) {
     const dueDate = new Date(startFrom);
@@ -43,14 +45,14 @@ function generateInstallments(loanId, principalPerPeriod, interestPerPeriod, ten
       const absIndex = (startNo - 1) + i;
       weekNo = Math.floor(absIndex / 7) + 1;
       dayNo = (absIndex % 7) + 1;
-    } else if (tenureUnit === 'WEEKS' || frequency === 'WEEKLY') {
+    } else if (isWeekly) {
       dueDate.setDate(dueDate.getDate() + offset * 7);
       weekNo = (startNo - 1) + i + 1;
-      dayNo = 1;
+      dayNo = null;
     } else {
       dueDate.setMonth(dueDate.getMonth() + offset);
       weekNo = (startNo - 1) + i + 1;
-      dayNo = 1;
+      dayNo = null;
     }
 
     let prin = round2(principalPerPeriod);
@@ -284,9 +286,13 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 
     if (interestType === 'WITHOUT_INTEREST') {
       const isDaily = frequency === 'DAILY' || tenureUnit === 'DAYS';
-      const weeksOrDays = tenure ? parseInt(tenure) : 10;
+      const isWeekly = frequency === 'WEEKLY' || tenureUnit === 'WEEKS';
+      const isMonthly = frequency === 'MONTHLY' || tenureUnit === 'MONTHS';
+      const weeksOrDays = tenure ? parseInt(tenure) : (isDaily ? (tenureUnit === 'DAYS' ? 100 : 10) : 10);
       
-      // If daily frequency, 10 weeks = 70 daily installments
+      // If daily frequency with WEEKS unit, 10 weeks = 70 daily installments
+      // If daily with DAYS unit, weeksOrDays daily installments
+      // If weekly or monthly, weeksOrDays installments
       batchSize = isDaily ? (tenureUnit === 'DAYS' ? weeksOrDays : weeksOrDays * 7) : weeksOrDays;
       interestPerPeriod = 0;
       principalPerPeriod = parseFloat(principalAmount) / batchSize;
@@ -321,8 +327,8 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     // End date calculation
     const end = new Date(start);
     if (frequency === 'DAILY' || tenureUnit === 'DAYS') end.setDate(end.getDate() + batchSize);
-    else if (tenureUnit === 'MONTHS') end.setMonth(end.getMonth() + batchSize);
-    else if (tenureUnit === 'WEEKS' || frequency === 'WEEKLY') end.setDate(end.getDate() + batchSize * 7);
+    else if (frequency === 'MONTHLY' || tenureUnit === 'MONTHS') end.setMonth(end.getMonth() + batchSize);
+    else if (frequency === 'WEEKLY' || tenureUnit === 'WEEKS') end.setDate(end.getDate() + batchSize * 7);
     else end.setDate(end.getDate() + batchSize);
 
     // Generate sequential loan number
@@ -398,7 +404,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
               collectedById: loan.agentId,
               amount: toPay,
               paymentMode: 'CASH',
-              paymentType: 'INTEREST',
+              paymentType: (rep.principal > 0 && rep.interest > 0) ? 'EMI' : (rep.principal > 0 ? 'PRINCIPAL' : 'INTEREST'),
               reference: 'Pre-collected Entry',
               collectedAt: new Date()
             }
@@ -409,10 +415,17 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       }
       
       if (totalInterestPaid > 0) {
-        await prisma.loan.update({
-          where: { id: loan.id },
-          data: { interestCollected: { increment: totalInterestPaid } }
-        });
+        if (loan.interestType === 'WITHOUT_INTEREST' || loan.interestType === 'EMI') {
+          await prisma.loan.update({
+            where: { id: loan.id },
+            data: { outstandingPrincipal: { decrement: totalInterestPaid } }
+          });
+        } else {
+          await prisma.loan.update({
+            where: { id: loan.id },
+            data: { interestCollected: { increment: totalInterestPaid } }
+          });
+        }
       }
     }
 
