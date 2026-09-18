@@ -183,8 +183,6 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
     e.preventDefault();
     if (!form.name.trim()) return toast.error('Customer name is required');
     if (!form.phone.trim()) return toast.error('Customer phone number is required');
-    if (!form.address.trim()) return toast.error('Address is required');
-    if (!form.idNumber.trim()) return toast.error('ID Number is required');
 
     setSubmitting(true);
     try {
@@ -192,10 +190,10 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email?.trim() || null,
-        address: form.address.trim(),
-        city: form.city.trim(),
+        address: form.address.trim() || 'Address Not Provided',
+        city: form.city.trim() || 'N/A',
         idType: form.idType || 'AADHAR',
-        idNumber: form.idNumber.trim(),
+        idNumber: form.idNumber.trim() || 'N/A',
         idProofUrl: form.idProofUrl || null,
         photoUrl: form.photoUrl || null,
         notificationPref: form.notificationPref || 'WHATSAPP',

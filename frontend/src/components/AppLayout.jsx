@@ -5,7 +5,7 @@ import { notificationsAPI } from '../services/api';
 import {
   LayoutDashboard, Users, Landmark, HandCoins, ChevronRight, Plus,
   FileBarChart, Shield, UserCog, LogOut, Menu, X, Settings, Bell, History
-} from 'lucide-react';
+, FileText} from 'lucide-react';
 
 export default function AppLayout() {
   const { user, logout, isSuperAdmin, isAdmin } = useAuth();

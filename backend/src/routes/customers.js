@@ -120,54 +120,112 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     const trimmedPhone = phone?.trim();
     const cleanEmail = email?.trim() ? email.trim() : null;
 
-    // Create or find user account for customer (allow sharing User profile if same phone)
-    let user = await prisma.user.findFirst({ where: { phone: trimmedPhone } });
-
-    if (!user && cleanEmail) {
-      const userByEmail = await prisma.user.findFirst({ where: { email: cleanEmail.toLowerCase() } });
-      if (userByEmail) {
-        return res.status(409).json({ success: false, message: 'Email is already registered to another user' });
-      }
+    if (!trimmedName) {
+      return res.status(400).json({ success: false, message: 'Customer name is required' });
     }
+    if (!trimmedPhone) {
+      return res.status(400).json({ success: false, message: 'Customer phone number is required' });
+    }
+
+    // Create or find user account for customer (allow sharing User profile if same phone or email)
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone: trimmedPhone },
+          ...(cleanEmail ? [{ email: cleanEmail.toLowerCase() }] : []),
+          { email: `${trimmedPhone}@loanflow.local` }
+        ]
+      }
+    });
 
     if (!user) {
       const bcrypt = require('bcryptjs');
-      const passwordHash = await bcrypt.hash(trimmedPhone, 12); // default password = phone number
+      const passwordHash = await bcrypt.hash(trimmedPhone || '123456', 10);
+      const userEmail = cleanEmail ? cleanEmail.toLowerCase() : `${trimmedPhone}_${Date.now()}@loanflow.local`;
       user = await prisma.user.create({
-        data: { name: trimmedName, email: cleanEmail ? cleanEmail.toLowerCase() : `${trimmedPhone}@loanflow.local`, phone: trimmedPhone, passwordHash, role: 'CUSTOMER' },
+        data: {
+          name: trimmedName,
+          email: userEmail,
+          phone: trimmedPhone,
+          passwordHash,
+          role: 'CUSTOMER'
+        },
       });
     }
 
-    const customer = await prisma.customer.create({
-      data: {
-        userId: user.id,
-        name: trimmedName,
-        phone: trimmedPhone,
-        email: cleanEmail,
-        address: address?.trim(),
-        city: city?.trim(),
-        idType: idType || 'AADHAR',
-        idNumber: idNumber?.trim(),
-        idProofUrl: idProofUrl?.trim() || null,
-        photoUrl: photoUrl?.trim() || null,
-        notificationPref: notificationPref || 'WHATSAPP',
-        latitude: (latitude !== undefined && latitude !== null && latitude !== '') ? parseFloat(latitude) : null,
-        longitude: (longitude !== undefined && longitude !== null && longitude !== '') ? parseFloat(longitude) : null,
-        jaminName: jaminName?.trim() || null,
-        jaminPhone: jaminPhone?.trim() || null,
-        jaminAddress: jaminAddress?.trim() || null,
-        jaminRelationship: jaminRelationship?.trim() || null,
-        jaminIdType: jaminIdType || 'AADHAR',
-        jaminIdNumber: jaminIdNumber?.trim() || null,
-        jaminPhotoUrl: jaminPhotoUrl?.trim() || null,
-        jaminIdProofUrl: jaminIdProofUrl?.trim() || null,
-      },
-    });
+    const customerData = {
+      userId: user.id,
+      name: trimmedName,
+      phone: trimmedPhone,
+      email: cleanEmail,
+      address: address?.trim() || 'Address Not Provided',
+      city: city?.trim() || 'N/A',
+      idType: idType || 'AADHAR',
+      idNumber: idNumber?.trim() || 'N/A',
+      idProofUrl: idProofUrl?.trim() || null,
+      photoUrl: photoUrl?.trim() || null,
+      notificationPref: notificationPref || 'WHATSAPP',
+      latitude: (latitude !== undefined && latitude !== null && latitude !== '') ? parseFloat(latitude) : null,
+      longitude: (longitude !== undefined && longitude !== null && longitude !== '') ? parseFloat(longitude) : null,
+      jaminName: jaminName?.trim() || null,
+      jaminPhone: jaminPhone?.trim() || null,
+      jaminAddress: jaminAddress?.trim() || null,
+      jaminRelationship: jaminRelationship?.trim() || null,
+      jaminIdType: jaminIdType || 'AADHAR',
+      jaminIdNumber: jaminIdNumber?.trim() || null,
+      jaminPhotoUrl: jaminPhotoUrl?.trim() || null,
+      jaminIdProofUrl: jaminIdProofUrl?.trim() || null,
+    };
+
+    let customer;
+    try {
+      customer = await prisma.customer.create({ data: customerData });
+    } catch (createErr) {
+      console.warn('⚠️ First attempt to create customer failed, self-healing schema and retrying:', createErr.message);
+      // Auto-add missing columns to Postgres
+      const colsToEnsure = [
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "notificationPref" TEXT DEFAULT 'WHATSAPP';`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "photoUrl" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "idProofUrl" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminName" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminPhone" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminAddress" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminRelationship" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminIdType" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminIdNumber" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminPhotoUrl" TEXT;`,
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "jaminIdProofUrl" TEXT;`,
+      ];
+      for (const sql of colsToEnsure) {
+        try { await prisma.$executeRawUnsafe(sql); } catch (_) {}
+      }
+
+      try {
+        customer = await prisma.customer.create({ data: customerData });
+      } catch (retryErr) {
+        // Fallback with core required columns only
+        customer = await prisma.customer.create({
+          data: {
+            userId: user.id,
+            name: trimmedName,
+            phone: trimmedPhone,
+            email: cleanEmail,
+            address: address?.trim() || 'Address Not Provided',
+            city: city?.trim() || 'N/A',
+            idType: idType || 'AADHAR',
+            idNumber: idNumber?.trim() || 'N/A',
+          }
+        });
+      }
+    }
 
     await auditLog(req.user.id, 'CREATE_CUSTOMER', 'Customer', customer.id, { name: trimmedName, phone: trimmedPhone, jaminName }, req);
     res.status(201).json({ success: true, data: customer });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Failed to create customer:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to create customer' });
   }
 });
 
@@ -192,10 +250,10 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
         name: trimmedName,
         phone: trimmedPhone,
         email: cleanEmail,
-        address: address?.trim(),
-        city: city?.trim(),
+        address: address?.trim() || 'Address Not Provided',
+        city: city?.trim() || 'N/A',
         idType: idType || 'AADHAR',
-        idNumber: idNumber?.trim(),
+        idNumber: idNumber?.trim() || 'N/A',
         idProofUrl: idProofUrl?.trim() || null,
         photoUrl: photoUrl?.trim() || null,
         notificationPref: notificationPref || 'WHATSAPP',

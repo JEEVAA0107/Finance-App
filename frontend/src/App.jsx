@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AppLayout from './components/AppLayout';
 import Dashboard from './pages/Dashboard';
+import DayBookPage from './pages/DayBookPage';
 import CustomersPage from './pages/CustomersPage';
 import CustomerDetail from './pages/CustomerDetail';
 import LoansPage from './pages/LoansPage';

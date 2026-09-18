@@ -246,9 +246,6 @@ export default function CreateLoan() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {selectedCustomer.idProofUrl && (
-                    <span className="badge badge-info" style={{ fontSize: 10 }}>ID Verified</span>
-                  )}
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
@@ -259,42 +256,6 @@ export default function CreateLoan() {
                   </button>
                 </div>
               </div>
-
-              {/* Jamin summary row if present */}
-              {selectedCustomer.jaminName ? (
-                <div style={{
-                  borderTop: '1px solid var(--border-subtle, #e2e8f0)',
-                  paddingTop: 8,
-                  marginTop: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: 12,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {selectedCustomer.jaminPhotoUrl ? (
-                      <img
-                        src={selectedCustomer.jaminPhotoUrl}
-                        alt={selectedCustomer.jaminName}
-                        style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid #10b981' }}
-                      />
-                    ) : (
-                      <ShieldCheck size={18} style={{ color: '#10b981' }} />
-                    )}
-                    <div>
-                      <span style={{ fontWeight: 700, color: '#0f172a' }}>Jamin: {selectedCustomer.jaminName}</span>
-                      <span style={{ color: '#64748b', marginLeft: 6 }}>({selectedCustomer.jaminRelationship || 'Guarantor'})</span>
-                    </div>
-                  </div>
-                  {selectedCustomer.jaminPhone && (
-                    <span style={{ color: '#64748b' }}>{selectedCustomer.jaminPhone}</span>
-                  )}
-                </div>
-              ) : (
-                <div style={{ borderTop: '1px solid var(--border-subtle, #e2e8f0)', paddingTop: 6, fontSize: 11, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span>⚠️ No Jamin (Guarantor) added yet for this customer.</span>
-                </div>
-              )}
             </div>
           )}
 

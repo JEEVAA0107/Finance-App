@@ -57,6 +57,7 @@ app.use('/api/auth',       require('./src/routes/auth'));
 app.use('/api/users',      require('./src/routes/users'));
 app.use('/api/customers',  require('./src/routes/customers'));
 app.use('/api/loans',      require('./src/routes/loans'));
+app.use('/api/daybook',    require('./src/routes/daybook'));
 app.use('/api/repayments', require('./src/routes/repayments'));
 app.use('/api/payments',   require('./src/routes/payments'));
 app.use('/api/dashboard',  require('./src/routes/dashboard'));
@@ -110,24 +111,28 @@ const prisma = new PrismaClient();
 
 async function syncDatabaseSchema() {
   try {
-    const columns = [
-      'photoUrl',
-      'jaminName',
-      'jaminPhone',
-      'jaminAddress',
-      'jaminRelationship',
-      'jaminIdType',
-      'jaminIdNumber',
-      'jaminPhotoUrl',
-      'jaminIdProofUrl',
+    const customerCols = [
+      { col: 'photoUrl', type: 'TEXT' },
+      { col: 'idProofUrl', type: 'TEXT' },
+      { col: 'notificationPref', type: "TEXT DEFAULT 'WHATSAPP'" },
+      { col: 'latitude', type: 'DOUBLE PRECISION' },
+      { col: 'longitude', type: 'DOUBLE PRECISION' },
+      { col: 'jaminName', type: 'TEXT' },
+      { col: 'jaminPhone', type: 'TEXT' },
+      { col: 'jaminAddress', type: 'TEXT' },
+      { col: 'jaminRelationship', type: 'TEXT' },
+      { col: 'jaminIdType', type: 'TEXT' },
+      { col: 'jaminIdNumber', type: 'TEXT' },
+      { col: 'jaminPhotoUrl', type: 'TEXT' },
+      { col: 'jaminIdProofUrl', type: 'TEXT' },
     ];
-    for (const col of columns) {
+    for (const item of customerCols) {
       const attempts = [
-        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "${col}" TEXT;`,
-        `ALTER TABLE "Customer" ADD COLUMN "${col}" TEXT;`,
-        `ALTER TABLE customer ADD COLUMN IF NOT EXISTS "${col}" TEXT;`,
-        `ALTER TABLE customer ADD COLUMN "${col}" TEXT;`,
-        `ALTER TABLE customers ADD COLUMN IF NOT EXISTS "${col}" TEXT;`
+        `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE "Customer" ADD COLUMN "${item.col}" ${item.type};`,
+        `ALTER TABLE customer ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE customer ADD COLUMN "${item.col}" ${item.type};`,
+        `ALTER TABLE customers ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`
       ];
       for (const sql of attempts) {
         try {
@@ -136,7 +141,25 @@ async function syncDatabaseSchema() {
         } catch (_) {}
       }
     }
-    console.log('✅ Customer & Jamin schema columns verified');
+
+    // User table columns
+    const userCols = [
+      { col: 'agentId', type: 'TEXT' }
+    ];
+    for (const item of userCols) {
+      const attempts = [
+        `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE "User" ADD COLUMN "${item.col}" ${item.type};`,
+        `ALTER TABLE users ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`
+      ];
+      for (const sql of attempts) {
+        try {
+          await prisma.$executeRawUnsafe(sql);
+          break;
+        } catch (_) {}
+      }
+    }
+    console.log('✅ Customer & User schema columns verified');
 
     // Repayment table schema updates for Weekly & Daily Carry-Forward
     const repaymentCols = [

@@ -160,26 +160,12 @@ export default function LoanDetail() {
     ? Math.min(...activeUnpaid.map(r => r.installmentNo))
     : null;
 
-  // Group all repayments by weekNo
-  const weekMap = {};
-  (loan.repayments || []).forEach(r => {
-    const w = r.weekNo || (r.installmentNo ? Math.floor((r.installmentNo - 1) / (isDaily ? 7 : 1)) + 1 : 1);
-    if (!weekMap[w]) weekMap[w] = [];
-    weekMap[w].push(r);
-  });
-  const weekNumbers = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
-
-  // Find first active/overdue week to expand by default
-  const firstActiveWeek = weekNumbers.find(w => {
-    const list = weekMap[w] || [];
-    return list.some(r => r.status === 'OVERDUE') || list.some(r => r.status === 'PENDING' || r.status === 'PARTIAL');
-  }) || weekNumbers[0];
-
-  const displayedWeeks = weekNumbers.filter(w => {
-    const list = weekMap[w] || [];
-    if (scheduleFilter === 'OVERDUE') return list.some(r => r.status === 'OVERDUE');
-    if (scheduleFilter === 'PENDING') return list.some(r => r.status === 'PENDING' || r.status === 'PARTIAL');
-    if (scheduleFilter === 'PAID') return list.every(r => r.status === 'PAID');
+  const allRepayments = loan.repayments || [];
+  const pendingCount = allRepayments.filter(r => r.status === 'PENDING' || r.status === 'PARTIAL').length;
+  const displayedRepayments = allRepayments.filter(r => {
+    if (scheduleFilter === 'OVERDUE') return r.status === 'OVERDUE';
+    if (scheduleFilter === 'PENDING') return r.status === 'PENDING' || r.status === 'PARTIAL';
+    if (scheduleFilter === 'PAID') return r.status === 'PAID';
     return true;
   });
 
@@ -195,7 +181,17 @@ export default function LoanDetail() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{loan.loanNumber}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{loan.customer?.name} · {loan.tenureUnit === 'WEEKS' ? 'Weekly' : loan.tenureUnit === 'MONTHS' ? 'Monthly' : 'Daily'}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+              <Link to={`/customers/${loan.customer?.id}`} style={{ fontWeight: 700, color: 'var(--primary-600)', textDecoration: 'none' }}>
+                {loan.customer?.name}
+              </Link>
+              {loan.customer?.phone && (
+                <a href={`tel:${loan.customer.phone}`} style={{ color: 'inherit', textDecoration: 'none', marginLeft: 6 }}>
+                  · 📞 {loan.customer.phone}
+                </a>
+              )}
+              <span> · {loan.tenureUnit === 'WEEKS' ? 'Weekly' : loan.tenureUnit === 'MONTHS' ? 'Monthly' : 'Daily'}</span>
+            </div>
           </div>
           <span className={`badge ${loan.status === 'ACTIVE' ? 'badge-success' : loan.status === 'CLOSED' ? 'badge-info' : 'badge-danger'}`}>{loan.status}</span>
         </div>
@@ -262,110 +258,16 @@ export default function LoanDetail() {
         )}
       </div>
 
-      {/* Borrower & Jamin Summary Card */}
-      <div className="card" style={{ marginBottom: 14 }}>
-        <div className="borrower-jamin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-          {/* Borrower */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {loan.customer?.photoUrl ? (
-              <img
-                src={loan.customer.photoUrl}
-                alt={loan.customer.name}
-                onClick={() => setPreviewImage(loan.customer.photoUrl)}
-                title="Click to zoom"
-                style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover', border: '2px solid var(--primary-400)', cursor: 'pointer', flexShrink: 0 }}
-              />
-            ) : (
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(99,102,241,0.1)', color: 'var(--primary-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>
-                {loan.customer?.name?.charAt(0)}
-              </div>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Borrower (வாடிக்கையாளர்)</div>
-              <Link to={`/customers/${loan.customer?.id}`} style={{ fontWeight: 800, fontSize: 14, color: 'inherit', textDecoration: 'none' }}>
-                {loan.customer?.name}
-              </Link>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Phone size={11} />
-                <a href={`tel:${loan.customer?.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{loan.customer?.phone}</a>
-              </div>
-            </div>
-            {loan.customer?.idProofUrl && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => setPreviewImage(loan.customer.idProofUrl)}
-                title="View Borrower ID Proof"
-                style={{ fontSize: 11, padding: '4px 8px' }}
-              >
-                <Eye size={13} /> Proof
-              </button>
-            )}
-          </div>
-
-          {/* Jamin Person */}
-          <div className="borrower-jamin-divider" style={{ display: 'flex', alignItems: 'center', gap: 12, borderLeft: '1px solid var(--border-subtle)', paddingLeft: 16 }}>
-            {loan.customer?.jaminName ? (
-              <>
-                {loan.customer.jaminPhotoUrl ? (
-                  <img
-                    src={loan.customer.jaminPhotoUrl}
-                    alt={loan.customer.jaminName}
-                    onClick={() => setPreviewImage(loan.customer.jaminPhotoUrl)}
-                    title="Click to zoom"
-                    style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover', border: '2px solid #10b981', cursor: 'pointer', flexShrink: 0 }}
-                  />
-                ) : (
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16,185,129,0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>
-                    {loan.customer.jaminName?.charAt(0)}
-                  </div>
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: '#059669', textTransform: 'uppercase', fontWeight: 700 }}>
-                    Jamin Person (ஜாமீன்)
-                  </div>
-                  <div style={{ fontWeight: 800, fontSize: 14 }}>{loan.customer.jaminName}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Phone size={11} />
-                    {loan.customer.jaminPhone ? (
-                      <a href={`tel:${loan.customer.jaminPhone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{loan.customer.jaminPhone}</a>
-                    ) : (
-                      <span>{loan.customer.jaminRelationship || 'Guarantor'}</span>
-                    )}
-                  </div>
-                </div>
-                {loan.customer?.jaminIdProofUrl && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setPreviewImage(loan.customer.jaminIdProofUrl)}
-                    title="View Jamin ID Proof"
-                    style={{ fontSize: 11, padding: '4px 8px' }}
-                  >
-                    <Eye size={13} /> Proof
-                  </button>
-                )}
-              </>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 12, padding: '4px 0' }}>
-                <ShieldCheck size={18} style={{ color: '#94a3b8' }} />
-                <span>No Jamin guarantor registered for this borrower.</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Weekly Repayment Schedule */}
+      {/* Direct Repayment Schedule (No Collapsing) */}
       <div className="card" style={{ marginBottom: 16 }}>
         {/* Header with Title and Summary Badges */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16 }}>Repayment Schedule</div>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>
+              {isDaily ? 'Daily Repayment Schedule' : isWeekly ? 'Weekly Repayment Schedule' : isMonthly ? 'Monthly Repayment Schedule' : 'Repayment Schedule'}
+            </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {isMonthly
-                ? `${weekNumbers.length} Months · ${totalCount} Installments (Monthly Collections)`
-                : `${weekNumbers.length} Weeks · ${totalCount} Installments ${isDaily ? '(Daily Collections)' : '(Weekly Collections)'}`}
+              {totalCount} {isDaily ? 'Days' : isWeekly ? 'Weeks' : isMonthly ? 'Months' : 'Installments'} · ₹{loan.installmentAmount?.toLocaleString('en-IN')} / {isDaily ? 'Day' : isWeekly ? 'Week' : isMonthly ? 'Month' : 'Period'}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -385,7 +287,7 @@ export default function LoanDetail() {
           </div>
         </div>
 
-        {/* Filter Tabs & Expand/Collapse Controls */}
+        {/* Filter Tabs */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
           <div className="schedule-filter-tabs">
             <button
@@ -393,7 +295,7 @@ export default function LoanDetail() {
               className={`schedule-filter-tab ${scheduleFilter === 'ALL' ? 'active' : ''}`}
               onClick={() => setScheduleFilter('ALL')}
             >
-              All ({weekNumbers.length})
+              All ({totalCount})
             </button>
             {overdueCount > 0 && (
               <button
@@ -410,7 +312,7 @@ export default function LoanDetail() {
               className={`schedule-filter-tab ${scheduleFilter === 'PENDING' ? 'active' : ''}`}
               onClick={() => setScheduleFilter('PENDING')}
             >
-              ⏳ Pending
+              ⏳ Pending ({pendingCount})
             </button>
             <button
               type="button"
@@ -420,281 +322,176 @@ export default function LoanDetail() {
               ✓ Paid ({paidCount})
             </button>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 11, padding: '4px 8px', color: 'var(--text-muted)' }}
-              onClick={() => toggleAllWeeks(true)}
-            >
-              Expand All
-            </button>
-            <span style={{ color: 'var(--border-default)' }}>|</span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 11, padding: '4px 8px', color: 'var(--text-muted)' }}
-              onClick={() => toggleAllWeeks(false)}
-            >
-              Collapse All
-            </button>
-          </div>
         </div>
 
-        {/* Weeks Accordion List */}
-        {displayedWeeks.length === 0 ? (
+        {/* Installments Direct List */}
+        {displayedRepayments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--text-muted)', fontSize: 13, background: 'var(--bg-glass)', borderRadius: 10 }}>
             No installments match the selected filter.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {displayedWeeks.map(w => {
-              const weekList = weekMap[w] || [];
-              const isWeekPaid = weekList.every(r => r.status === 'PAID');
-              const hasOverdue = weekList.some(r => r.status === 'OVERDUE');
-              const hasCarried = weekList.some(r => r.status === 'CARRIED_FORWARD');
-              const isWeekCleared = weekList.every(r => r.status === 'PAID' || r.status === 'CARRIED_FORWARD');
-              const weekDueSum = weekList.reduce((sum, r) => sum + r.dueAmount, 0);
-              const weekPaidSum = weekList.reduce((sum, r) => sum + (r.paidAmount || 0), 0);
-              
-              // Smart collapse: open active/overdue week or filtered view by default
-              const isExpanded = expandedWeeks[w] !== undefined ? expandedWeeks[w] : (w === firstActiveWeek || scheduleFilter !== 'ALL');
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {displayedRepayments.map(r => {
+              const isBlocked = lowestUnpaidInstNo !== null && r.installmentNo > lowestUnpaidInstNo && r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD';
+              const isCarriedForward = r.status === 'CARRIED_FORWARD';
+              const isOverdue = r.status === 'OVERDUE';
+              const isPaid = r.status === 'PAID';
+
+              const unitTitle = isDaily
+                ? `Day #${r.installmentNo}`
+                : isWeekly
+                ? `Week #${r.installmentNo}`
+                : isMonthly
+                ? `Month #${r.installmentNo}`
+                : `Installment #${r.installmentNo}`;
 
               return (
                 <div
-                  key={w}
-                  className="week-card"
+                  key={r.id}
+                  className="installment-item"
                   style={{
-                    border: hasOverdue
+                    border: isOverdue
                       ? '1.5px solid rgba(239, 68, 68, 0.45)'
-                      : isWeekPaid
+                      : isPaid
                       ? '1px solid rgba(16, 185, 129, 0.3)'
-                      : hasCarried
+                      : isCarriedForward
                       ? '1px solid rgba(139, 92, 246, 0.3)'
                       : '1px solid var(--border-default)',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    background: isCarriedForward
+                      ? 'rgba(139,92,246,0.03)'
+                      : isOverdue
+                      ? 'rgba(239,68,68,0.03)'
+                      : isPaid
+                      ? 'rgba(16,185,129,0.02)'
+                      : 'var(--card-bg, #ffffff)',
                   }}
                 >
-                  {/* Week Header */}
-                  <div
-                    className="week-header"
-                    onClick={() => toggleWeek(w)}
-                    style={{
-                      background: hasOverdue
-                        ? 'rgba(239, 68, 68, 0.05)'
-                        : isWeekPaid
-                        ? 'rgba(16, 185, 129, 0.04)'
-                        : hasCarried
-                        ? 'rgba(139, 92, 246, 0.04)'
-                        : 'var(--bg-glass, rgba(0,0,0,0.02))',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  {/* Left info: Icon, Unit title, Due date, and Status badge */}
+                  <div className="inst-mobile-top">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
+                        width: 30,
+                        height: 30,
+                        borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 800,
-                        fontSize: 12,
                         flexShrink: 0,
-                        background: hasOverdue ? '#fee2e2' : isWeekPaid ? '#d1fae5' : hasCarried ? '#ede9fe' : 'rgba(99,102,241,0.1)',
-                        color: hasOverdue ? '#b91c1c' : isWeekPaid ? '#047857' : hasCarried ? '#6d28d9' : 'var(--primary-600)',
+                        background: isPaid
+                          ? 'rgba(16,185,129,0.15)'
+                          : isCarriedForward
+                          ? 'rgba(139,92,246,0.15)'
+                          : isOverdue
+                          ? 'rgba(239,68,68,0.15)'
+                          : 'rgba(0,0,0,0.05)',
                       }}>
-                        {isMonthly ? `M${w}` : `W${w}`}
+                        {isPaid ? (
+                          <CheckCircle size={15} style={{ color: 'var(--accent-600)' }} />
+                        ) : isCarriedForward ? (
+                          <CornerDownRight size={15} style={{ color: '#7c3aed' }} />
+                        ) : isOverdue ? (
+                          <AlertTriangle size={15} style={{ color: '#ef4444' }} />
+                        ) : (
+                          <Clock size={15} style={{ color: 'var(--text-muted)' }} />
+                        )}
                       </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>{isMonthly ? `Month ${w}` : `Week ${w}`}</span>
-                          <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>
-                            ({weekList.length} {weekList.length === 1 ? 'inst' : 'insts'})
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {weekList.length > 0 && `${fmtShort(weekList[0].dueDate)} – ${fmtShort(weekList[weekList.length - 1].dueDate)}`}
+
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>{unitTitle}</span>
+                          <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>({fmtShort(r.dueDate)})</span>
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 800, fontSize: 13 }}>
-                          ₹{weekPaidSum.toLocaleString('en-IN')} / ₹{weekDueSum.toLocaleString('en-IN')}
-                        </div>
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                          {isWeekPaid ? 'Fully Paid' : hasOverdue ? 'Overdue Pending' : isWeekCleared ? 'Carried Fwd' : 'In Progress'}
-                        </div>
-                      </div>
-
-                      {hasOverdue ? (
-                        <span className="badge badge-danger" style={{ fontSize: 10, padding: '2px 6px' }}>⚠️ Overdue</span>
-                      ) : isWeekPaid ? (
-                        <span className="badge badge-success" style={{ fontSize: 10, padding: '2px 6px' }}>✓ Paid</span>
-                      ) : isWeekCleared ? (
-                        <span className="badge" style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(139,92,246,0.15)', color: '#7c3aed' }}>↺ Moved</span>
+                    <div>
+                      {isPaid ? (
+                        <span className="badge badge-success" style={{ fontSize: 10, padding: '2px 8px' }}>
+                          ✓ Paid ₹{r.paidAmount?.toLocaleString('en-IN')}
+                        </span>
+                      ) : isCarriedForward ? (
+                        <span className="badge" style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(139,92,246,0.15)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.3)' }}>
+                          ↺ Carried Fwd {r.carriedToInstNo ? `→ #${r.carriedToInstNo}` : ''}
+                        </span>
+                      ) : isOverdue ? (
+                        <span className="badge badge-danger" style={{ fontSize: 10, padding: '2px 8px' }}>
+                          ⚠️ Overdue
+                        </span>
+                      ) : r.paidAmount > 0 ? (
+                        <span className="badge badge-warning" style={{ fontSize: 10, padding: '2px 8px' }}>
+                          Partial: ₹{r.paidAmount?.toLocaleString('en-IN')}
+                        </span>
                       ) : (
-                        <span className="badge badge-muted" style={{ fontSize: 10, padding: '2px 6px' }}>Pending</span>
+                        <span className="badge badge-muted" style={{ fontSize: 10, padding: '2px 8px' }}>
+                          Pending
+                        </span>
                       )}
-
-                      {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
                     </div>
                   </div>
 
-                  {/* Week Installments Content */}
-                  {isExpanded && (
-                    <div style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-card)' }}>
-                      {weekList.map(r => {
-                        const isBlocked = lowestUnpaidInstNo !== null && r.installmentNo > lowestUnpaidInstNo && r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD';
-                        const isCarriedForward = r.status === 'CARRIED_FORWARD';
-                        const isOverdue = r.status === 'OVERDUE';
-                        const isPaid = r.status === 'PAID';
+                  {/* Right info: Due amount & Actions */}
+                  <div className="inst-mobile-bottom">
+                    <div style={{ fontWeight: 800, fontSize: 15, color: isPaid ? 'var(--accent-600)' : 'var(--text-primary)' }}>
+                      ₹{r.dueAmount?.toLocaleString('en-IN')}
+                    </div>
 
-                        return (
-                          <div
-                            key={r.id}
-                            className="installment-item"
-                            style={{
-                              background: isCarriedForward
-                                ? 'rgba(139,92,246,0.03)'
-                                : isOverdue
-                                ? 'rgba(239,68,68,0.03)'
-                                : 'transparent',
+                    {!isPaid && !isCarriedForward && loan.status !== 'CLOSED' && (
+                      isBlocked ? (
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: '4px 8px', cursor: 'not-allowed', opacity: 0.45 }}
+                          disabled
+                          title={`முதலில் Installment #${lowestUnpaidInstNo} collect செய்யுங்கள்`}
+                        >
+                          <Lock size={12} />
+                        </button>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <button
+                            type="button"
+                            className="btn btn-success btn-sm"
+                            style={{ padding: '5px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}
+                            title="Collect Installment Amount"
+                            onClick={() => {
+                              setPayModal(r);
+                              setPayForm({
+                                amount: String(r.dueAmount - r.paidAmount),
+                                paymentMode: 'CASH',
+                                reference: '',
+                                penaltyAmount: isOverdue ? String(r.penaltyAmount || 100) : ''
+                              });
                             }}
                           >
-                            {/* Mobile Top / Desktop Left: icon, installment label & status badge */}
-                            <div className="inst-mobile-top">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{
-                                  width: 26,
-                                  height: 26,
-                                  borderRadius: '50%',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                  background: isPaid
-                                    ? 'rgba(16,185,129,0.15)'
-                                    : isCarriedForward
-                                    ? 'rgba(139,92,246,0.15)'
-                                    : isOverdue
-                                    ? 'rgba(239,68,68,0.15)'
-                                    : 'rgba(0,0,0,0.05)',
-                                }}>
-                                  {isPaid ? (
-                                    <CheckCircle size={13} style={{ color: 'var(--accent-600)' }} />
-                                  ) : isCarriedForward ? (
-                                    <CornerDownRight size={13} style={{ color: '#7c3aed' }} />
-                                  ) : isOverdue ? (
-                                    <AlertTriangle size={13} style={{ color: '#ef4444' }} />
-                                  ) : (
-                                    <Clock size={13} style={{ color: 'var(--text-muted)' }} />
-                                  )}
-                                </div>
+                            <HandCoins size={13} /> Collect
+                          </button>
 
-                                <div>
-                                  <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <span>#{r.installmentNo} {r.dayNo ? `· Day ${r.dayNo}` : ''}</span>
-                                    <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>({fmtShort(r.dueDate)})</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div>
-                                {isPaid ? (
-                                  <span className="badge badge-success" style={{ fontSize: 10, padding: '1px 6px' }}>
-                                    Paid ₹{r.paidAmount?.toLocaleString('en-IN')}
-                                  </span>
-                                ) : isCarriedForward ? (
-                                  <span className="badge" style={{ fontSize: 10, padding: '1px 6px', background: 'rgba(139,92,246,0.15)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.3)' }}>
-                                    ↺ Carried Fwd {r.carriedToInstNo ? `→ #${r.carriedToInstNo}` : ''}
-                                  </span>
-                                ) : isOverdue ? (
-                                  <span className="badge badge-danger" style={{ fontSize: 10, padding: '1px 6px' }}>
-                                    Overdue · Due: ₹{r.penaltyAmount > 0 ? r.penaltyAmount : 100}
-                                  </span>
-                                ) : r.paidAmount > 0 ? (
-                                  <span className="badge badge-warning" style={{ fontSize: 10, padding: '1px 6px' }}>
-                                    Partial: ₹{r.paidAmount?.toLocaleString('en-IN')}
-                                  </span>
-                                ) : (
-                                  <span className="badge badge-muted" style={{ fontSize: 10, padding: '1px 6px' }}>
-                                    Pending
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Mobile Bottom / Desktop Right: amount and action buttons */}
-                            <div className="inst-mobile-bottom">
-                              <div style={{ fontWeight: 800, fontSize: 14, color: isPaid ? 'var(--accent-600)' : 'var(--text-primary)' }}>
-                                ₹{r.dueAmount?.toLocaleString('en-IN')}
-                              </div>
-
-                              {/* Actions */}
-                              {!isPaid && !isCarriedForward && loan.status !== 'CLOSED' && (
-                                isBlocked ? (
-                                  <button
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ padding: '4px 8px', cursor: 'not-allowed', opacity: 0.45 }}
-                                    disabled
-                                    title={`முதலில் Installment #${lowestUnpaidInstNo} collect செய்யுங்கள் அல்லது Penalty செலுத்தி Carry Forward செய்யுங்கள்`}
-                                  >
-                                    <Lock size={12} />
-                                  </button>
-                                ) : (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                    {/* Normal collection */}
-                                    <button
-                                      type="button"
-                                      className="btn btn-success btn-sm"
-                                      style={{ padding: '5px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}
-                                      title="Collect Installment Amount"
-                                      onClick={() => {
-                                        setPayModal(r);
-                                        setPayForm({
-                                          amount: String(r.dueAmount - r.paidAmount),
-                                          paymentMode: 'CASH',
-                                          reference: '',
-                                          penaltyAmount: isOverdue ? String(r.penaltyAmount || 100) : ''
-                                        });
-                                      }}
-                                    >
-                                      <HandCoins size={13} /> Collect
-                                    </button>
-
-                                    {/* Overdue Case B: Pay Penalty Only & Carry Forward */}
-                                    {isOverdue && (
-                                      <button
-                                        type="button"
-                                        className="btn btn-warning btn-sm"
-                                        style={{
-                                          padding: '5px 9px',
-                                          fontSize: 11,
-                                          fontWeight: 700,
-                                          background: 'rgba(245,158,11,0.15)',
-                                          color: '#d97706',
-                                          border: '1px solid rgba(245,158,11,0.35)',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 3,
-                                        }}
-                                        title="Pay Penalty Only & Carry Forward to End of Loan Schedule"
-                                        onClick={() => handleOpenPenaltyModal(r)}
-                                      >
-                                        <Clock size={12} /> Carry Fwd
-                                      </button>
-                                    )}
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          {isOverdue && (
+                            <button
+                              type="button"
+                              className="btn btn-warning btn-sm"
+                              style={{
+                                padding: '5px 9px',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                background: 'rgba(245,158,11,0.15)',
+                                color: '#d97706',
+                                border: '1px solid rgba(245,158,11,0.35)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                              }}
+                              title="Pay Penalty Only & Carry Forward to End of Loan Schedule"
+                              onClick={() => handleOpenPenaltyModal(r)}
+                            >
+                              <Clock size={12} /> Carry Fwd
+                            </button>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
               );
             })}
