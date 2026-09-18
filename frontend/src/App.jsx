@@ -32,6 +32,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<AppLayout />}>
         <Route index element={<Dashboard />} />
+        <Route path="daybook" element={<DayBookPage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="loans" element={<LoansPage />} />

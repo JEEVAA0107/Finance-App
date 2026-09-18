@@ -48,6 +48,7 @@ export default function AppLayout() {
         ]},
         { section: 'Operations', items: [
           { to: '/collections', icon: HandCoins, label: 'Collections' },
+          { to: '/daybook', icon: FileText, label: 'Day Book' },
           { to: '/payment-history', icon: History, label: 'History' },
         ]},
         { section: 'Admin', items: [
