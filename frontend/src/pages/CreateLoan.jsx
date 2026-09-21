@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loansAPI, customersAPI } from '../services/api';
 import AddCustomerModal from '../components/AddCustomerModal';
@@ -61,19 +61,19 @@ export default function CreateLoan() {
         const isWeeks = form.tenureUnit === 'WEEKS';
         totalInstallments = isWeeks ? (tenureVal * 7) : tenureVal;
         unitLabel = 'day';
-        freqLabel = isWeeks ? 'Daily (7 days/week organized by week)' : 'Daily Repayment (à®¤à®¿à®©à®šà®°à®¿ à®¤à®µà®£à¯ˆ)';
+        freqLabel = isWeeks ? 'Daily (7 days/week organized by week)' : 'Daily Repayment (தினசரி தவணை)';
         subtitle = isWeeks
           ? `${totalInstallments} daily installments across ${tenureVal} weeks`
           : `${totalInstallments} daily installments`;
       } else if (isMonthly) {
         totalInstallments = tenureVal;
         unitLabel = 'month';
-        freqLabel = 'Monthly Repayment (à®®à®¾à®¤à®¤à¯ à®¤à®µà®£à¯ˆ)';
+        freqLabel = 'Monthly Repayment (மாதத் தவணை)';
         subtitle = `${totalInstallments} monthly installments across ${tenureVal} months`;
       } else {
         totalInstallments = tenureVal;
         unitLabel = 'week';
-        freqLabel = 'Weekly Repayment (à®µà®¾à®°à®¤à¯ à®¤à®µà®£à¯ˆ)';
+        freqLabel = 'Weekly Repayment (வாரத் தவணை)';
         subtitle = `${totalInstallments} weekly installments across ${tenureVal} weeks`;
       }
 
@@ -209,7 +209,7 @@ export default function CreateLoan() {
               <option value="">Select customer...</option>
               {customers.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.name} â€” {c.phone} {c.jaminName ? `(Jamin: ${c.jaminName})` : ''}
+                  {c.name} — {c.phone} {c.jaminName ? `(Jamin: ${c.jaminName})` : ''}
                 </option>
               ))}
             </select>
@@ -242,7 +242,7 @@ export default function CreateLoan() {
                   )}
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 14 }}>{selectedCustomer.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedCustomer.phone} Â· {selectedCustomer.city}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedCustomer.phone} · {selectedCustomer.city}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -265,13 +265,14 @@ export default function CreateLoan() {
               const val = e.target.value;
               setForm(f => {
                 const next = { ...f, interestType: val };
-                if ((val === 'EMI' || val === 'FLAT') && f.tenureUnit === 'DAYS') {
-                  next.tenureUnit = 'MONTHS';
-                  next.tenure = '12';
-                  next.repaymentFrequency = 'MONTHLY';
-                } else if (val === 'EMI' || val === 'FLAT') {
-                  // Reset repaymentFrequency to match current tenureUnit (avoid inheriting DAILY from WITHOUT_INTEREST)
+                if (val === 'EMI') {
+                  if (f.tenureUnit === 'DAYS') {
+                    next.tenureUnit = 'MONTHS';
+                    next.tenure = '12';
+                  }
                   next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+                } else if (val === 'FLAT') {
+                  next.repaymentFrequency = next.tenureUnit === 'DAYS' ? 'DAILY' : next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
                 } else if (val === 'WITHOUT_INTEREST') {
                   if (!next.repaymentFrequency) next.repaymentFrequency = 'DAILY';
                   if (!next.tenureUnit) next.tenureUnit = 'DAYS';
@@ -280,27 +281,27 @@ export default function CreateLoan() {
                 return next;
               });
             }}>
-              <option value="FLAT">Regular Flat Interest (à®µà®Ÿà¯à®Ÿà®¿ à®•à®Ÿà®©à¯)</option>
-              <option value="WITHOUT_INTEREST">Deduction Based (à®•à®¨à¯à®¤à¯ à®µà®Ÿà¯à®Ÿà®¿)</option>
-              <option value="EMI">EMI (à®…à®šà®²à¯‹à®Ÿà¯ à®¤à®µà®£à¯ˆ)</option>
+              <option value="FLAT">Regular Flat Interest (வட்டி கடன்)</option>
+              <option value="WITHOUT_INTEREST">Deduction Based (கந்து வட்டி)</option>
+              <option value="EMI">EMI (அசலோடு தவணை)</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Loan Amount (â‚¹) *</label>
+            <label className="form-label">Loan Amount (₹) *</label>
             <input className="form-input" type="number" min="1" placeholder="e.g. 50000" value={form.principalAmount} onChange={e => set('principalAmount', e.target.value)} required />
           </div>
 
           {form.interestType === 'WITHOUT_INTEREST' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Initial Advance Deduction (â‚¹) *</label>
+                <label className="form-label">Initial Advance Deduction (₹) *</label>
                 <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.advanceDeduction} onChange={e => set('advanceDeduction', e.target.value)} required />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amount subtracted upfront before disbursing to the borrower (à®®à¯à®©à¯à®ªà®£à®®à¯ à®ªà®¿à®Ÿà®¿à®¤à¯à®¤à®®à¯)</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amount subtracted upfront before disbursing to the borrower (முன்பணம் பிடித்தம்)</span>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Repayment Frequency (à®¤à®µà®£à¯ˆ à®®à¯à®±à¯ˆ) *</label>
+                <label className="form-label">Repayment Frequency (தவணை முறை) *</label>
                 <select
                   className="form-select"
                   value={form.repaymentFrequency}
@@ -314,9 +315,9 @@ export default function CreateLoan() {
                     }));
                   }}
                 >
-                  <option value="DAILY">Daily Repayment (à®¤à®¿à®©à®šà®°à®¿ à®¤à®µà®£à¯ˆ)</option>
-                  <option value="WEEKLY">Weekly Repayment (à®µà®¾à®°à®¤à¯ à®¤à®µà®£à¯ˆ)</option>
-                  <option value="MONTHLY">Monthly Repayment (à®®à®¾à®¤à®¤à¯ à®¤à®µà®£à¯ˆ)</option>
+                  <option value="DAILY">Daily Repayment (தினசரி தவணை)</option>
+                  <option value="WEEKLY">Weekly Repayment (வாரத் தவணை)</option>
+                  <option value="MONTHLY">Monthly Repayment (மாதத் தவணை)</option>
                 </select>
               </div>
 
@@ -348,7 +349,7 @@ export default function CreateLoan() {
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        Days (à®¨à®¾à®Ÿà¯à®•à®³à¯)
+                        Days (நாட்கள்)
                       </button>
                       <button
                         type="button"
@@ -371,7 +372,7 @@ export default function CreateLoan() {
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        Weeks (à®µà®¾à®°à®™à¯à®•à®³à¯)
+                        Weeks (வாரங்கள்)
                       </button>
                     </div>
                   </div>
@@ -436,7 +437,6 @@ export default function CreateLoan() {
                 <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
                   <option value="MONTHS">Monthly</option>
                   <option value="WEEKS">Weekly</option>
-                  <option value="DAYS">Daily</option>
                 </select>
               </div>
 
@@ -457,6 +457,7 @@ export default function CreateLoan() {
                 <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
                   <option value="WEEKS">Weekly</option>
                   <option value="MONTHS">Monthly</option>
+                  <option value="DAYS">Daily</option>
                 </select>
               </div>
             </>
@@ -468,7 +469,7 @@ export default function CreateLoan() {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Already Collected Amount (â‚¹) [Optional]</label>
+            <label className="form-label">Already Collected Amount (₹) [Optional]</label>
             <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.alreadyCollectedAmount} onChange={e => set('alreadyCollectedAmount', e.target.value)} />
           </div>
         </div>
@@ -480,15 +481,15 @@ export default function CreateLoan() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>LOAN AMOUNT</div>
-                  <div style={{ fontSize: 16, fontWeight: 800 }}>â‚¹{preview.totalRepayable.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800 }}>₹{preview.totalRepayable.toLocaleString('en-IN')}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: '#ef4444' }}>DEDUCTED UPFRONT</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#ef4444' }}>- â‚¹{preview.deduction.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#ef4444' }}>- ₹{preview.deduction.toLocaleString('en-IN')}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>ACTUAL DISBURSED</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--accent-400)' }}>â‚¹{preview.disbursed.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--accent-400)' }}>₹{preview.disbursed.toLocaleString('en-IN')}</div>
                 </div>
               </div>
               <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -498,7 +499,7 @@ export default function CreateLoan() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>PER {preview.unitLabel.toUpperCase()} DUE</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>â‚¹{Math.round(preview.due).toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>₹{Math.round(preview.due).toLocaleString('en-IN')}</div>
                 </div>
               </div>
             </div>
@@ -507,22 +508,22 @@ export default function CreateLoan() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, textAlign: 'center' }}>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{preview.unitLabel.toUpperCase()} DUE</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--primary-400)' }}>â‚¹{Math.round(preview.installmentDue).toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--primary-400)' }}>₹{Math.round(preview.installmentDue).toLocaleString('en-IN')}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>FIXED TOTAL INTEREST</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning-400)' }}>â‚¹{Math.round(preview.totalInterest).toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning-400)' }}>₹{Math.round(preview.totalInterest).toLocaleString('en-IN')}</div>
                 </div>
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-                Customer repays total **â‚¹{Math.round(preview.totalPayable).toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
+                Customer repays total **₹{Math.round(preview.totalPayable).toLocaleString('en-IN')}** over **{preview.tenure} {preview.unitLabelPlural}**
               </div>
             </div>
           ) : (
             <div className="card" style={{ marginTop: 12, background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.2)', textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>INTEREST PER {preview.period.toUpperCase()}</div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--primary-400)' }}>â‚¹{parseInt(preview.interest).toLocaleString('en-IN')}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Continuous loan Â· Principal paid separately to close</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--primary-400)' }}>₹{parseInt(preview.interest).toLocaleString('en-IN')}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Continuous loan · Principal paid separately to close</div>
             </div>
           )
         )}

@@ -43,7 +43,7 @@ router.post('/', authenticate, async (req, res) => {
       if (unpaidPrevious) {
         return res.status(400).json({
           success: false,
-          message: `à®®à¯à®¤à®²à®¿à®²à¯ Installment #${unpaidPrevious.installmentNo} (Week ${unpaidPrevious.weekNo || '?'}, Status: ${unpaidPrevious.status}, â‚¹${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect à®šà¯†à®¯à¯à®¯à¯à®™à¯à®•à®³à¯ à®…à®²à¯à®²à®¤à¯ Penalty à®šà¯†à®²à¯à®¤à¯à®¤à®¿ Carry Forward à®šà¯†à®¯à¯à®¯à¯à®™à¯à®•à®³à¯.`
+          message: `முதலில் Installment #${unpaidPrevious.installmentNo} (Week ${unpaidPrevious.weekNo || '?'}, Status: ${unpaidPrevious.status}, ₹${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect செய்யுங்கள் அல்லது Penalty செலுத்தி Carry Forward செய்யுங்கள்.`
         });
       }
     }
