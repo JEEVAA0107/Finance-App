@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 // round2 MUST be defined before any route that uses it
 const round2 = (num) => Math.round(num * 100) / 100;
 
-// POST /api/payments — Collect INTEREST payment
+// POST /api/payments â€” Collect INTEREST payment
 router.post('/', authenticate, async (req, res) => {
   try {
     const { repaymentId, amount, paymentMode = 'CASH', reference, notes, penaltyAmount = 0 } = req.body;
@@ -29,7 +29,7 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Already fully paid' });
     }
 
-    // ── Sequential Order Enforcement ──────────────────────────────────────────
+    // â”€â”€ Sequential Order Enforcement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Cannot collect installment #N if any earlier installment (#1 to #N-1) is not PAID or CARRIED_FORWARD
     if (repayment.installmentNo > 1) {
       const unpaidPrevious = await prisma.repayment.findFirst({
@@ -43,11 +43,11 @@ router.post('/', authenticate, async (req, res) => {
       if (unpaidPrevious) {
         return res.status(400).json({
           success: false,
-          message: `முதலில் Installment #${unpaidPrevious.installmentNo} (Week ${unpaidPrevious.weekNo || '?'}, Status: ${unpaidPrevious.status}, ₹${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect செய்யுங்கள் அல்லது Penalty செலுத்தி Carry Forward செய்யுங்கள்.`
+          message: `à®®à¯à®¤à®²à®¿à®²à¯ Installment #${unpaidPrevious.installmentNo} (Week ${unpaidPrevious.weekNo || '?'}, Status: ${unpaidPrevious.status}, â‚¹${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect à®šà¯†à®¯à¯à®¯à¯à®™à¯à®•à®³à¯ à®…à®²à¯à®²à®¤à¯ Penalty à®šà¯†à®²à¯à®¤à¯à®¤à®¿ Carry Forward à®šà¯†à®¯à¯à®¯à¯à®™à¯à®•à®³à¯.`
         });
       }
     }
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
     const baseAmt = parseFloat(amount);
@@ -64,7 +64,7 @@ router.post('/', authenticate, async (req, res) => {
         paymentMode,
         paymentType,
         reference,
-        notes: penaltyAmt > 0 ? (notes ? `${notes} (Includes ₹${penaltyAmt} overdue interest/penalty)` : `Includes ₹${penaltyAmt} overdue interest/penalty`) : notes,
+        notes: penaltyAmt > 0 ? (notes ? `${notes} (Includes â‚¹${penaltyAmt} overdue interest/penalty)` : `Includes â‚¹${penaltyAmt} overdue interest/penalty`) : notes,
       },
     });
 
@@ -160,10 +160,10 @@ router.post('/', authenticate, async (req, res) => {
       sendSMS(loanData.customer.phone, smsMessage);
 
       // WhatsApp Message
-      const waMessage = `✅ *Payment Successful!*
+      const waMessage = `âœ… *Payment Successful!*
       
 Hello ${loanData.customer.name},
-We have received your payment of *₹${amount}* for your loan (*${loanData.loanNumber}*).
+We have received your payment of *â‚¹${amount}* for your loan (*${loanData.loanNumber}*).
 
 *Installment:* #${repayment.installmentNo}
 *Mode:* ${paymentMode}
@@ -179,7 +179,7 @@ Thank you for choosing LoanFlow Pro!`;
   }
 });
 
-// POST /api/payments/penalty — Pay Penalty for Overdue Installment & Unlock Carry Forward
+// POST /api/payments/penalty â€” Pay Penalty for Overdue Installment & Unlock Carry Forward
 router.post('/penalty', authenticate, async (req, res) => {
   try {
     const { repaymentId, amount, paymentMode = 'CASH', reference, notes } = req.body;
@@ -220,114 +220,104 @@ router.post('/penalty', authenticate, async (req, res) => {
       },
     });
 
-    // 2. Find the last installment of the loan to append the carried-forward installment
-    const lastInstallment = await prisma.repayment.findFirst({
-      where: { loanId: repayment.loanId },
-      orderBy: { installmentNo: 'desc' },
-    });
+    // 2. Determine the shift interval based on loan tenureUnit
+    const tenureUnit = repayment.loan.tenureUnit;
+    const isDaily = tenureUnit === 'DAYS';
+    const isWeekly = tenureUnit === 'WEEKS';
 
-    const nextInstNo = (lastInstallment ? lastInstallment.installmentNo : repayment.installmentNo) + 1;
-    const isDaily = repayment.dayNo != null || repayment.loan.tenureUnit === 'DAYS';
-
-    let newDueDate = new Date(lastInstallment ? lastInstallment.dueDate : repayment.dueDate);
-    let newWeekNo, newDayNo;
-
+    // Compute new due date by shifting current installment forward by one period
+    let shiftedDueDate = new Date(repayment.dueDate);
     if (isDaily) {
-      newDueDate.setDate(newDueDate.getDate() + 1);
-      newWeekNo = Math.floor((nextInstNo - 1) / 7) + 1;
-      newDayNo = ((nextInstNo - 1) % 7) + 1;
-    } else if (repayment.loan.tenureUnit === 'WEEKS') {
-      newDueDate.setDate(newDueDate.getDate() + 7);
-      newWeekNo = (lastInstallment && lastInstallment.weekNo ? lastInstallment.weekNo : (repayment.weekNo || 1)) + 1;
-      newDayNo = 1;
+      shiftedDueDate.setDate(shiftedDueDate.getDate() + 1);
+    } else if (isWeekly) {
+      shiftedDueDate.setDate(shiftedDueDate.getDate() + 7);
     } else {
-      newDueDate.setMonth(newDueDate.getMonth() + 1);
-      newWeekNo = (lastInstallment && lastInstallment.weekNo ? lastInstallment.weekNo : (repayment.weekNo || 1)) + 1;
-      newDayNo = 1;
+      shiftedDueDate.setMonth(shiftedDueDate.getMonth() + 1);
     }
 
-    const remainingDue = round2(Math.max(0, repayment.dueAmount - repayment.paidAmount));
-
-    // 3. Create the carried-forward installment at the end of the loan schedule
-    const newRepayment = await prisma.repayment.create({
-      data: {
-        loanId: repayment.loanId,
-        installmentNo: nextInstNo,
-        weekNo: newWeekNo,
-        dayNo: newDayNo,
-        dueDate: newDueDate,
-        originalDueDate: newDueDate,
-        dueAmount: remainingDue,
-        principal: repayment.principal,
-        interest: repayment.interest,
-        penaltyAmount: 0,
-        penaltyPaid: 0,
-        penaltyStatus: 'NONE',
-        status: 'PENDING',
-      },
-    });
-
-    // 4. Update the current repayment to CARRIED_FORWARD with penalty paid
-    await prisma.repayment.update({
+    // 3. Update current repayment: shift due date, reset to PENDING, mark penalty PAID
+    const updatedRepayment = await prisma.repayment.update({
       where: { id: repayment.id },
       data: {
-        status: 'CARRIED_FORWARD',
-        penaltyPaid: penaltyPaidAmt,
+        dueDate: shiftedDueDate,
+        status: 'PENDING',
+        penaltyPaid: round2((repayment.penaltyPaid || 0) + penaltyPaidAmt),
         penaltyStatus: 'PAID',
-        carriedToInstNo: nextInstNo,
+        penaltyAmount: 0,
       },
     });
 
-    // 5. Update loan tenure, endDate, and interestCollected (penalties add to collected revenue)
+    // 4. Shift all subsequent PENDING/OVERDUE/PARTIAL installments forward by one period
+    const subsequentRepayments = await prisma.repayment.findMany({
+      where: {
+        loanId: repayment.loanId,
+        installmentNo: { gt: repayment.installmentNo },
+        status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] },
+      },
+      orderBy: { installmentNo: 'asc' },
+    });
+
+    for (const inst of subsequentRepayments) {
+      let newDate = new Date(inst.dueDate);
+      if (isDaily) {
+        newDate.setDate(newDate.getDate() + 1);
+      } else if (isWeekly) {
+        newDate.setDate(newDate.getDate() + 7);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      await prisma.repayment.update({
+        where: { id: inst.id },
+        data: { dueDate: newDate },
+      });
+    }
+
+    // 5. Update loan endDate and record penalty as collected revenue
+    let finalEndDate = shiftedDueDate;
+    if (subsequentRepayments.length > 0) {
+      finalEndDate = new Date(subsequentRepayments[subsequentRepayments.length - 1].dueDate);
+      if (isDaily) finalEndDate.setDate(finalEndDate.getDate() + 1);
+      else if (isWeekly) finalEndDate.setDate(finalEndDate.getDate() + 7);
+      else finalEndDate.setMonth(finalEndDate.getMonth() + 1);
+    }
+
     await prisma.loan.update({
       where: { id: repayment.loanId },
       data: {
-        endDate: newDueDate,
-        tenure: Math.max(repayment.loan.tenure || 0, nextInstNo),
+        endDate: finalEndDate,
         interestCollected: { increment: round2(penaltyPaidAmt) },
       },
     });
 
     await auditLog(req.user.id, 'COLLECT_PENALTY_CARRY_FORWARD', 'Payment', payment.id, {
       amount: penaltyPaidAmt,
-      originalRepaymentId: repayment.id,
+      repaymentId: repayment.id,
       installmentNo: repayment.installmentNo,
       weekNo: repayment.weekNo,
-      carriedToInstNo: nextInstNo,
-      newWeekNo,
-      newDueDate,
+      shiftedDueDate,
+      subsequentShifted: subsequentRepayments.length,
     }, req);
-
     // 6. Non-blocking notifications
     try {
       const phone = repayment.loan.customer.phone;
       const name = repayment.loan.customer.name;
       const loanNum = repayment.loan.loanNumber;
 
-      const sms = `Penalty of Rs.${penaltyPaidAmt} received for ${loanNum} Inst #${repayment.installmentNo}. Unpaid balance Rs.${remainingDue} carried forward to Week ${newWeekNo} (Inst #${nextInstNo}).`;
+      const sms = `Penalty of Rs.${penaltyPaidAmt} received for ${loanNum} Inst #${repayment.installmentNo}. Schedule shifted by 1 period. New due date: ${shiftedDueDate.toLocaleDateString('en-IN')}.`;
       sendSMS(phone, sms);
 
-      const waMessage = `⚠️ *Penalty Paid & Carry Forward Activated*
-
-Hello ${name},
-Your penalty payment of *₹${penaltyPaidAmt}* for loan *${loanNum}* (Installment #${repayment.installmentNo}, Week ${repayment.weekNo || '?'}) has been recorded.
-
-✅ *Status:* Carried Forward to Week ${newWeekNo} (Installment #${nextInstNo})
-📅 *New Due Date:* ${newDueDate.toLocaleDateString('en-IN')}
-💰 *Carried Balance:* ₹${remainingDue.toLocaleString('en-IN')}
-
-The schedule has been updated accordingly. Thank you!`;
+      const waMessage = `*Penalty Paid - Schedule Updated*\n\nHello ${name},\nYour penalty of *Rs.${penaltyPaidAmt}* for loan *${loanNum}* (Inst #${repayment.installmentNo}) has been recorded.\n\nStatus: Back to Pending\nNew Due Date: ${shiftedDueDate.toLocaleDateString('en-IN')}\n${subsequentRepayments.length} subsequent installment(s) also shifted forward.\n\nThank you!`;
       sendWhatsAppMessage(phone, waMessage);
     } catch (_) {}
 
     res.status(201).json({
       success: true,
-      message: `Penalty ₹${penaltyPaidAmt} collected! Installment #${repayment.installmentNo} moved to Week ${newWeekNo} (Installment #${nextInstNo}).`,
+      message: `Penalty Rs.${penaltyPaidAmt} collected! Installment #${repayment.installmentNo} shifted to ${shiftedDueDate.toLocaleDateString('en-IN')}. ${subsequentRepayments.length} subsequent installment(s) also shifted.`,
       data: {
         payment,
-        carriedFromId: repayment.id,
-        carriedToInstNo: nextInstNo,
-        newRepayment,
+        updatedRepayment,
+        subsequentShifted: subsequentRepayments.length,
+        shiftedDueDate,
       },
     });
   } catch (error) {
@@ -335,7 +325,8 @@ The schedule has been updated accordingly. Thank you!`;
   }
 });
 
-// POST /api/payments/principal — Pay PRINCIPAL amount
+
+// POST /api/payments/principal â€” Pay PRINCIPAL amount
 router.post('/principal', authenticate, async (req, res) => {
   try {
     const { loanId, amount, paymentMode = 'CASH', reference, notes } = req.body;
@@ -424,7 +415,7 @@ router.post('/principal', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/payments/close — Close a loan by paying Principal + Accrued Interest + Penalty
+// POST /api/payments/close â€” Close a loan by paying Principal + Accrued Interest + Penalty
 router.post('/close', authenticate, async (req, res) => {
   try {
     const { loanId, principalAmount, accruedInterestAmount, penaltyAmount, paymentMode = 'CASH', reference, notes } = req.body;
@@ -547,7 +538,7 @@ router.post('/close', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/payments — History
+// GET /api/payments â€” History
 router.get('/', authenticate, async (req, res) => {
   try {
     const { from, to, collectedById, page = 1, limit = 30 } = req.query;
