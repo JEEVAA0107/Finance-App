@@ -324,72 +324,18 @@ export default function CreateLoan() {
 
               {form.repaymentFrequency === 'DAILY' ? (
                 <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>
-                      Repayment Period ({form.tenureUnit === 'WEEKS' ? 'Weeks' : 'Days'}) *
-                    </label>
-                    <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.04)', padding: 2, borderRadius: 8, border: '1px solid var(--border-subtle, #e2e8f0)' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm(f => ({
-                            ...f,
-                            tenureUnit: 'DAYS',
-                            tenure: f.tenureUnit === 'WEEKS' ? String((parseInt(f.tenure) || 10) * 7) : (f.tenure || '100')
-                          }));
-                        }}
-                        style={{
-                          border: 'none',
-                          padding: '3px 10px',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          background: form.tenureUnit === 'DAYS' ? 'var(--primary-600, #2563eb)' : 'transparent',
-                          color: form.tenureUnit === 'DAYS' ? '#ffffff' : 'var(--text-muted, #64748b)',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        Days (நாட்கள்)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm(f => ({
-                            ...f,
-                            tenureUnit: 'WEEKS',
-                            tenure: f.tenureUnit === 'DAYS' && parseInt(f.tenure) >= 7 ? String(Math.round(parseInt(f.tenure) / 7)) : (f.tenure || '10')
-                          }));
-                        }}
-                        style={{
-                          border: 'none',
-                          padding: '3px 10px',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          background: form.tenureUnit === 'WEEKS' ? 'var(--primary-600, #2563eb)' : 'transparent',
-                          color: form.tenureUnit === 'WEEKS' ? '#ffffff' : 'var(--text-muted, #64748b)',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        Weeks (வாரங்கள்)
-                      </button>
-                    </div>
-                  </div>
+                  <label className="form-label">Repayment Period (Days) *</label>
                   <input
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder={form.tenureUnit === 'WEEKS' ? 'e.g. 10' : 'e.g. 100'}
+                    placeholder="e.g. 100"
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
                   />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {form.tenureUnit === 'WEEKS'
-                      ? `Total ${parseInt(form.tenure || 0) * 7} daily installments across ${form.tenure || 0} weeks`
-                      : `Total ${form.tenure || 0} daily installments`}
+                    Total {form.tenure || 0} daily installments
                   </span>
                 </div>
               ) : form.repaymentFrequency === 'WEEKLY' ? (
