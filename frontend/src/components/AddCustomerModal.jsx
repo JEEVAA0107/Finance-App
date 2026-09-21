@@ -184,6 +184,21 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
     if (!form.name.trim()) return toast.error('Customer name is required');
     if (!form.phone.trim()) return toast.error('Customer phone number is required');
 
+    if (form.idType === 'AADHAR') {
+      if (form.idNumber.trim().length !== 12) {
+        return toast.error('Customer Aadhar number must be exactly 12 digits');
+      }
+    }
+    
+    if (form.jaminIdType === 'AADHAR' && form.jaminIdNumber?.trim()) {
+      if (form.jaminIdNumber.trim().length !== 12) {
+        return toast.error('Jamin Aadhar number must be exactly 12 digits');
+      }
+      if (form.idType === 'AADHAR' && form.idNumber.trim() === form.jaminIdNumber.trim()) {
+        return toast.error('Customer and Jamin Aadhar numbers cannot be the same');
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload = {
@@ -638,7 +653,13 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                       className="form-input"
                       placeholder={`Enter ${form.idType} Number`}
                       value={form.idNumber}
-                      onChange={e => update('idNumber', e.target.value)}
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (form.idType === 'AADHAR') {
+                          val = val.replace(/\D/g, '').slice(0, 12);
+                        }
+                        update('idNumber', val);
+                      }}
                       required
                     />
                   </div>
@@ -770,7 +791,13 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                         className="form-input"
                         placeholder="Card Number"
                         value={form.jaminIdNumber}
-                        onChange={e => update('jaminIdNumber', e.target.value)}
+                        onChange={e => {
+                          let val = e.target.value;
+                          if (form.jaminIdType === 'AADHAR') {
+                            val = val.replace(/\D/g, '').slice(0, 12);
+                          }
+                          update('jaminIdNumber', val);
+                        }}
                       />
                     </div>
                   </div>

@@ -121,6 +121,27 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     const trimmedName = name?.trim();
     const trimmedPhone = phone?.trim();
     const cleanEmail = email?.trim() ? email.trim() : null;
+    const notId = req.params.id ? { not: req.params.id } : undefined;
+    const cid = idNumber?.trim();
+    const jid = jaminIdNumber?.trim();
+
+    if (idType === 'AADHAR' && cid && cid !== 'N/A') {
+      if (!/^\d{12}$/.test(cid)) return res.status(400).json({ success: false, message: 'Customer Aadhar number must be exactly 12 digits' });
+      const existC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: cid, ...(notId && { id: notId }) } });
+      if (existC) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered.' });
+      const existCJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: cid, ...(notId && { id: notId }) } });
+      if (existCJ) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered as a Guarantor (Jamin).' });
+    }
+
+    if (jaminIdType === 'AADHAR' && jid && jid !== 'N/A') {
+      if (!/^\d{12}$/.test(jid)) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar number must be exactly 12 digits' });
+      if (idType === 'AADHAR' && cid === jid) return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
+      const existJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: jid, ...(notId && { id: notId }) } });
+      if (existJ) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered.' });
+      const existJC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: jid, ...(notId && { id: notId }) } });
+      if (existJC) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered as a Customer.' });
+    }
+
 
     if (!trimmedName) {
       return res.status(400).json({ success: false, message: 'Customer name is required' });
@@ -247,6 +268,27 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
     const trimmedName = name?.trim();
     const trimmedPhone = phone?.trim();
     const cleanEmail = email?.trim() ? email.trim() : null;
+    const notId = req.params.id ? { not: req.params.id } : undefined;
+    const cid = idNumber?.trim();
+    const jid = jaminIdNumber?.trim();
+
+    if (idType === 'AADHAR' && cid && cid !== 'N/A') {
+      if (!/^\d{12}$/.test(cid)) return res.status(400).json({ success: false, message: 'Customer Aadhar number must be exactly 12 digits' });
+      const existC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: cid, ...(notId && { id: notId }) } });
+      if (existC) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered.' });
+      const existCJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: cid, ...(notId && { id: notId }) } });
+      if (existCJ) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered as a Guarantor (Jamin).' });
+    }
+
+    if (jaminIdType === 'AADHAR' && jid && jid !== 'N/A') {
+      if (!/^\d{12}$/.test(jid)) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar number must be exactly 12 digits' });
+      if (idType === 'AADHAR' && cid === jid) return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
+      const existJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: jid, ...(notId && { id: notId }) } });
+      if (existJ) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered.' });
+      const existJC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: jid, ...(notId && { id: notId }) } });
+      if (existJC) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered as a Customer.' });
+    }
+
 
     const customer = await prisma.customer.update({
       where: { id: req.params.id },

@@ -93,12 +93,7 @@ export default function UsersPage() {
           <p>Manage system users and roles</p>
         </div>
         <div className="flex-mobile-stack items-center gap-12">
-          <div className="tabs" style={{ marginBottom: 0, width: '100%' }}>
-            <button className={`tab ${filter === '' ? 'active' : ''}`} onClick={() => setFilter('')}>All</button>
-            <button className={`tab ${filter === 'ADMIN' ? 'active' : ''}`} onClick={() => setFilter('ADMIN')}>Admin</button>
-            <button className={`tab ${filter === 'AGENT' ? 'active' : ''}`} onClick={() => setFilter('AGENT')}>Agent</button>
-            <button className={`tab ${filter === 'CUSTOMER' ? 'active' : ''}`} onClick={() => setFilter('CUSTOMER')}>Customer</button>
-          </div>
+          
           <button className="btn btn-primary" onClick={openAdd} style={{ whiteSpace: 'nowrap' }}><Plus size={18} />Add User</button>
         </div>
       </div>
