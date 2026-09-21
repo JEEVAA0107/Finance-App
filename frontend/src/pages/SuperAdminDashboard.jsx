@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { companiesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import {
-  Landmark, Plus, Shield, ShieldCheck, ShieldAlert, Phone,
-  Users, KeyRound, Search, CheckCircle2, XCircle, RefreshCw, Trash2, Power
+  Landmark, Plus, ShieldCheck, ShieldAlert, Phone,
+  Users, KeyRound, Search, RefreshCw, Trash2, Power
 } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
@@ -91,14 +91,13 @@ export default function SuperAdminDashboard() {
   const handleToggleStatus = async (company) => {
     const newStatus = !company.isActive;
     const actionText = newStatus ? 'Activate' : 'Suspend';
-    if (!window.confirm(`Are you sure you want to ${actionText} '${company.name}'? ${newStatus ? 'Staff will be able to log in.' : 'Staff and Admin will be blocked from logging in.'}`)) {
+    if (!window.confirm(`Are you sure you want to ${actionText} '${company.name}'?`)) {
       return;
     }
 
     try {
       await companiesAPI.toggleStatus(company.id, newStatus);
       toast.success(newStatus ? `'${company.name}' is now ACTIVE` : `'${company.name}' is now SUSPENDED`);
-      // Update local state directly for instant feedback
       setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, isActive: newStatus } : c));
     } catch (err) {
       toast.error(err.message || 'Failed to update company status');
@@ -159,202 +158,188 @@ export default function SuperAdminDashboard() {
   const totalUsers = companies.reduce((sum, c) => sum + (c.stats?.users || 0), 0);
 
   return (
-    <div className="page-container animate-in" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="page-container animate-in" style={{ padding: '16px', maxWidth: '1200px', margin: '0 auto' }}>
       
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: 800 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h1 className="page-title" style={{ margin: 0, fontSize: '22px', fontWeight: 800 }}>
               Super Admin Portal
             </h1>
-            <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase' }}>
-              Master Authority
+            <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', textTransform: 'uppercase' }}>
+              Master Control
             </span>
           </div>
-          <p className="page-subtitle" style={{ margin: '4px 0 0 0', color: 'var(--text-muted)' }}>
-            Provision, manage, and authenticate all Finance companies in the platform
+          <p className="page-subtitle" style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+            Register, authenticate, and manage Finance businesses
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px', width: 'auto' }}>
           <button
             className="btn btn-secondary"
             onClick={loadCompanies}
             disabled={loading}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', fontSize: '13px' }}
           >
-            <RefreshCw size={16} className={loading ? 'spin' : ''} />
+            <RefreshCw size={14} className={loading ? 'spin' : ''} />
             Refresh
           </button>
           <button
             className="btn btn-primary"
             onClick={() => setShowRegisterModal(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '10px', fontWeight: 700 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontWeight: 700, fontSize: '13px' }}
           >
-            <Plus size={18} />
-            Register New Finance
+            <Plus size={16} />
+            Register Finance
           </button>
         </div>
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <div className="stat-card blue" style={{ padding: '20px', borderRadius: '16px' }}>
-          <div className="stat-icon blue" style={{ background: '#dbeafe', color: '#1d4ed8', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Landmark size={22} />
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+        <div className="stat-card blue" style={{ padding: '14px', borderRadius: '14px' }}>
+          <div className="stat-icon blue" style={{ width: '34px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Landmark size={18} />
           </div>
-          <div className="stat-value" style={{ fontSize: '28px', fontWeight: 800, marginTop: '8px' }}>{companies.length}</div>
-          <div className="stat-label" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total Registered Finances</div>
+          <div className="stat-value" style={{ fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{companies.length}</div>
+          <div className="stat-label" style={{ fontSize: '12px' }}>Total Finances</div>
         </div>
 
-        <div className="stat-card green" style={{ padding: '20px', borderRadius: '16px' }}>
-          <div className="stat-icon green" style={{ background: '#dcfce7', color: '#15803d', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ShieldCheck size={22} />
+        <div className="stat-card green" style={{ padding: '14px', borderRadius: '14px' }}>
+          <div className="stat-icon green" style={{ width: '34px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldCheck size={18} />
           </div>
-          <div className="stat-value" style={{ fontSize: '28px', fontWeight: 800, color: '#16a34a', marginTop: '8px' }}>{activeCount}</div>
-          <div className="stat-label" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Active & Authenticated</div>
+          <div className="stat-value" style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-500)', marginTop: '6px' }}>{activeCount}</div>
+          <div className="stat-label" style={{ fontSize: '12px' }}>Active / Auth</div>
         </div>
 
-        <div className="stat-card yellow" style={{ padding: '20px', borderRadius: '16px' }}>
-          <div className="stat-icon yellow" style={{ background: '#fee2e2', color: '#b91c1c', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ShieldAlert size={22} />
+        <div className="stat-card yellow" style={{ padding: '14px', borderRadius: '14px' }}>
+          <div className="stat-icon yellow" style={{ width: '34px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldAlert size={18} />
           </div>
-          <div className="stat-value" style={{ fontSize: '28px', fontWeight: 800, color: '#dc2626', marginTop: '8px' }}>{suspendedCount}</div>
-          <div className="stat-label" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Suspended / Inactive</div>
+          <div className="stat-value" style={{ fontSize: '22px', fontWeight: 800, color: 'var(--danger-500)', marginTop: '6px' }}>{suspendedCount}</div>
+          <div className="stat-label" style={{ fontSize: '12px' }}>Suspended</div>
         </div>
 
-        <div className="stat-card purple" style={{ padding: '20px', borderRadius: '16px' }}>
-          <div className="stat-icon purple" style={{ background: '#f3e8ff', color: '#7e22ce', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Users size={22} />
+        <div className="stat-card purple" style={{ padding: '14px', borderRadius: '14px' }}>
+          <div className="stat-icon purple" style={{ width: '34px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Users size={18} />
           </div>
-          <div className="stat-value" style={{ fontSize: '28px', fontWeight: 800, marginTop: '8px' }}>{totalUsers}</div>
-          <div className="stat-label" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total System Users</div>
+          <div className="stat-value" style={{ fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{totalUsers}</div>
+          <div className="stat-label" style={{ fontSize: '12px' }}>Staff & Admins</div>
         </div>
       </div>
 
-      {/* Filter / Search Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', background: '#ffffff', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-subtle, #e2e8f0)' }}>
-        <Search size={18} style={{ color: '#94a3b8' }} />
+      {/* Search Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', background: 'var(--bg-card)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-default)' }}>
+        <Search size={16} style={{ color: 'var(--text-muted)' }} />
         <input
           type="text"
-          placeholder="Search by Finance Name, Code (e.g. SMF), or Owner Phone..."
+          placeholder="Search by Finance Name, Code (e.g. SMF), or Mobile..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px', color: '#0f172a' }}
+          style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '13px', color: 'var(--text-primary)' }}
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setSearchTerm('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}>✕</button>
         )}
       </div>
 
-      {/* Companies List Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: '18px', border: '1px solid var(--border-subtle, #e2e8f0)' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-subtle, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>
-            Registered Finance Businesses ({filtered.length})
+      {/* Companies List Container */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: '16px' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>
+            Finance Companies ({filtered.length})
           </h3>
         </div>
 
-        <div className="table-container" style={{ overflowX: 'auto' }}>
-          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-container" style={{ overflowX: 'auto', width: '100%' }}>
+          <table className="data-table" style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', fontSize: '12px', textTransform: 'uppercase', color: '#64748b' }}>
-                <th style={{ padding: '14px 20px' }}>Finance Name & Code</th>
-                <th style={{ padding: '14px 20px' }}>Owner / Mobile</th>
-                <th style={{ padding: '14px 20px' }}>Data Metrics</th>
-                <th style={{ padding: '14px 20px' }}>Authentication Status</th>
-                <th style={{ padding: '14px 20px', textAlign: 'right' }}>Actions</th>
+              <tr style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                <th style={{ padding: '12px 16px' }}>Finance Name</th>
+                <th style={{ padding: '12px 16px' }}>Owner & Phone</th>
+                <th style={{ padding: '12px 16px' }}>Metrics</th>
+                <th style={{ padding: '12px 16px' }}>Status</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(comp => (
-                <tr key={comp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={comp.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   
                   {/* Finance Name & Code */}
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: comp.isActive ? '#eff6ff' : '#f8fafc', color: comp.isActive ? '#2563eb' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                        <Landmark size={20} />
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: comp.isActive ? 'var(--primary-50)' : 'var(--bg-tertiary)', color: comp.isActive ? 'var(--primary-600)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Landmark size={18} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{comp.name}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                          <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', letterSpacing: '0.5px' }}>
-                            CODE: {comp.code.toUpperCase()}
-                          </span>
-                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>{comp.name}</div>
+                        <span style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                          CODE: {comp.code.toUpperCase()}
+                        </span>
                       </div>
                     </div>
                   </td>
 
                   {/* Owner & Phone */}
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#334155' }}>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px' }}>
                       {comp.ownerName || 'Finance Admin'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '12px', marginTop: '2px' }}>
-                      <Phone size={13} /> {comp.phone || 'No phone'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
+                      <Phone size={12} /> {comp.phone || '-'}
                     </div>
                   </td>
 
                   {/* Metrics */}
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '13px' }}>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{comp.stats?.loans || 0}</span>{' '}
-                        <span style={{ color: '#64748b', fontSize: '11px' }}>Loans</span>
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{comp.stats?.customers || 0}</span>{' '}
-                        <span style={{ color: '#64748b', fontSize: '11px' }}>Cust</span>
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{comp.stats?.users || 0}</span>{' '}
-                        <span style={{ color: '#64748b', fontSize: '11px' }}>Users</span>
-                      </div>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
+                      <div><strong>{comp.stats?.loans || 0}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Loans</span></div>
+                      <div><strong>{comp.stats?.customers || 0}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Cust</span></div>
+                      <div><strong>{comp.stats?.users || 0}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Staff</span></div>
                     </div>
                   </td>
 
                   {/* Active / Inactive Status with One-Click Toggle */}
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(comp)}
-                        title={comp.isActive ? "Click to Suspend this Finance" : "Click to Activate this Finance"}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          borderRadius: '20px',
-                          border: comp.isActive ? '1px solid #bbf7d0' : '1px solid #fecaca',
-                          background: comp.isActive ? '#f0fdf4' : '#fef2f2',
-                          color: comp.isActive ? '#166534' : '#991b1b',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <Power size={14} />
-                        {comp.isActive ? 'ACTIVE / AUTH' : 'SUSPENDED'}
-                      </button>
-                    </div>
+                  <td style={{ padding: '12px 16px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(comp)}
+                      title={comp.isActive ? "Click to Suspend" : "Click to Activate"}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        border: comp.isActive ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                        background: comp.isActive ? '#f0fdf4' : '#fef2f2',
+                        color: comp.isActive ? '#166534' : '#991b1b',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Power size={12} />
+                      {comp.isActive ? 'ACTIVE' : 'SUSPENDED'}
+                    </button>
                   </td>
 
                   {/* Actions */}
-                  <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                       <button
                         type="button"
                         onClick={() => handleOpenPasswordModal(comp)}
                         className="btn btn-secondary"
-                        style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
-                        title="Set new password for this Finance Admin"
+                        style={{ padding: '5px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
+                        title="Reset Admin Password"
                       >
-                        <KeyRound size={14} />
+                        <KeyRound size={12} />
                         Password
                       </button>
 
@@ -363,10 +348,10 @@ export default function SuperAdminDashboard() {
                           type="button"
                           onClick={() => handleDeleteCompany(comp)}
                           className="btn btn-ghost"
-                          style={{ color: '#ef4444', padding: '6px' }}
+                          style={{ color: 'var(--danger-500)', padding: '5px' }}
                           title="Delete Company"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       )}
                     </div>
@@ -376,8 +361,8 @@ export default function SuperAdminDashboard() {
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                    {searchTerm ? 'No finance companies match your search.' : 'No finance companies registered yet. Click "+ Register New Finance" to add your first client.'}
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    {searchTerm ? 'No matching finance companies.' : 'No finance companies registered yet. Click "+ Register Finance" to create one.'}
                   </td>
                 </tr>
               )}
@@ -386,29 +371,27 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* Modal 1: Register New Finance Company */}
+      {/* Modal 1: Register New Finance */}
       {showRegisterModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="modal animate-in" style={{ background: '#fff', borderRadius: '20px', maxWidth: '500px', width: '100%', padding: '28px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+          <div className="modal animate-in" style={{ background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '24px', boxSizing: 'border-box' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ background: '#dbeafe', color: '#2563eb', padding: '10px', borderRadius: '12px' }}>
-                  <Landmark size={22} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: 'var(--primary-50)', color: 'var(--primary-600)', padding: '8px', borderRadius: '10px' }}>
+                  <Landmark size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Register New Finance</h3>
-                  <p style={{ margin: '2px 0 0 0', color: '#64748b', fontSize: '12px' }}>Create tenant & provision Admin account</p>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Register New Finance</h3>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '11px' }}>Provision business & admin account</p>
                 </div>
               </div>
-              <button onClick={() => setShowRegisterModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+              <button onClick={() => setShowRegisterModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
             </div>
 
             <form onSubmit={handleCreateCompany}>
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                  Finance Business Name *
-                </label>
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label">Finance Business Name *</label>
                 <input
                   type="text"
                   className="form-input"
@@ -416,47 +399,35 @@ export default function SuperAdminDashboard() {
                   value={regForm.name}
                   onChange={handleNameChange}
                   required
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                  Unique Company Login Code *
-                </label>
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label">Company Login Code *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. smf or srimurugan"
+                  placeholder="e.g. smf"
                   value={regForm.code}
                   onChange={(e) => setRegForm({ ...regForm, code: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
                   required
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                 />
-                <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '3px' }}>
-                  This code will be typed by the Finance Owner and their agents on the Login screen.
-                </small>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                    Owner Name
-                  </label>
+                  <label className="form-label">Owner Name</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Murugan S"
+                    placeholder="e.g. Murugan"
                     value={regForm.ownerName}
                     onChange={(e) => setRegForm({ ...regForm, ownerName: e.target.value })}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                    Mobile Number *
-                  </label>
+                  <label className="form-label">Mobile Number *</label>
                   <input
                     type="tel"
                     className="form-input"
@@ -464,15 +435,12 @@ export default function SuperAdminDashboard() {
                     value={regForm.phone}
                     onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })}
                     required
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '18px' }}>
-                <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                  Initial Login Password * (Set by Super Admin)
-                </label>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Initial Login Password * (Set by Super Admin)</label>
                 <input
                   type="text"
                   className="form-input"
@@ -480,19 +448,15 @@ export default function SuperAdminDashboard() {
                   value={regForm.password}
                   onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
                   required
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                 />
-                <small style={{ color: '#2563eb', fontSize: '11px', display: 'block', marginTop: '3px' }}>
-                  You will share this password with the Finance owner so they can log in.
-                </small>
               </div>
 
-              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowRegisterModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', borderRadius: '10px', fontWeight: 700 }}>
-                  Create & Provision Finance
+                <button type="submit" className="btn btn-primary">
+                  Create Finance
                 </button>
               </div>
             </form>
@@ -502,26 +466,24 @@ export default function SuperAdminDashboard() {
 
       {/* Modal 2: Reset Admin Password */}
       {showPasswordModal && selectedCompany && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="modal animate-in" style={{ background: '#fff', borderRadius: '20px', maxWidth: '420px', width: '100%', padding: '28px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+          <div className="modal animate-in" style={{ background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '380px', width: '100%', padding: '24px', boxSizing: 'border-box' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <KeyRound size={20} style={{ color: '#2563eb' }} />
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800 }}>Reset Admin Password</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <KeyRound size={18} style={{ color: 'var(--primary-600)' }} />
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}>Reset Password</h3>
               </div>
-              <button onClick={() => setShowPasswordModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+              <button onClick={() => setShowPasswordModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
             </div>
 
-            <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 16px 0' }}>
-              Setting a new password for <strong>{selectedCompany.name}</strong> ({selectedCompany.phone || 'Admin'}).
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: '0 0 14px 0' }}>
+              Setting a new password for <strong>{selectedCompany.name}</strong> ({selectedCompany.phone}).
             </p>
 
             <form onSubmit={handleResetPassword}>
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', display: 'block', marginBottom: '6px' }}>
-                  New Password
-                </label>
+              <div className="form-group" style={{ marginBottom: '18px' }}>
+                <label className="form-label">New Password</label>
                 <input
                   type="text"
                   className="form-input"
@@ -530,16 +492,15 @@ export default function SuperAdminDashboard() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   autoFocus
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                 />
               </div>
 
-              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowPasswordModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={submittingPassword} style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', borderRadius: '10px', fontWeight: 700 }}>
-                  {submittingPassword ? 'Saving...' : 'Update Password'}
+                <button type="submit" className="btn btn-primary" disabled={submittingPassword}>
+                  {submittingPassword ? 'Saving...' : 'Update'}
                 </button>
               </div>
             </form>

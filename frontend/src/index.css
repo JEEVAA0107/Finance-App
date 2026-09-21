@@ -1684,3 +1684,14 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   }
 }
 
+
+/* Mobile input icon padding fix - prevents text and icons from overlapping */
+@media (max-width: 768px) {
+  input.form-input.input-with-icon-left {
+    padding-left: 42px !important;
+  }
+  input.form-input.input-with-icon-both {
+    padding-left: 42px !important;
+    padding-right: 42px !important;
+  }
+}
