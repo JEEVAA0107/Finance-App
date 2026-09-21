@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { IndianRupee, Plus, FileText, ArrowDownRight, ArrowUpRight, HandCoins, Building2, Wallet } from 'lucide-react';
+import { IndianRupee, Plus, FileText, ArrowDownRight, ArrowUpRight, HandCoins, Building2, Wallet, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function DayBookPage() {
@@ -74,8 +74,8 @@ export default function DayBookPage() {
         </div>
         <div className="stat-card green">
           <div className="stat-icon green"><ArrowDownRight size={20} /></div>
-          <div className="stat-value">{fmt(data?.collections + data?.processingFees)}</div>
-          <div className="stat-label">Total In (Collections + Fees)</div>
+          <div className="stat-value">{fmt((data?.collections || 0) + (data?.processingFees || 0) + (data?.penaltyCollected || 0))}</div>
+          <div className="stat-label">Total In (Collections + Fees + Penalty)</div>
         </div>
         <div className="stat-card yellow">
           <div className="stat-icon yellow"><ArrowUpRight size={20} /></div>
@@ -102,6 +102,10 @@ export default function DayBookPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
               <span className="color-muted font-medium">Processing Fees</span>
               <span className="font-bold">{fmt(data?.processingFees)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <span className="color-muted font-medium">Penalty Collected</span>
+              <span className="font-bold" style={{ color: 'var(--danger)' }}>{fmt(data?.penaltyCollected)}</span>
             </div>
           </div>
         </div>
@@ -156,8 +160,8 @@ export default function DayBookPage() {
       </div>
 
       {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '400px' }}>
+        <div className="modal-overlay">
+          <div className="modal animate-in" style={{ maxWidth: '420px', padding: '0' }}>
             <div className="modal-header">
               <h3>Add Office Expense</h3>
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>&times;</button>

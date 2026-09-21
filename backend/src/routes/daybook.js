@@ -22,6 +22,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       where: { collectedAt: { gte: start, lte: end } }
     });
     const collections = payments.reduce((sum, p) => sum + p.amount, 0);
+    const emiCollections = payments
+      .filter(p => p.paymentType !== 'PENALTY')
+      .reduce((sum, p) => sum + p.amount, 0);
 
     // 2. Loan Distributed (Principal of Loans disbursed today)
     const disbursedLoans = await prisma.loan.findMany({
@@ -43,14 +46,18 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     // 4. Calculate Opening Balance (All time collections - disbursements - expenses BEFORE today)
     // Note: If you want a fixed manual opening balance, it needs a different model.
     // For now, we compute it dynamically based on all past history.
+    // 4a. Penalty Collected today (paymentType = 'PENALTY')
+    const penaltyCollected = payments
+      .filter(p => p.paymentType === 'PENALTY')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // 4b. Opening Balance:
+    //   = past collections (all payment types)
+    //   - past office expenses only
+    //   (Loan principal is NOT subtracted — loans cycle back as repayments)
     const pastPayments = await prisma.payment.aggregate({
       where: { collectedAt: { lt: start } },
       _sum: { amount: true }
-    });
-    
-    const pastDisbursements = await prisma.loan.aggregate({
-      where: { disbursedAt: { lt: start }, status: { not: 'PENDING' } },
-      _sum: { principalAmount: true }
     });
     
     const pastExpenses = await prisma.expense.aggregate({
@@ -59,7 +66,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     });
 
     const totalPastIn = pastPayments._sum.amount || 0;
-    const totalPastOut = (pastDisbursements._sum.principalAmount || 0) + (pastExpenses._sum.amount || 0);
+    const totalPastOut = pastExpenses._sum.amount || 0;
     const openingBalance = totalPastIn - totalPastOut;
 
     // 5. Cash in Hand
@@ -71,6 +78,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         date: start,
         openingBalance,
         collections,
+        emiCollections,
+        penaltyCollected,
         processingFees,
         loanDistributed,
         officeExpenses,
