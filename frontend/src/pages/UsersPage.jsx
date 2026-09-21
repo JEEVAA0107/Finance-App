@@ -189,11 +189,7 @@ export default function UsersPage() {
                   )}
                   <div className="form-group">
                     <label className="form-label">Role *</label>
-                    <select className="form-select" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
-                      <option value="AGENT">Field Agent</option>
-                      <option value="ADMIN">Admin</option>
-                      <option value="CUSTOMER">Customer</option>
-                    </select>
+                    <input className="form-input" value="Field Agent" disabled />
                   </div>
                 </div>
               </div>

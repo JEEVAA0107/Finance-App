@@ -15,7 +15,7 @@ export default function CustomersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
-  const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
+  const viewMode = 'grid';
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'NO_LOANS'
 
   const location = useLocation();
@@ -162,51 +162,7 @@ export default function CustomersPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* View mode toggle */}
-          <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 3 }}>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              title="Table View"
-              style={{
-                background: viewMode === 'table' ? 'var(--primary-600)' : 'transparent',
-                color: viewMode === 'table' ? '#fff' : 'var(--text-muted)',
-                border: 'none',
-                borderRadius: 7,
-                padding: '6px 12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                fontSize: 12,
-                fontWeight: 600,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Table size={14} /> Table
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              title="Grid View"
-              style={{
-                background: viewMode === 'grid' ? 'var(--primary-600)' : 'transparent',
-                color: viewMode === 'grid' ? '#fff' : 'var(--text-muted)',
-                border: 'none',
-                borderRadius: 7,
-                padding: '6px 12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                fontSize: 12,
-                fontWeight: 600,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <LayoutGrid size={14} /> Grid
-            </button>
-          </div>
+          
 
           <button className="btn btn-primary" onClick={openAdd} style={{ gap: 6, padding: '8px 16px', fontWeight: 700 }}>
             <Plus size={16} /> Add Customer

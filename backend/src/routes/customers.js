@@ -156,6 +156,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     }
 
     const customerData = {
+      companyId: req.user.companyId || null,
       userId: user.id,
       name: trimmedName,
       phone: trimmedPhone,
@@ -210,6 +211,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
         // Fallback with core required columns only
         customer = await prisma.customer.create({
           data: {
+            companyId: req.user.companyId || null,
             userId: user.id,
             name: trimmedName,
             phone: trimmedPhone,

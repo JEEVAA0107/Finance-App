@@ -305,6 +305,10 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     let frequency = repaymentFrequency || (tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY');
       if (interestType === 'FLAT' || interestType === 'EMI') {
         frequency = tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+        if (interestType === 'FLAT' && frequency === 'DAILY') {
+          frequency = 'MONTHLY';
+          tenureUnit = 'MONTHS';
+        }
       }
 
     if (interestType === 'WITHOUT_INTEREST') {

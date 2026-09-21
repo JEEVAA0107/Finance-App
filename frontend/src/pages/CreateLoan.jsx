@@ -272,7 +272,8 @@ export default function CreateLoan() {
                   }
                   next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
                 } else if (val === 'FLAT') {
-                  next.repaymentFrequency = next.tenureUnit === 'DAYS' ? 'DAILY' : next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+                  if (next.tenureUnit === 'DAYS') next.tenureUnit = 'MONTHS';
+                  next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
                 } else if (val === 'WITHOUT_INTEREST') {
                   if (!next.repaymentFrequency) next.repaymentFrequency = 'DAILY';
                   if (!next.tenureUnit) next.tenureUnit = 'DAYS';
@@ -457,7 +458,6 @@ export default function CreateLoan() {
                 <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
                   <option value="WEEKS">Weekly</option>
                   <option value="MONTHS">Monthly</option>
-                  <option value="DAYS">Daily</option>
                 </select>
               </div>
             </>
