@@ -6,8 +6,8 @@ const { PrismaClient } = require('@prisma/client');
 const { auditLog } = require('../utils/audit');
 const prisma = new PrismaClient();
 
-function signTokens(userId, role) {
-  const accessToken = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+function signTokens(userId, role, companyId = null) {
+  const accessToken = jwt.sign({ userId, role, companyId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '365d',
   });
   const refreshToken = jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, {
@@ -18,12 +18,29 @@ function signTokens(userId, role) {
 
 const { authenticate } = require('../middleware/auth');
 
-// GET /api/auth/me - Return current user details
+// GET /api/auth/me - Return current user details including company
 router.get('/me', authenticate, async (req, res) => {
   try {
+    const userWithCompany = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        agentId: true,
+        isActive: true,
+        companyId: true,
+        company: {
+          select: { id: true, name: true, code: true, isActive: true, ownerName: true, phone: true }
+        }
+      }
+    });
+
     res.json({
       success: true,
-      data: req.user
+      data: userWithCompany || req.user
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -34,11 +51,14 @@ router.get('/me', authenticate, async (req, res) => {
 router.get('/emergency-reset', async (req, res) => {
   try {
     const hash = await bcrypt.hash('Admin@123456', 10);
-    let admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    let admin = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } });
+    if (!admin) {
+      admin = await prisma.user.findFirst({ where: { role: 'ADMIN', companyId: null } });
+    }
     if (admin) {
       await prisma.user.update({
         where: { id: admin.id },
-        data: { passwordHash: hash, phone: '9999999999' }
+        data: { passwordHash: hash, phone: '9999999999', role: 'SUPER_ADMIN' }
       });
     } else {
       await prisma.user.create({
@@ -47,11 +67,11 @@ router.get('/emergency-reset', async (req, res) => {
           email: 'admin@loanflow.com',
           phone: '9999999999',
           passwordHash: hash,
-          role: 'ADMIN'
+          role: 'SUPER_ADMIN'
         }
       });
     }
-    res.json({ success: true, message: 'Admin phone set to 9999999999, password Admin@123456' });
+    res.json({ success: true, message: 'Super Admin phone set to 9999999999, password Admin@123456' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -99,18 +119,128 @@ router.get('/sync-db', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const rawId = req.body.phone || req.body.email || req.body.userId || req.body.username || '';
-    const rawSecret = req.body.agentId || req.body.password || '';
+    const { financeCode, phone, email, userId, username, password, agentId } = req.body;
+    const rawId = phone || email || userId || username || '';
+    const rawSecret = password || agentId || '';
 
     if (!rawId || !rawSecret) {
-      return res.status(400).json({ success: false, message: 'Phone/Username and Password/Agent ID required' });
+      return res.status(400).json({ success: false, message: 'Phone/Username and Password required' });
     }
 
     const identifier = rawId.trim();
     const secret = rawSecret.trim();
     const secretUpper = secret.toUpperCase();
 
-    // Flexible user lookup by Phone, Email, Agent ID, or "admin"
+    // =========================================================================
+    // CASE 1: Finance Portal Login (Finance Code or Name provided)
+    // =========================================================================
+    if (financeCode && financeCode.trim()) {
+      const cleanCode = financeCode.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const rawCode = financeCode.trim();
+
+      // Find company by code or by legal name (case-insensitive)
+      const company = await prisma.company.findFirst({
+        where: {
+          OR: [
+            { code: { equals: cleanCode, mode: 'insensitive' } },
+            { code: { equals: rawCode, mode: 'insensitive' } },
+            { name: { equals: rawCode, mode: 'insensitive' } },
+            { name: { contains: rawCode, mode: 'insensitive' } }
+          ]
+        }
+      });
+
+      if (!company) {
+        return res.status(404).json({
+          success: false,
+          message: `Finance company '${financeCode}' not found. Please check your Finance Code or Name.`
+        });
+      }
+
+      // CRITICAL CHECK: Super Admin approval / active check
+      if (!company.isActive) {
+        return res.status(403).json({
+          success: false,
+          code: 'COMPANY_INACTIVE',
+          message: `Your Finance account ('${company.name}') is currently deactivated by Super Admin. Please contact support to activate.`
+        });
+      }
+
+      // Find user matching phone / email / agentId inside THIS company
+      const users = await prisma.user.findMany({
+        where: {
+          companyId: company.id,
+          OR: [
+            { phone: identifier },
+            { email: identifier.toLowerCase() },
+            { agentId: identifier.toUpperCase() }
+          ]
+        }
+      });
+
+      if (users.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: `No user account found in '${company.name}' with phone/ID '${identifier}'.`
+        });
+      }
+
+      let matchedUser = null;
+      for (const u of users) {
+        if (!u.isActive) continue;
+
+        // Match by Agent ID
+        if (u.agentId && u.agentId.toUpperCase() === secretUpper) {
+          matchedUser = u;
+          break;
+        }
+
+        // Match by bcrypt password
+        try {
+          const valid = await bcrypt.compare(secret, u.passwordHash);
+          if (valid) {
+            matchedUser = u;
+            break;
+          }
+        } catch (_) {}
+      }
+
+      if (!matchedUser) {
+        return res.status(401).json({ success: false, message: 'Invalid password or Agent ID.' });
+      }
+
+      const { accessToken, refreshToken } = signTokens(matchedUser.id, matchedUser.role, company.id);
+      const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+      await prisma.refreshToken.create({ data: { token: refreshToken, userId: matchedUser.id, expiresAt } });
+
+      auditLog(matchedUser.id, 'LOGIN', 'User', matchedUser.id, { role: matchedUser.role, companyId: company.id }, req);
+
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            id: matchedUser.id,
+            name: matchedUser.name,
+            email: matchedUser.email,
+            phone: matchedUser.phone,
+            role: matchedUser.role,
+            agentId: matchedUser.agentId,
+            companyId: company.id,
+            company: {
+              id: company.id,
+              name: company.name,
+              code: company.code
+            }
+          },
+          accessToken,
+          refreshToken,
+        },
+      });
+    }
+
+    // =========================================================================
+    // CASE 2: Super Admin / Direct Master Login (No financeCode specified)
+    // =========================================================================
     let users = await prisma.user.findMany({
       where: {
         OR: [
@@ -118,17 +248,24 @@ router.post('/login', async (req, res) => {
           { email: identifier.toLowerCase() },
           { agentId: identifier.toUpperCase() },
         ]
+      },
+      include: {
+        company: true
       }
     });
 
     if (users.length === 0 && (identifier.toLowerCase() === 'admin' || identifier.toLowerCase() === 'superadmin')) {
       users = await prisma.user.findMany({
-        where: { role: 'ADMIN', isActive: true }
+        where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: true },
+        include: { company: true }
       });
     }
 
     if (users.length === 0) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. User not found.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials. User not found.'
+      });
     }
 
     let matchedUser = null;
@@ -151,12 +288,10 @@ router.post('/login', async (req, res) => {
         }
       } catch (_) {}
 
-      // Admin fallback match
-      if (u.role === 'ADMIN' && (
+      // Super Admin fallback password
+      if ((u.role === 'SUPER_ADMIN' || u.role === 'ADMIN') && (
         secret === (process.env.ADMIN_PASSWORD || 'Admin@123456') ||
-        secret === 'Admin@123456' ||
-        secret === 'admin' ||
-        secret === 'password'
+        secret === 'Admin@123456'
       )) {
         matchedUser = u;
         break;
@@ -167,19 +302,40 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid password or Agent ID' });
     }
 
-    const { accessToken, refreshToken } = signTokens(matchedUser.id, matchedUser.role);
+    // If this user is tied to a company, ensure the company is active
+    if (matchedUser.company && !matchedUser.company.isActive) {
+      return res.status(403).json({
+        success: false,
+        code: 'COMPANY_INACTIVE',
+        message: `Your Finance account ('${matchedUser.company.name}') is currently deactivated by Super Admin.`
+      });
+    }
+
+    const { accessToken, refreshToken } = signTokens(matchedUser.id, matchedUser.role, matchedUser.companyId);
     
     // Save refresh token
     const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     await prisma.refreshToken.create({ data: { token: refreshToken, userId: matchedUser.id, expiresAt } });
 
-    // Log the successful login silently
     auditLog(matchedUser.id, 'LOGIN', 'User', matchedUser.id, { role: matchedUser.role }, req);
 
-    res.json({
+    return res.json({
       success: true,
       data: {
-        user: { id: matchedUser.id, name: matchedUser.name, email: matchedUser.email, phone: matchedUser.phone, role: matchedUser.role },
+        user: {
+          id: matchedUser.id,
+          name: matchedUser.name,
+          email: matchedUser.email,
+          phone: matchedUser.phone,
+          role: matchedUser.role,
+          agentId: matchedUser.agentId,
+          companyId: matchedUser.companyId,
+          company: matchedUser.company ? {
+            id: matchedUser.company.id,
+            name: matchedUser.company.name,
+            code: matchedUser.company.code
+          } : null
+        },
         accessToken,
         refreshToken,
       },
@@ -189,10 +345,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/register (Admin or self-register as CUSTOMER)
+// POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, phone, password, role = 'CUSTOMER' } = req.body;
+    const { name, email, phone, password, role = 'CUSTOMER', companyId } = req.body;
     if (!name || !email || !phone || !password) {
       return res.status(400).json({ success: false, message: 'All fields required' });
     }
@@ -206,17 +362,17 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
-      data: { name, email: email.toLowerCase(), phone, passwordHash, role },
+      data: { name, email: email.toLowerCase(), phone, passwordHash, role, companyId: companyId || null },
     });
 
-    const { accessToken, refreshToken } = signTokens(user.id, user.role);
+    const { accessToken, refreshToken } = signTokens(user.id, user.role, user.companyId);
     const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt } });
 
     res.status(201).json({
       success: true,
       data: {
-        user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
+        user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, companyId: user.companyId },
         accessToken,
         refreshToken,
       },
@@ -238,10 +394,17 @@ router.post('/refresh', async (req, res) => {
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { company: true }
+    });
     if (!user) return res.status(401).json({ success: false, message: 'User not found' });
 
-    const { accessToken, refreshToken: newRefresh } = signTokens(user.id, user.role);
+    if (user.company && !user.company.isActive) {
+      return res.status(403).json({ success: false, code: 'COMPANY_INACTIVE', message: 'Company deactivated' });
+    }
+
+    const { accessToken, refreshToken: newRefresh } = signTokens(user.id, user.role, user.companyId);
 
     await prisma.refreshToken.delete({ where: { token: refreshToken } });
     const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);

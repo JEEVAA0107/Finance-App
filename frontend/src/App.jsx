@@ -12,6 +12,7 @@ import CreateLoan from './pages/CreateLoan';
 import CollectionPage from './pages/CollectionPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import LoginPage from './pages/LoginPage';
 import NotificationsDashboard from './pages/NotificationsDashboard';
 import ProfitPage from './pages/ProfitPage';
@@ -25,13 +26,14 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 
 function AppRoutes() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
   if (!user) return <LoginPage />;
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={isSuperAdmin ? <SuperAdminDashboard /> : <Dashboard />} />
+        <Route path="super-admin" element={isSuperAdmin ? <SuperAdminDashboard /> : <Navigate to="/" replace />} />
         <Route path="daybook" element={<DayBookPage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="customers/:id" element={<CustomerDetail />} />

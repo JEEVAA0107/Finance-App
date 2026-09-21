@@ -53,6 +53,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+app.use('/api/companies',  require('./src/routes/companies'));
 app.use('/api/auth',       require('./src/routes/auth'));
 app.use('/api/users',      require('./src/routes/users'));
 app.use('/api/customers',  require('./src/routes/customers'));

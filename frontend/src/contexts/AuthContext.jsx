@@ -29,8 +29,8 @@ export function AuthProvider({ children }) {
           }
         })
         .catch((err) => {
-          // ONLY clear session if server explicitly rejects token with HTTP 401
-          if (err.response?.status === 401) {
+          // Clear session if server explicitly rejects token with 401 or 403 (inactive company)
+          if (err.response?.status === 401 || err.response?.status === 403) {
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
@@ -42,15 +42,20 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (phone, agentId) => {
-    const response = await authAPI.login({
+  const login = async (phone, password, financeCode = '') => {
+    const payload = {
       phone,
       email: phone,
       userId: phone,
       username: phone,
-      agentId,
-      password: agentId
-    });
+      password,
+      agentId: password,
+    };
+    if (financeCode && financeCode.trim()) {
+      payload.financeCode = financeCode.trim();
+    }
+
+    const response = await authAPI.login(payload);
     if (response.accessToken) {
       localStorage.setItem('token', response.accessToken);
     }
@@ -74,13 +79,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || (user?.role === 'ADMIN' && !user?.companyId);
   const isAdmin = user?.role === 'ADMIN';
   const isAgent = user?.role === 'AGENT';
   const isCustomer = user?.role === 'CUSTOMER';
+  const company = user?.company || null;
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isSuperAdmin, isAdmin, isAgent, isCustomer }}>
+    <AuthContext.Provider value={{ user, company, loading, login, logout, isSuperAdmin, isAdmin, isAgent, isCustomer }}>
       {children}
     </AuthContext.Provider>
   );

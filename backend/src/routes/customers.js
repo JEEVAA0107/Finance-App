@@ -11,6 +11,7 @@ router.get('/', authenticate, async (req, res) => {
     const { search, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = { isActive: true };
+    if (req.user.companyId) { where.companyId = req.user.companyId; }
     if (search) {
       where.OR = [
         { name: { contains: search } },

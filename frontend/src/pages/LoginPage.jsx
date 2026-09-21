@@ -1,164 +1,281 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldAlert, UserCheck, Lock, Eye, EyeOff, Phone, ChevronLeft } from 'lucide-react';
+import { Landmark, Shield, Lock, Eye, EyeOff, Phone, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [step, setStep] = useState(1); // 1 = Role Selection, 2 = Form
-  const [selectedRole, setSelectedRole] = useState(null); // 'ADMIN' or 'AGENT'
-  const [form, setForm] = useState({ userId: '', password: '' });
+  // Mode: 'FINANCE' (Finance Owner / Agent) vs 'SUPER_ADMIN' (Platform Owner)
+  const [loginMode, setLoginMode] = useState('FINANCE');
+
+  // Form states
+  const [financeCode, setFinanceCode] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [isInactiveError, setIsInactiveError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role);
-    setStep(2);
+  // Restore remembered finance code
+  useEffect(() => {
+    const savedCode = localStorage.getItem('finova_last_finance_code');
+    if (savedCode) {
+      setFinanceCode(savedCode);
+    }
+  }, []);
+
+  const handleModeChange = (mode) => {
+    setLoginMode(mode);
     setError('');
+    setIsInactiveError(false);
+    setPassword('');
+    if (mode === 'SUPER_ADMIN') {
+      setPhone('6380372501');
+    } else {
+      setPhone('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsInactiveError(false);
     setLoading(true);
+
     try {
-      await login(form.userId, form.password);
+      if (loginMode === 'FINANCE') {
+        if (!financeCode.trim()) {
+          setError('Please enter your Finance Name or Unique Code.');
+          setLoading(false);
+          return;
+        }
+        await login(phone.trim(), password.trim(), financeCode.trim());
+        // Remember finance code for next time
+        localStorage.setItem('finova_last_finance_code', financeCode.trim());
+      } else {
+        // Super Admin Login
+        await login(phone.trim(), password.trim());
+      }
     } catch (err) {
-      setError(err.message || 'Invalid credentials. Please try again.');
+      const msg = err.message || err.response?.data?.message || 'Login failed. Please verify credentials.';
+      setError(msg);
+      if (err.response?.data?.code === 'COMPANY_INACTIVE' || msg.toLowerCase().includes('deactivated')) {
+        setIsInactiveError(true);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card animate-in" style={{ maxWidth: '420px', width: '100%', padding: '32px' }}>
+    <div className="login-page" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '20px' }}>
+      <div className="login-card animate-in" style={{ maxWidth: '440px', width: '100%', padding: '36px', background: 'rgba(255, 255, 255, 0.98)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255,255,255,0.2)' }}>
         
-        {step === 1 && (
-          <div className="role-selection animate-in">
-            <div className="login-logo" style={{ textAlign: 'center', marginBottom: '32px' }}>
-              <img src="/logo-icon.png" alt="Finova Logo" style={{ width: '80px', height: '80px', borderRadius: '18px', objectFit: 'contain', margin: '0 auto 16px auto', display: 'block', boxShadow: '0 8px 24px rgba(0,0,0,0.06)' }} />
-              <h2 style={{ fontSize: '28px', fontWeight: '800', margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>Finova</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '6px 0 0 0' }}>Select your account type to continue</p>
-            </div>
+        {/* Header with Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'linear-gradient(135deg, var(--primary-600, #3b82f6) 0%, var(--primary-800, #1d4ed8) 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto', boxShadow: '0 8px 20px rgba(59, 130, 246, 0.35)' }}>
+            <Landmark size={32} />
+          </div>
+          <h1 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>
+            Finova
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
+            Multi-Tenant Finance & Loan Management
+          </p>
+        </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <button 
-                type="button"
-                onClick={() => handleRoleSelect('ADMIN')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', 
-                  borderRadius: '16px', border: '1px solid var(--border-subtle)', 
-                  background: 'var(--card-bg)', cursor: 'pointer', textAlign: 'left',
-                  transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
-                }}
-                className="role-card-hover"
-              >
-                <div style={{ background: 'var(--primary-50)', color: 'var(--primary-600)', padding: '14px', borderRadius: '12px' }}>
-                  <ShieldAlert size={28} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '4px' }}>Super Admin</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Full access to dashboard & reports</div>
-                </div>
-              </button>
+        {/* Tab Switcher: Finance Login vs Super Admin */}
+        <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '14px', marginBottom: '24px' }}>
+          <button
+            type="button"
+            onClick={() => handleModeChange('FINANCE')}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              background: loginMode === 'FINANCE' ? '#ffffff' : 'transparent',
+              color: loginMode === 'FINANCE' ? '#0f172a' : '#64748b',
+              boxShadow: loginMode === 'FINANCE' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none'
+            }}
+          >
+            <Landmark size={16} />
+            Finance Login
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('SUPER_ADMIN')}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              background: loginMode === 'SUPER_ADMIN' ? '#ffffff' : 'transparent',
+              color: loginMode === 'SUPER_ADMIN' ? '#0f172a' : '#64748b',
+              boxShadow: loginMode === 'SUPER_ADMIN' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none'
+            }}
+          >
+            <Shield size={16} />
+            Super Admin
+          </button>
+        </div>
 
-              <button 
-                type="button"
-                onClick={() => handleRoleSelect('AGENT')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', 
-                  borderRadius: '16px', border: '1px solid var(--border-subtle)', 
-                  background: 'var(--card-bg)', cursor: 'pointer', textAlign: 'left',
-                  transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
-                }}
-                className="role-card-hover"
-              >
-                <div style={{ background: 'var(--success-50)', color: 'var(--success-600)', padding: '14px', borderRadius: '12px' }}>
-                  <UserCheck size={28} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '4px' }}>Field Agent</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Access collections & customer data</div>
-                </div>
-              </button>
+        {/* Error Alert Box */}
+        {error && (
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            fontSize: '13px',
+            lineHeight: '1.4',
+            background: isInactiveError ? '#fffbeb' : '#fef2f2',
+            color: isInactiveError ? '#b45309' : '#b91c1c',
+            border: isInactiveError ? '1px solid #fde68a' : '1px solid #fecaca'
+          }}>
+            <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong>{isInactiveError ? 'Account Deactivated' : 'Authentication Failed'}</strong>
+              <div style={{ marginTop: '2px' }}>{error}</div>
             </div>
-            <style>{`
-              .role-card-hover:hover {
-                border-color: var(--primary-300) !important;
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(59, 130, 246, 0.1) !important;
-              }
-            `}</style>
           </div>
         )}
 
-        {step === 2 && (
-          <div className="login-form animate-in">
-            <button 
-              type="button" 
-              onClick={() => setStep(1)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginBottom: '24px', padding: 0, fontSize: '14px', fontWeight: 600 }}
-            >
-              <ChevronLeft size={16} /> Back
-            </button>
-
-            <div className="login-logo" style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                {selectedRole === 'ADMIN' ? 'Admin Login' : 'Agent Login'}
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '6px 0 0 0' }}>Enter your credentials to access your account.</p>
+        <form onSubmit={handleSubmit}>
+          {/* 1. Finance Name / Code (Only in Finance mode) */}
+          {loginMode === 'FINANCE' && (
+            <div className="form-group" style={{ marginBottom: '18px' }}>
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#475569', marginBottom: '6px', display: 'block' }}>
+                Finance Name or Code
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Landmark size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="e.g. SMF or Sri Murugan Finance"
+                  value={financeCode}
+                  onChange={(e) => setFinanceCode(e.target.value)}
+                  required
+                  style={{ padding: '12px 14px 12px 42px', borderRadius: '12px', width: '100%', fontSize: '14px', border: '1px solid #cbd5e1' }}
+                />
+              </div>
+              <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                Enter the unique code or finance name provided by Super Admin
+              </small>
             </div>
+          )}
 
-            {error && <div className="login-error" style={{ marginBottom: '16px' }}>{error}</div>}
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="form-label" style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
-                  {selectedRole === 'ADMIN' ? 'Email or Phone Number' : 'Agent ID or Phone'}
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input
-                    className="form-input input-with-icon-left"
-                    type="text"
-                    placeholder={selectedRole === 'ADMIN' ? 'admin@example.com' : 'AGT-8767'}
-                    value={form.userId}
-                    onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                    autoComplete="username"
-                    required
-                    style={{ padding: '12px 14px 12px 40px', borderRadius: '12px', width: '100%' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label className="form-label" style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>Password</label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input
-                    className="form-input input-with-icon-both"
-                    type={showPass ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    autoComplete="current-password"
-                    required
-                    style={{ padding: '12px 40px 12px 40px', borderRadius: '12px', width: '100%' }}
-                  />
-                  <button type="button" onClick={() => setShowPass(!showPass)}
-                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
-                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary login-submit" disabled={loading} style={{ width: '100%', padding: '14px', borderRadius: '12px', fontSize: '15px', fontWeight: 600 }}>
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
+          {/* 2. Phone / User ID */}
+          <div className="form-group" style={{ marginBottom: '18px' }}>
+            <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#475569', marginBottom: '6px', display: 'block' }}>
+              {loginMode === 'FINANCE' ? 'Registered Mobile Number or Agent ID' : 'Super Admin Mobile / Email'}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                className="form-input"
+                type="text"
+                placeholder={loginMode === 'FINANCE' ? 'e.g. 9876543210' : '9999999999 or email'}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoComplete="username"
+                required
+                style={{ padding: '12px 14px 12px 42px', borderRadius: '12px', width: '100%', fontSize: '14px', border: '1px solid #cbd5e1' }}
+              />
+            </div>
           </div>
-        )}
+
+          {/* 3. Password */}
+          <div className="form-group" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#475569', margin: 0 }}>
+                {loginMode === 'FINANCE' ? 'Password (Given by Super Admin)' : 'Master Password'}
+              </label>
+            </div>
+            <div style={{ position: 'relative' }}>
+              <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                className="form-input"
+                type={showPass ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                style={{ padding: '12px 42px 12px 42px', borderRadius: '12px', width: '100%', fontSize: '14px', border: '1px solid #cbd5e1' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '14px',
+              borderRadius: '12px',
+              fontSize: '15px',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              color: '#ffffff',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+              transition: 'all 0.2s',
+              opacity: loading ? 0.7 : 1
+            }}
+          >
+            {loading ? (
+              <span>Authenticating...</span>
+            ) : (
+              <>
+                <span>{loginMode === 'FINANCE' ? 'Sign In to Finance' : 'Sign In as Super Admin'}</span>
+                <ArrowRight size={18} />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Footer Note */}
+        <div style={{ marginTop: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+          {loginMode === 'FINANCE' ? (
+            <span>Don't have credentials? Contact Super Admin to register your Finance.</span>
+          ) : (
+            <span>Super Admin Portal gives master authority over all finance tenants.</span>
+          )}
+        </div>
+
       </div>
     </div>
   );

@@ -88,6 +88,15 @@ export const authAPI = {
 };
 
 // ─── Users ────────────────────────────────────────────────────────────────────
+// 🏢 Companies (Super Admin) 🏢
+export const companiesAPI = {
+  list: (params) => api.get('/companies', { params }).then(extractData),
+  create: (data) => api.post('/companies', data).then(extractData),
+  toggleStatus: (id, isActive) => api.patch('/companies/' + id + '/status', { isActive }).then(extractData),
+  resetAdminPassword: (id, newPassword) => api.post('/companies/' + id + '/reset-password', { newPassword }).then(extractData),
+  delete: (id) => api.delete('/companies/' + id).then(extractData),
+};
+
 export const usersAPI = {
   list: (params) => api.get('/users', { params }).then(extractData),
   create: (data) => api.post('/users', data).then(extractData),

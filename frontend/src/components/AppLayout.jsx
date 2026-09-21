@@ -207,7 +207,7 @@ export default function AppLayout() {
             </div>
             <div className="sidebar-user-info">
               <div className="sidebar-user-name">{user?.name}</div>
-              <div className="sidebar-user-role">{user?.role}</div>
+              <div className="sidebar-user-role">{isSuperAdmin ? 'Super Admin' : (user?.company?.name || user?.role)}</div>
             </div>
             <button className="mobile-menu-btn" onClick={handleLogout} title="Logout">
               <LogOut size={18} />

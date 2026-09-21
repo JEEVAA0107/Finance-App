@@ -11,17 +11,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Company {
+  id           String     @id @default(uuid())
+  name         String
+  code         String     @unique
+  ownerName    String?
+  phone        String?
+  address      String?
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  users        User[]
+  customers    Customer[]
+  loans        Loan[]
+  expenses     Expense[]
+
+  @@index([code])
+}
+
 model User {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
+  companyId    String?
+  company      Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
   agentId      String?
   name         String
   email        String
   phone        String
   passwordHash String
-  role         String   @default("CUSTOMER") // ADMIN | AGENT | CUSTOMER
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         String     @default("CUSTOMER") // SUPER_ADMIN | ADMIN | AGENT | CUSTOMER
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   // Relations
   customers    Customer[]
@@ -32,6 +53,7 @@ model User {
 
   @@index([email])
   @@index([phone])
+  @@index([companyId])
 }
 
 model RefreshToken {
@@ -44,9 +66,11 @@ model RefreshToken {
 }
 
 model Customer {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   phone       String
   email       String?
@@ -56,14 +80,14 @@ model Customer {
   idNumber    String
   idProofUrl  String?
   photoUrl    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   notificationPref String @default("BOTH") // WHATSAPP | APP | BOTH | NONE
   latitude   Float?   // GPS latitude for map pinning
   longitude  Float?   // GPS longitude for map pinning
 
-  // Jamin (Guarantor / ஜாமீன்) details
+  // Jamin (Guarantor) details
   jaminName         String?
   jaminPhone        String?
   jaminAddress      String?
@@ -79,15 +103,18 @@ model Customer {
   @@index([phone])
   @@index([name])
   @@index([idNumber])
+  @@index([companyId])
 }
 
 model Loan {
-  id                String   @id @default(uuid())
-  loanNumber        String   @unique
+  id                String    @id @default(uuid())
+  companyId         String?
+  company           Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  loanNumber        String    @unique
   customerId        String
-  customer          Customer @relation(fields: [customerId], references: [id])
+  customer          Customer  @relation(fields: [customerId], references: [id])
   agentId           String?
-  agent             User?    @relation("AgentLoans", fields: [agentId], references: [id])
+  agent             User?     @relation("AgentLoans", fields: [agentId], references: [id])
   
   // Financial details
   principalAmount   Float
@@ -102,7 +129,7 @@ model Loan {
   totalPayable      Float
   installmentAmount Float
   
-  // Tracking fields — interest collected separately from principal
+  // Tracking fields - interest collected separately from principal
   interestCollected Float    @default(0)  // Total interest collected via weekly payments
   outstandingPrincipal Float?              // Remaining principal (null means same as principalAmount)
   
@@ -120,6 +147,7 @@ model Loan {
   @@index([customerId])
   @@index([status])
   @@index([loanNumber])
+  @@index([companyId])
 }
 
 model Repayment {
@@ -165,7 +193,7 @@ model Payment {
   collectedBy   User     @relation("CollectedBy", fields: [collectedById], references: [id])
   amount        Float
   paymentMode   String   @default("CASH") // CASH | UPI | BANK | CHEQUE
-  paymentType   String   @default("INTEREST") // INTEREST | PRINCIPAL — weekly = interest, lump sum = principal
+  paymentType   String   @default("INTEREST") // INTEREST | PRINCIPAL
   reference     String?
   notes         String?
   collectedAt   DateTime @default(now())
@@ -216,12 +244,15 @@ model NotificationLog {
 }
 
 model Expense {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   amount      Float
-  category    String   @default("OFFICE")
+  category    String    @default("OFFICE")
   description String?
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  date        DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
+  @@index([companyId])
+}

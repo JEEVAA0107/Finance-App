@@ -11,6 +11,7 @@ router.get('/', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
     const { role, page = 1, limit = 20 } = req.query;
     const where = role ? { role } : {};
+    if (req.user.companyId) { where.companyId = req.user.companyId; }
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const [users, total] = await Promise.all([
@@ -48,7 +49,7 @@ router.post('/', authenticate, authorize('ADMIN'), async (req, res) => {
     }
 
     const user = await prisma.user.create({
-      data: { name, email: email.toLowerCase(), phone, passwordHash, role: role || 'AGENT', agentId },
+      data: { name, email: email.toLowerCase(), phone, passwordHash, role: role || 'AGENT', agentId, companyId: req.user.companyId || null },
     });
 
     await auditLog(req.user.id, 'CREATE_USER', 'User', user.id, { role: user.role }, req);
