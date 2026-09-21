@@ -150,9 +150,10 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       return res.status(400).json({ success: false, message: 'Customer phone number is required' });
     }
 
-    // Create or find user account for customer (allow sharing User profile if same phone or email)
+        // Create or find user account for customer
     let user = await prisma.user.findFirst({
       where: {
+        companyId: req.user.companyId || undefined,
         OR: [
           { phone: trimmedPhone },
           ...(cleanEmail ? [{ email: cleanEmail.toLowerCase() }] : []),
@@ -167,6 +168,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       const userEmail = cleanEmail ? cleanEmail.toLowerCase() : `${trimmedPhone}_${Date.now()}@loanflow.local`;
       user = await prisma.user.create({
         data: {
+          companyId: req.user.companyId,
           name: trimmedName,
           email: userEmail,
           phone: trimmedPhone,
