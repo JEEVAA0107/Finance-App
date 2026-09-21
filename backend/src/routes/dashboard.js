@@ -40,6 +40,27 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     });
 
     // Payments aggregate
+    // Penalty Aggregates (Carry Forward & Late Penalties)
+    const [penaltyAgg, todayPenaltyAgg, repPenaltyAgg] = await Promise.all([
+      prisma.payment.aggregate({
+        where: { paymentType: 'PENALTY' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.payment.aggregate({
+        where: {
+          paymentType: 'PENALTY',
+          collectedAt: { gte: startOfToday, lte: endOfToday },
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.repayment.aggregate({
+        _sum: { penaltyPaid: true },
+      }),
+    ]);
+    const totalPenaltyCollectedAmt = Math.max(penaltyAgg._sum.amount || 0, repPenaltyAgg._sum.penaltyPaid || 0);
+
     const paymentAgg = await prisma.payment.aggregate({
       _sum: { amount: true },
     });
@@ -348,6 +369,10 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
           profit: monthlyInterestIncome,
         },
         monthlyTrend: months,
+        totalPenaltyCollected: totalPenaltyCollectedAmt,
+        totalPenaltyCount: penaltyAgg._count || 0,
+        todayPenaltyCollected: todayPenaltyAgg._sum.amount || 0,
+        todayPenaltyCount: todayPenaltyAgg._count || 0,
       },
     });
   } catch (error) {

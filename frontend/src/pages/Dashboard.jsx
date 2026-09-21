@@ -153,6 +153,43 @@ export default function Dashboard() {
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
             <StatCard to="/payment-history" icon={HandCoins} label="Total Collected (வசூலானது)" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/profit" icon={TrendingUp} label="Total Profit (லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
+            <StatCard to="/payment-history" icon={AlertTriangle} label="Total Penalty (அபராதம்)" value={fmt(s?.totalPenaltyCollected)} color="red" />
+          </div>
+
+          {/* Section: Penalty Collections */}
+          <div className="card" style={{ padding: '16px 20px', marginBottom: 20, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.02) 100%)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
+                  <AlertTriangle size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>Penalty Collected Section (அபராதம் வசூல்)</span>
+                    {s?.totalPenaltyCount > 0 && (
+                      <span style={{ fontSize: 11, background: 'rgba(239, 68, 68, 0.15)', color: '#b91c1c', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
+                        {s.totalPenaltyCount} payments
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#b91c1c', marginTop: 2 }}>
+                    {fmt(s?.totalPenaltyCollected || 0)}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Collected from carry forward shifts & late fee charges
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ textAlign: 'right', background: 'var(--bg-glass)', padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(239, 68, 68, 0.15)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Today's Penalty</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>{fmt(s?.todayPenaltyCollected || 0)}</div>
+                </div>
+                <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#dc2626', fontSize: 12, fontWeight: 700 }}>
+                  View History →
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Section 2: Today's Metrics */}

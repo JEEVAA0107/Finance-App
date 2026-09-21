@@ -156,6 +156,16 @@ export default function LoanDetail() {
 
   // Active unpaid: only installments that are neither PAID nor CARRIED_FORWARD
   const activeUnpaid = loan.repayments?.filter(r => r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD') || [];
+  // Penalty calculation for this loan
+  const totalPenaltyFromPayments = (loan.repayments || []).reduce((sum, r) => {
+    const pSum = (r.payments || []).filter(p => p.paymentType === 'PENALTY').reduce((acc, p) => acc + (p.amount || 0), 0);
+    return sum + pSum;
+  }, 0);
+  const totalPenaltyFromRepayments = (loan.repayments || []).reduce((sum, r) => sum + (r.penaltyPaid || 0), 0);
+  const totalLoanPenalty = loan.penaltyCollected !== undefined
+    ? loan.penaltyCollected
+    : Math.max(totalPenaltyFromPayments, totalPenaltyFromRepayments);
+
   const lowestUnpaidInstNo = activeUnpaid.length > 0
     ? Math.min(...activeUnpaid.map(r => r.installmentNo))
     : null;
@@ -234,6 +244,34 @@ export default function LoanDetail() {
             <span style={{ fontWeight: 700, color: 'var(--accent-600)' }}>₹{(loan.interestCollected || 0).toLocaleString('en-IN')}</span>
           </div>
         )}
+
+        {/* Total Penalty Collected Section */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: 13,
+          marginBottom: 12,
+          padding: '10px 14px',
+          borderRadius: 10,
+          background: totalLoanPenalty > 0 ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-glass)',
+          border: totalLoanPenalty > 0 ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-subtle)',
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, color: totalLoanPenalty > 0 ? '#dc2626' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AlertTriangle size={15} color={totalLoanPenalty > 0 ? '#ef4444' : 'var(--text-muted)'} />
+              <span>Total Penalty Collected (அபராதம்)</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              Carry forward fee & overdue penalties
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontWeight: 800, fontSize: 15, color: totalLoanPenalty > 0 ? '#dc2626' : 'var(--text-primary)' }}>
+              ₹{totalLoanPenalty.toLocaleString('en-IN')}
+            </span>
+          </div>
+        </div>
 
         {/* Progress */}
         <div style={{ height: 6, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>

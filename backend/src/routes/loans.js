@@ -259,7 +259,27 @@ router.get('/:id', authenticate, async (req, res) => {
       },
     });
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
-    res.json({ success: true, data: loan });
+
+    // Aggregate penalty for this specific loan
+    const penaltyAgg = await prisma.payment.aggregate({
+      where: {
+        paymentType: 'PENALTY',
+        repayment: { loanId: req.params.id },
+      },
+      _sum: { amount: true },
+      _count: true,
+    });
+    const repPenaltySum = (loan.repayments || []).reduce((sum, r) => sum + (r.penaltyPaid || 0), 0);
+    const loanPenaltyCollected = Math.max(penaltyAgg._sum.amount || 0, repPenaltySum);
+
+    res.json({
+      success: true,
+      data: {
+        ...loan,
+        penaltyCollected: loanPenaltyCollected,
+        penaltyCount: penaltyAgg._count || 0,
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -283,6 +303,9 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     
     let batchSize, interestPerPeriod, principalPerPeriod, installmentAmount, totalPayable, totalInterest;
     let frequency = repaymentFrequency || (tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY');
+      if (interestType === 'FLAT' || interestType === 'EMI') {
+        frequency = tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+      }
 
     if (interestType === 'WITHOUT_INTEREST') {
       const isDaily = frequency === 'DAILY' || tenureUnit === 'DAYS';

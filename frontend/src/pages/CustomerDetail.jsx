@@ -5,7 +5,7 @@ import AddCustomerModal from '../components/AddCustomerModal';
 import { isPdfDocument } from '../utils/imageCompressor';
 import {
   User, Phone, MapPin, CreditCard, Landmark, ArrowLeft,
-  ShieldCheck, Edit2, MessageCircle, Eye, ExternalLink, X, FileText
+  ShieldCheck, Edit2, AlertTriangle, MessageCircle, Eye, ExternalLink, X, FileText
 } from 'lucide-react';
 
 function formatDate(d) {
@@ -32,6 +32,14 @@ export default function CustomerDetail() {
 
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading Customer...</p></div>;
   if (!customer) return <div className="card empty-state"><h3>Customer not found</h3></div>;
+
+    const totalCustomerPenalty = (customer.loans || []).reduce((acc, l) => {
+    const repPenalty = (l.repayments || []).reduce((rAcc, r) => {
+      const payPenalty = (r.payments || []).filter(p => p.paymentType === 'PENALTY').reduce((pAcc, p) => pAcc + (p.amount || 0), 0);
+      return rAcc + Math.max(r.penaltyPaid || 0, payPenalty);
+    }, 0);
+    return acc + (l.penaltyCollected || repPenalty);
+  }, 0);
 
   return (
     <div className="animate-in">
@@ -434,10 +442,27 @@ export default function CustomerDetail() {
         </div>
 
         {customer.loans?.length > 0 ? (
+          <>
+            {/* Customer Loans Penalty & Summary Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 14 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--bg-glass)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total Loans</div>
+                <div style={{ fontSize: 16, fontWeight: 800 }}>{customer.loans.length}</div>
+              </div>
+              <div style={{ padding: '10px 14px', background: totalCustomerPenalty > 0 ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-glass)', borderRadius: 10, border: totalCustomerPenalty > 0 ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: 11, color: totalCustomerPenalty > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <AlertTriangle size={13} /> Total Penalty (அபராதம்)
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: totalCustomerPenalty > 0 ? '#dc2626' : 'var(--text-primary)' }}>
+                  ₹{totalCustomerPenalty.toLocaleString('en-IN')}
+                </div>
+              </div>
+            </div>
+
           <div className="table-container" style={{ border: 'none' }}>
             <table className="data-table">
               <thead>
-                <tr><th>Loan #</th><th>Principal</th><th>Payable</th><th>Tenure</th><th>Status</th><th>Start Date</th></tr>
+                <tr><th>Loan #</th><th>Principal</th><th>Payable</th><th>Tenure</th><th>Penalty</th><th>Status</th><th>Start Date</th></tr>
               </thead>
               <tbody>
                 {customer.loans.map((l) => (
@@ -462,6 +487,23 @@ export default function CustomerDetail() {
                       )}
                     </td>
                     <td data-label="Tenure">{l.tenure} {l.tenureUnit?.toLowerCase()}</td>
+                    {(() => {
+                      const loanPen = (l.repayments || []).reduce((rAcc, r) => {
+                        const payPen = (r.payments || []).filter(p => p.paymentType === 'PENALTY').reduce((pAcc, p) => pAcc + (p.amount || 0), 0);
+                        return rAcc + Math.max(r.penaltyPaid || 0, payPen);
+                      }, 0);
+                      return (
+                        <td data-label="Penalty">
+                          {loanPen > 0 ? (
+                            <span style={{ fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: 6, fontSize: 12 }}>
+                              ₹{loanPen.toLocaleString('en-IN')}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>₹0</span>
+                          )}
+                        </td>
+                      );
+                    })()}
                     <td data-label="Status"><span className={`badge ${l.status === 'ACTIVE' ? 'badge-success' : l.status === 'CLOSED' ? 'badge-muted' : 'badge-danger'}`}>{l.status}</span></td>
                     <td data-label="Start Date">{formatDate(l.startDate)}</td>
                   </tr>
@@ -469,6 +511,7 @@ export default function CustomerDetail() {
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
             No loans have been disbursed to this customer yet.

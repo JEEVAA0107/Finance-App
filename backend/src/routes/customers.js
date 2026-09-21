@@ -56,6 +56,7 @@ router.get('/:id', authenticate, async (req, res) => {
         loans: {
           include: {
             repayments: {
+              include: { payments: true },
               orderBy: { installmentNo: 'asc' },
             },
           },
