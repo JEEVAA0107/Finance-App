@@ -10,4 +10,19 @@ export default defineConfig({
       ignored: ['**/android/**']
     }
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+        }
+      }
+    }
+  }
 })

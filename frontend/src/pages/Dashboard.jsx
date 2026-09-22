@@ -42,8 +42,31 @@ const StatCard = ({ icon: Icon, label, value, color, to, onClick }) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = user?.id ? `dashboard_cache_${user.id}` : 'dashboard_cache_default';
+
+  const [data, setData] = useState(() => {
+    try {
+      const key = user?.id ? `dashboard_cache_${user.id}` : 'dashboard_cache_default';
+      const cached = localStorage.getItem(key);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(!data);
+
+  // Sync with user cache if user is loaded later
+  useEffect(() => {
+    if (!data) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          setData(JSON.parse(cached));
+          setLoading(false);
+        }
+      } catch (e) {}
+    }
+  }, [user?.id]);
 
   // Breakdown modal states
   const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
@@ -54,7 +77,16 @@ export default function Dashboard() {
 
   const loadData = () => {
     Promise.all([dashboardAPI.summary(), dashboardAPI.agent()])
-      .then(([s, a]) => setData({ summary: s, agent: a }))
+      .then(([s, a]) => {
+        const fresh = { summary: s, agent: a };
+        setData(fresh);
+        try {
+          const key = user?.id ? `dashboard_cache_${user.id}` : 'dashboard_cache_default';
+          localStorage.setItem(key, JSON.stringify(fresh));
+        } catch (e) {
+          console.warn('Dashboard cache write failed', e);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };

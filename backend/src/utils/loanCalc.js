@@ -90,11 +90,18 @@ function generateLoanNumber() {
  * On the due date itself, if not paid, status remains PENDING/PARTIAL (Due Today).
  * Also fixes any records prematurely marked OVERDUE for today or future dates.
  */
+let lastSyncOverdueTimestamp = 0;
+
 async function syncOverdueStatus(prisma) {
+  const now = Date.now();
+  // Throttle: run at most once every 5 minutes to keep dashboard loading sub-second
+  if (now - lastSyncOverdueTimestamp < 5 * 60 * 1000) return;
+  lastSyncOverdueTimestamp = now;
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  // 1. Revert any repayments due TODAY or FUTURE that were incorrectly marked OVERDUE
+  // 1. Revert any repayments due TODAY or FUTURE that were incorrectly marked OVERDUE in a single query
   await prisma.repayment.updateMany({
     where: {
       status: 'OVERDUE',
@@ -103,43 +110,16 @@ async function syncOverdueStatus(prisma) {
     data: { status: 'PENDING' },
   });
 
-  // 2. Mark repayments as OVERDUE ONLY IF due date is strictly BEFORE start of today (i.e. yesterday or earlier)
-  const overdueReps = await prisma.repayment.findMany({
+  // 2. Mark repayments as OVERDUE ONLY IF due date is strictly BEFORE start of today in a single batch query
+  await prisma.repayment.updateMany({
     where: {
       status: { in: ['PENDING', 'PARTIAL'] },
       dueDate: { lt: startOfToday },
     },
-    include: { loan: true },
+    data: {
+      status: 'OVERDUE',
+    },
   });
-
-  for (const rep of overdueReps) {
-    const penAmt = rep.penaltyAmount > 0 ? rep.penaltyAmount : 0;
-    await prisma.repayment.update({
-      where: { id: rep.id },
-      data: {
-        status: 'OVERDUE',
-        penaltyStatus: rep.penaltyStatus === 'PAID' ? 'PAID' : (penAmt > 0 ? 'PENDING' : 'NONE'),
-        penaltyAmount: penAmt,
-      },
-    });
-  }
-
-  // 3. One-time backfill for missing weekNo/dayNo on any repayments
-  const missingScheduleReps = await prisma.repayment.findMany({
-    where: { weekNo: null },
-    include: { loan: true },
-    take: 100,
-  });
-
-  for (const r of missingScheduleReps) {
-    const isDaily = r.loan?.tenureUnit === 'DAYS';
-    const weekNo = isDaily ? Math.floor((r.installmentNo - 1) / 7) + 1 : r.installmentNo;
-    const dayNo = isDaily ? ((r.installmentNo - 1) % 7) + 1 : 1;
-    await prisma.repayment.update({
-      where: { id: r.id },
-      data: { weekNo, dayNo, originalDueDate: r.dueDate },
-    });
-  }
 }
 
 module.exports = {

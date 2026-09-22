@@ -4,11 +4,29 @@ const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const prisma = new PrismaClient();
 
+// High performance in-memory cache for dashboard data
+const dashboardCache = new Map();
+function getCached(key, ttlMs = 15000) {
+  const item = dashboardCache.get(key);
+  if (item && Date.now() - item.time < ttlMs) {
+    return item.data;
+  }
+  return null;
+}
+function setCached(key, data) {
+  dashboardCache.set(key, { time: Date.now(), data });
+}
+
 const { syncOverdueStatus } = require('../utils/loanCalc');
 
 // GET /api/dashboard/summary
 router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
+    const cacheKey = `summary_${req.user.companyId || req.user.id || 'all'}`;
+    const cached = getCached(cacheKey, 15000);
+    if (cached) {
+      return res.json(cached);
+    }
     const now = new Date();
     
     // Start of current day
@@ -167,9 +185,13 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     // === All-Time Actual Profit (what was really collected, not expected) ===
     const allPaymentRecords = await prisma.payment.findMany({
-      include: {
+      select: {
+        amount: true,
+        paymentType: true,
         repayment: {
-          include: { loan: { select: { interestType: true, totalPayable: true, totalInterest: true } } }
+          select: {
+            loan: { select: { interestType: true, totalPayable: true, totalInterest: true } }
+          }
         }
       }
     });
@@ -221,53 +243,94 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       take: 5,
     });
 
-    // Monthly Chart Data (Last 6 months)
+    // Monthly Chart Data (Last 6 months) — Optimized: parallel batch query & in-memory grouping
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [chartPayments, chartLoans, chartDeductionLoans] = await Promise.all([
+      prisma.payment.findMany({
+        where: { collectedAt: { gte: sixMonthsAgo } },
+        select: {
+          amount: true,
+          paymentType: true,
+          collectedAt: true,
+          repayment: {
+            select: {
+              loan: { select: { interestType: true, totalPayable: true, totalInterest: true } }
+            }
+          }
+        }
+      }),
+      prisma.loan.findMany({
+        where: { createdAt: { gte: sixMonthsAgo } },
+        select: {
+          principalAmount: true,
+          createdAt: true
+        }
+      }),
+      prisma.loan.findMany({
+        where: { createdAt: { gte: sixMonthsAgo }, interestType: 'WITHOUT_INTEREST' },
+        select: { totalInterest: true, processingFee: true, createdAt: true }
+      })
+    ]);
+
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-      
-      const [mPay, mLoan] = await Promise.all([
-        prisma.payment.aggregate({ where: { collectedAt: { gte: start, lte: end } }, _sum: { amount: true } }),
-        prisma.loan.aggregate({ where: { createdAt: { gte: start, lte: end } }, _sum: { principalAmount: true, totalInterest: true } })
-      ]);
+      const startMs = start.getTime();
+      const endMs = end.getTime();
 
-      // Actual interest collected in this specific month
-      const mPayRecords = await prisma.payment.findMany({
-        where: { collectedAt: { gte: start, lte: end } },
-        include: {
-          repayment: {
-            include: { loan: { select: { interestType: true, totalPayable: true, totalInterest: true } } }
-          }
+      let disbursed = 0;
+      for (let j = 0; j < chartLoans.length; j++) {
+        const l = chartLoans[j];
+        const t = new Date(l.createdAt).getTime();
+        if (t >= startMs && t <= endMs) {
+          disbursed += (l.principalAmount || 0);
         }
-      });
+      }
+
+      let collected = 0;
       let mInterest = 0;
-      mPayRecords.forEach(p => {
-        const loan = p.repayment?.loan;
-        if (!loan) return;
-        const type = loan.interestType || 'FLAT';
-        if (type === 'FLAT') {
-          if (p.paymentType !== 'PRINCIPAL') {
-            mInterest += (p.amount || 0);
+      for (let j = 0; j < chartPayments.length; j++) {
+        const p = chartPayments[j];
+        const t = new Date(p.collectedAt).getTime();
+        if (t >= startMs && t <= endMs) {
+          const amt = p.amount || 0;
+          collected += amt;
+          const loan = p.repayment?.loan;
+          if (loan) {
+            const type = loan.interestType || 'FLAT';
+            if (type === 'FLAT') {
+              if (p.paymentType !== 'PRINCIPAL') {
+                mInterest += amt;
+              }
+            } else if (type === 'EMI') {
+              const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
+              mInterest += amt * interestRatio;
+            }
           }
-        } else if (type === 'EMI') {
-          const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
-          mInterest += (p.amount || 0) * interestRatio;
         }
-      });
-      const mDeductionLoans = await prisma.loan.findMany({
-        where: { createdAt: { gte: start, lte: end }, interestType: 'WITHOUT_INTEREST' },
-        select: { totalInterest: true, processingFee: true }
-      });
-      mDeductionLoans.forEach(l => { mInterest += (l.totalInterest || l.processingFee || 0); });
+      }
+
+      for (let j = 0; j < chartDeductionLoans.length; j++) {
+        const l = chartDeductionLoans[j];
+        const t = new Date(l.createdAt).getTime();
+        if (t >= startMs && t <= endMs) {
+          mInterest += (l.totalInterest || l.processingFee || 0);
+        }
+      }
+
       mInterest = Math.round(mInterest * 100) / 100;
-      
+
       months.push({
         name: start.toLocaleString('default', { month: 'short' }),
-        disbursed: mLoan._sum.principalAmount || 0,
-        collected: mPay._sum.amount || 0,
+        disbursed,
+        collected,
         interest: mInterest,
         profit: mInterest,
       });
@@ -340,7 +403,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const todayDueAmt = todaysDues._sum.dueAmount || 0;
     const todayPaidAmt = todaysDues._sum.paidAmount || 0;
 
-    res.json({
+    const responseData = {
       success: true,
       data: {
         outstandingAmount: totalOutstandingPrincipal + totalOutstandingInterest,
@@ -374,7 +437,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         todayPenaltyCollected: todayPenaltyAgg._sum.amount || 0,
         todayPenaltyCount: todayPenaltyAgg._count || 0,
       },
-    });
+    };
+    setCached(cacheKey, responseData);
+    res.json(responseData);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -384,6 +449,11 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
     const agentId = req.user.role === 'AGENT' ? req.user.id : (req.query.agentId || null);
+    const cacheKey = `agent_${agentId || req.user.id || 'all'}`;
+    const cached = getCached(cacheKey, 15000);
+    if (cached) {
+      return res.json(cached);
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -418,13 +488,15 @@ router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res)
       })
     ]);
 
-    res.json({
+    const responseData = {
       success: true,
       data: {
         collectedToday: { amount: collectedToday._sum.amount || 0, count: collectedToday._count },
         totalCollected: { amount: totalCollected._sum.amount || 0, count: totalCollected._count },
       },
-    });
+    };
+    setCached(cacheKey, responseData);
+    res.json(responseData);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

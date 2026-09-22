@@ -203,6 +203,16 @@ async function start() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Finova API running on http://0.0.0.0:${PORT}`);
       console.log(`📡 Accessible on your network at http://${localIp}:${PORT}`);
+
+      // Cloud keep-alive ping (e.g. Render / free tier) to prevent cold start spin-down
+      const renderUrl = process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_API_URL;
+      if (renderUrl && renderUrl.startsWith('http')) {
+        const pingClient = renderUrl.startsWith('https') ? require('https') : require('http');
+        setInterval(() => {
+          pingClient.get(`${renderUrl}/api/health`, () => {}).on('error', () => {});
+        }, 8 * 60 * 1000);
+        console.log(`⏱️ Keep-alive ping active for ${renderUrl}`);
+      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
