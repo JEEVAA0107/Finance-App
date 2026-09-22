@@ -25,6 +25,9 @@ router.post('/', authenticate, async (req, res) => {
     });
 
     if (!repayment) return res.status(404).json({ success: false, message: 'Repayment not found' });
+    if (req.user.companyId && repayment.loan?.companyId && repayment.loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     if (repayment.status === 'PAID') {
       return res.status(400).json({ success: false, message: 'Already fully paid' });
     }
@@ -214,6 +217,9 @@ router.post('/penalty', authenticate, async (req, res) => {
     });
 
     if (!repayment) return res.status(404).json({ success: false, message: 'Repayment not found' });
+    if (req.user.companyId && repayment.loan?.companyId && repayment.loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     if (repayment.status === 'PAID') {
       return res.status(400).json({ success: false, message: 'Installment is already fully paid' });
     }
@@ -361,6 +367,9 @@ router.post('/principal', authenticate, async (req, res) => {
     });
 
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (req.user.companyId && loan.companyId && loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     if (loan.status === 'CLOSED') {
       return res.status(400).json({ success: false, message: 'Loan is already closed' });
     }
@@ -450,6 +459,9 @@ router.post('/close', authenticate, async (req, res) => {
     });
 
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (req.user.companyId && loan.companyId && loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     if (loan.status === 'CLOSED') {
       return res.status(400).json({ success: false, message: 'Loan is already closed' });
     }
@@ -564,6 +576,9 @@ router.get('/', authenticate, async (req, res) => {
     const { from, to, collectedById, page = 1, limit = 30 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = {};
+    if (req.user.companyId) {
+      where.repayment = { loan: { companyId: req.user.companyId } };
+    }
 
     if (collectedById) where.collectedById = collectedById;
     if (from || to) {

@@ -66,6 +66,9 @@ router.get('/:id', authenticate, async (req, res) => {
       },
     });
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    if (req.user.companyId && customer.companyId && customer.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this customer' });
+    }
     res.json({ success: true, data: customer });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -269,6 +272,12 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
       jaminIdType, jaminIdNumber, jaminPhotoUrl, jaminIdProofUrl
     } = req.body;
 
+    const existingCust = await prisma.customer.findUnique({ where: { id: req.params.id } });
+    if (!existingCust) return res.status(404).json({ success: false, message: 'Customer not found' });
+    if (req.user.companyId && existingCust.companyId && existingCust.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this customer' });
+    }
+
     const trimmedName = name?.trim();
     const trimmedPhone = phone?.trim();
       if (trimmedPhone && trimmedPhone.length > 10) return res.status(400).json({ success: false, message: 'Customer phone number cannot exceed 10 digits.' });
@@ -350,6 +359,12 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
 // DELETE /api/customers/:id
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
+    const existingCust = await prisma.customer.findUnique({ where: { id: req.params.id } });
+    if (!existingCust) return res.status(404).json({ success: false, message: 'Customer not found' });
+    if (req.user.companyId && existingCust.companyId && existingCust.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this customer' });
+    }
+
     const activeLoans = await prisma.loan.findMany({
       where: {
         customerId: req.params.id,

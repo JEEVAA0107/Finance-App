@@ -81,7 +81,9 @@ router.get('/', authenticate, async (req, res) => {
     const { loanId, status, from, to, page = 1, limit = 50 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = {};
-
+    if (req.user.companyId) {
+      where.loan = { companyId: req.user.companyId };
+    }
     if (loanId) where.loanId = loanId;
     if (status === 'OVERDUE') {
       const startOfToday = new Date();
@@ -142,6 +144,7 @@ router.get('/today', authenticate, async (req, res) => {
 
     const repayments = await prisma.repayment.findMany({
       where: {
+        ...(req.user.companyId ? { loan: { companyId: req.user.companyId } } : {}),
         OR: [
           { dueDate: { gte: today, lt: tomorrow } },
           { payments: { some: { collectedAt: { gte: today, lt: tomorrow } } } },

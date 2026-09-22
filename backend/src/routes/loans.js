@@ -135,6 +135,11 @@ router.get('/', authenticate, async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = {};
 
+    // Multi-tenant isolation: filter strictly by companyId
+    if (req.user.companyId) {
+      where.companyId = req.user.companyId;
+    }
+
     if (status) where.status = status;
     if (customerId) where.customerId = customerId;
     if (agentId) where.agentId = agentId;
@@ -185,6 +190,9 @@ router.get('/:id/preclosure', authenticate, async (req, res) => {
       include: { repayments: { include: { payments: true } } }
     });
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (req.user.companyId && loan.companyId && loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this loan' });
+    }
     if (loan.status === 'CLOSED') return res.status(400).json({ success: false, message: 'Loan is already closed' });
 
     let principalOutstanding = loan.outstandingPrincipal ?? loan.principalAmount;
@@ -259,6 +267,9 @@ router.get('/:id', authenticate, async (req, res) => {
       },
     });
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (req.user.companyId && loan.companyId && loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this loan' });
+    }
 
     // Aggregate penalty for this specific loan
     const penaltyAgg = await prisma.payment.aggregate({
@@ -297,6 +308,19 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     if (!customerId || !principalAmount || interestRate === undefined || !startDate) {
       return res.status(400).json({ success: false, message: 'Missing required loan fields' });
     }
+
+    // Verify customer exists and belongs to user's company
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { id: true, companyId: true }
+    });
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+    if (req.user.companyId && customer.companyId && customer.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Customer belongs to a different finance company' });
+    }
+    const effectiveCompanyId = req.user.companyId || customer.companyId || null;
 
     const start = new Date(startDate);
     const fee = parseFloat(advanceDeduction || processingFee || 0);
@@ -379,6 +403,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       data: {
         loanNumber,
         customerId,
+        companyId: effectiveCompanyId,
         agentId: agentId || req.user.id,
         principalAmount: parseFloat(principalAmount),
         interestRate: parseFloat(interestRate),
@@ -487,6 +512,9 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
     const loanId = req.params.id;
     const loan = await prisma.loan.findUnique({ where: { id: loanId } });
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
+    if (req.user.companyId && loan.companyId && loan.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this loan' });
+    }
 
     // Cascade delete manually
     const repayments = await prisma.repayment.findMany({ where: { loanId }, select: { id: true } });

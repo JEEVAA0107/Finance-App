@@ -40,6 +40,13 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const next7Days = new Date(startOfToday);
     next7Days.setDate(next7Days.getDate() + 7);
 
+    // Multi-tenant isolation filters
+    const companyId = req.user.companyId;
+    const loanWhere = companyId ? { companyId } : {};
+    const customerWhere = companyId ? { companyId, isActive: true } : { isActive: true };
+    const paymentWhere = companyId ? { repayment: { loan: { companyId } } } : {};
+    const repaymentWhere = companyId ? { loan: { companyId } } : {};
+
     // Update overdues (only starting day after due date)
     await syncOverdueStatus(prisma);
 
@@ -47,13 +54,13 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       activeLoans,
       activeCustomers
     ] = await Promise.all([
-      prisma.loan.count({ where: { status: 'ACTIVE' } }),
-      prisma.customer.count({ where: { isActive: true } }),
+      prisma.loan.count({ where: { status: 'ACTIVE', ...loanWhere } }),
+      prisma.customer.count({ where: customerWhere }),
     ]);
 
     // Financial aggregates (Overall)
     const loanAgg = await prisma.loan.aggregate({
-      where: { status: { in: ['ACTIVE', 'CLOSED', 'DEFAULTED'] } },
+      where: { status: { in: ['ACTIVE', 'CLOSED', 'DEFAULTED'] }, ...loanWhere },
       _sum: { principalAmount: true, totalPayable: true, totalInterest: true },
     });
 
@@ -61,7 +68,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     // Penalty Aggregates (Carry Forward & Late Penalties)
     const [penaltyAgg, todayPenaltyAgg, repPenaltyAgg] = await Promise.all([
       prisma.payment.aggregate({
-        where: { paymentType: 'PENALTY' },
+        where: { paymentType: 'PENALTY', ...paymentWhere },
         _sum: { amount: true },
         _count: true,
       }),
@@ -69,29 +76,32 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         where: {
           paymentType: 'PENALTY',
           collectedAt: { gte: startOfToday, lte: endOfToday },
+          ...paymentWhere,
         },
         _sum: { amount: true },
         _count: true,
       }),
       prisma.repayment.aggregate({
+        where: repaymentWhere,
         _sum: { penaltyPaid: true },
       }),
     ]);
     const totalPenaltyCollectedAmt = Math.max(penaltyAgg._sum.amount || 0, repPenaltyAgg._sum.penaltyPaid || 0);
 
     const paymentAgg = await prisma.payment.aggregate({
+      where: paymentWhere,
       _sum: { amount: true },
     });
 
     // Today's Collection
     const todaysPayments = await prisma.payment.aggregate({
-      where: { collectedAt: { gte: startOfToday, lte: endOfToday } },
+      where: { collectedAt: { gte: startOfToday, lte: endOfToday }, ...paymentWhere },
       _sum: { amount: true },
     });
 
     // Today's Dues
     const todaysDues = await prisma.repayment.aggregate({
-      where: { dueDate: { gte: startOfToday, lte: endOfToday } },
+      where: { dueDate: { gte: startOfToday, lte: endOfToday }, ...repaymentWhere },
       _sum: { dueAmount: true, paidAmount: true },
     });
 
@@ -99,6 +109,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     // PENDING status = future installments not yet due — DO NOT include those!
     const pendingDues = await prisma.repayment.aggregate({
       where: {
+        ...repaymentWhere,
         OR: [
           { status: 'OVERDUE' },
           { status: 'PARTIAL' },
@@ -111,28 +122,28 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     // Overdue Loans Count (Distinct loans with overdue)
     const overdueLoans = await prisma.repayment.groupBy({
       by: ['loanId'],
-      where: { status: 'OVERDUE' },
+      where: { status: 'OVERDUE', ...repaymentWhere },
     });
 
     const overdueAgg = await prisma.repayment.aggregate({
-      where: { status: 'OVERDUE' },
+      where: { status: 'OVERDUE', ...repaymentWhere },
       _sum: { dueAmount: true, paidAmount: true },
     });
 
     // Monthly Aggregates
     const monthlyLoans = await prisma.loan.aggregate({
-      where: { createdAt: { gte: startOfMonth } },
+      where: { createdAt: { gte: startOfMonth }, ...loanWhere },
       _sum: { principalAmount: true, totalInterest: true },
     });
 
     const monthlyPayments = await prisma.payment.aggregate({
-      where: { collectedAt: { gte: startOfMonth } },
+      where: { collectedAt: { gte: startOfMonth }, ...paymentWhere },
       _sum: { amount: true },
     });
 
     // Calculate actual realized monthly interest & profit
     const monthlyPaymentRecords = await prisma.payment.findMany({
-      where: { collectedAt: { gte: startOfMonth } },
+      where: { collectedAt: { gte: startOfMonth }, ...paymentWhere },
       include: {
         repayment: {
           include: { loan: { select: { interestType: true, principalAmount: true, totalPayable: true, totalInterest: true } } }
@@ -172,7 +183,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const monthlyDeductionLoans = await prisma.loan.findMany({
       where: {
         createdAt: { gte: startOfMonth },
-        interestType: 'WITHOUT_INTEREST'
+        interestType: 'WITHOUT_INTEREST',
+        ...loanWhere,
       },
       select: { totalInterest: true, processingFee: true }
     });
@@ -185,6 +197,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     // === All-Time Actual Profit (what was really collected, not expected) ===
     const allPaymentRecords = await prisma.payment.findMany({
+      where: paymentWhere,
       select: {
         amount: true,
         paymentType: true,
@@ -213,7 +226,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     // All deduction-based loans: interest was realized at disbursement
     const allDeductionLoans = await prisma.loan.findMany({
-      where: { interestType: 'WITHOUT_INTEREST' },
+      where: { interestType: 'WITHOUT_INTEREST', ...loanWhere },
       select: { totalInterest: true, processingFee: true }
     });
     allDeductionLoans.forEach(l => {
@@ -226,7 +239,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const upcomingDues = await prisma.repayment.findMany({
       where: { 
         dueDate: { gt: endOfToday, lte: next7Days },
-        status: { in: ['PENDING', 'PARTIAL'] }
+        status: { in: ['PENDING', 'PARTIAL'] },
+        ...repaymentWhere,
       },
       include: { loan: { include: { customer: { select: { name: true, phone: true } } } } },
       orderBy: { dueDate: 'asc' },
@@ -235,6 +249,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     // Recent Collections (Last 5)
     const recentCollections = await prisma.payment.findMany({
+      where: paymentWhere,
       include: { 
         repayment: { include: { loan: { include: { customer: { select: { name: true } } } } } },
         collectedBy: { select: { name: true } }
@@ -251,7 +266,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     const [chartPayments, chartLoans, chartDeductionLoans] = await Promise.all([
       prisma.payment.findMany({
-        where: { collectedAt: { gte: sixMonthsAgo } },
+        where: { collectedAt: { gte: sixMonthsAgo }, ...paymentWhere },
         select: {
           amount: true,
           paymentType: true,
@@ -264,14 +279,14 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         }
       }),
       prisma.loan.findMany({
-        where: { createdAt: { gte: sixMonthsAgo } },
+        where: { createdAt: { gte: sixMonthsAgo }, ...loanWhere },
         select: {
           principalAmount: true,
           createdAt: true
         }
       }),
       prisma.loan.findMany({
-        where: { createdAt: { gte: sixMonthsAgo }, interestType: 'WITHOUT_INTEREST' },
+        where: { createdAt: { gte: sixMonthsAgo }, interestType: 'WITHOUT_INTEREST', ...loanWhere },
         select: { totalInterest: true, processingFee: true, createdAt: true }
       })
     ]);
@@ -339,7 +354,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     // Outstanding separated by Loan Types and Principal vs Interest
     const activeLoanRecords = await prisma.loan.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', ...loanWhere },
       select: {
         id: true,
         interestType: true,
@@ -445,11 +460,12 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
   }
 });
 
-// GET /api/dashboard/agent — Agent dashboard
+// GET /api/dashboard/agent
 router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
     const agentId = req.user.role === 'AGENT' ? req.user.id : (req.query.agentId || null);
-    const cacheKey = `agent_${agentId || req.user.id || 'all'}`;
+    const companyId = req.user.companyId;
+    const cacheKey = `agent_${companyId || 'all'}_${agentId || req.user.id}`;
     const cached = getCached(cacheKey, 15000);
     if (cached) {
       return res.json(cached);
@@ -462,18 +478,25 @@ router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res)
 
     await syncOverdueStatus(prisma);
 
-    // Build filters — if no agentId (admin with no filter), show all
+    // Build filters scoped strictly by companyId and agentId
     const loanWhere = { status: 'ACTIVE' };
+    if (companyId) loanWhere.companyId = companyId;
     if (agentId) loanWhere.agentId = agentId;
 
     const repaymentWhere = { dueDate: { gte: today, lt: tomorrow } };
-    if (agentId) repaymentWhere.loan = { agentId };
+    if (companyId || agentId) {
+      repaymentWhere.loan = {};
+      if (companyId) repaymentWhere.loan.companyId = companyId;
+      if (agentId) repaymentWhere.loan.agentId = agentId;
+    }
 
     const paymentWhere = { collectedAt: { gte: today } };
     if (agentId) paymentWhere.collectedById = agentId;
+    if (companyId) paymentWhere.repayment = { loan: { companyId } };
 
     const paymentWhereAll = {};
     if (agentId) paymentWhereAll.collectedById = agentId;
+    if (companyId) paymentWhereAll.repayment = { loan: { companyId } };
 
     const [collectedToday, totalCollected] = await Promise.all([
       prisma.payment.aggregate({

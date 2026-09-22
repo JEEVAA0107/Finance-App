@@ -10,8 +10,12 @@ router.get('/defaulters', authenticate, authorize('ADMIN', 'AGENT'), async (req,
   try {
     await syncOverdueStatus(prisma);
 
+    const whereDefaulters = { status: 'OVERDUE' };
+    if (req.user.companyId) {
+      whereDefaulters.loan = { companyId: req.user.companyId };
+    }
     const defaulters = await prisma.repayment.findMany({
-      where: { status: 'OVERDUE' },
+      where: whereDefaulters,
       include: {
         loan: {
           include: {
@@ -39,6 +43,9 @@ router.get('/daily-collection', authenticate, authorize('ADMIN', 'AGENT'), async
     nextDay.setDate(nextDay.getDate() + 1);
 
     const where = { collectedAt: { gte: day, lt: nextDay } };
+    if (req.user.companyId) {
+      where.repayment = { loan: { companyId: req.user.companyId } };
+    }
     if (req.user.role === 'AGENT') where.collectedById = req.user.id;
 
     const payments = await prisma.payment.findMany({
@@ -85,6 +92,9 @@ router.get('/customer/:id', authenticate, async (req, res) => {
     });
 
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    if (req.user.companyId && customer.companyId && customer.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     res.json({ success: true, data: customer });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

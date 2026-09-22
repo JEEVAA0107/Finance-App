@@ -42,11 +42,11 @@ const StatCard = ({ icon: Icon, label, value, color, to, onClick }) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const cacheKey = user?.id ? `dashboard_cache_${user.id}` : 'dashboard_cache_default';
+  const cacheKey = `dashboard_cache_${user?.companyId || 'nocompany'}_${user?.id || 'default'}`;
 
   const [data, setData] = useState(() => {
     try {
-      const key = user?.id ? `dashboard_cache_${user.id}` : 'dashboard_cache_default';
+      const key = `dashboard_cache_${user?.companyId || 'nocompany'}_${user?.id || 'default'}`;
       const cached = localStorage.getItem(key);
       return cached ? JSON.parse(cached) : null;
     } catch {
@@ -55,18 +55,21 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = useState(!data);
 
-  // Sync with user cache if user is loaded later
+  // Tenant cache isolation: reload data and switch cache if company or user changes
   useEffect(() => {
-    if (!data) {
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          setData(JSON.parse(cached));
-          setLoading(false);
-        }
-      } catch (e) {}
-    }
-  }, [user?.id]);
+    try {
+      const key = `dashboard_cache_${user?.companyId || 'nocompany'}_${user?.id || 'default'}`;
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        setData(JSON.parse(cached));
+        setLoading(false);
+      } else {
+        setData(null);
+        setLoading(true);
+      }
+    } catch (e) {}
+    loadData();
+  }, [user?.id, user?.companyId]);
 
   // Breakdown modal states
   const [activeModal, setActiveModal] = useState(null); // 'DISBURSED' | 'OUTSTANDING' | null
@@ -81,7 +84,7 @@ export default function Dashboard() {
         const fresh = { summary: s, agent: a };
         setData(fresh);
         try {
-          const key = user?.id ? `dashboard_cache_${user.id}` : 'dashboard_cache_default';
+          const key = `dashboard_cache_${user?.companyId || 'nocompany'}_${user?.id || 'default'}`;
           localStorage.setItem(key, JSON.stringify(fresh));
         } catch (e) {
           console.warn('Dashboard cache write failed', e);

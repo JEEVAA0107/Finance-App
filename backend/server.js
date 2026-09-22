@@ -193,11 +193,32 @@ async function syncDatabaseSchema() {
   }
 }
 
+async function syncTenantIntegrity() {
+  try {
+    const unlinkedLoans = await prisma.loan.findMany({
+      where: { companyId: null },
+      include: { customer: { select: { companyId: true } } },
+      take: 500,
+    });
+    for (const loan of unlinkedLoans) {
+      if (loan.customer?.companyId) {
+        await prisma.loan.update({
+          where: { id: loan.id },
+          data: { companyId: loan.customer.companyId },
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Tenant integrity note:', err.message);
+  }
+}
+
 async function start() {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected');
+    console.log('Database connected');
     await syncDatabaseSchema();
+    await syncTenantIntegrity();
     await seedAdmin();
     startCronJobs();
     app.listen(PORT, '0.0.0.0', () => {

@@ -16,10 +16,14 @@ const getDayBounds = (dateStr) => {
 router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
     const { start, end } = getDayBounds(req.query.date);
+    const companyId = req.user.companyId;
+    const paymentWhere = companyId ? { repayment: { loan: { companyId } } } : {};
+    const loanWhere = companyId ? { companyId } : {};
+    const expenseWhere = companyId ? { companyId } : {};
 
     // 1. Collections (Payments made today)
     const payments = await prisma.payment.findMany({
-      where: { collectedAt: { gte: start, lte: end } }
+      where: { collectedAt: { gte: start, lte: end }, ...paymentWhere }
     });
     const collections = payments.reduce((sum, p) => sum + p.amount, 0);
     const emiCollections = payments
@@ -30,7 +34,8 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const disbursedLoans = await prisma.loan.findMany({
       where: { 
         disbursedAt: { gte: start, lte: end },
-        status: { not: 'PENDING' }
+        status: { not: 'PENDING' },
+        ...loanWhere
       }
     });
     const loanDistributed = disbursedLoans.reduce((sum, l) => sum + l.principalAmount, 0);
@@ -38,30 +43,25 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
 
     // 3. Office Expenses today
     const expenses = await prisma.expense.findMany({
-      where: { date: { gte: start, lte: end } },
+      where: { date: { gte: start, lte: end }, ...expenseWhere },
       orderBy: { createdAt: 'desc' }
     });
     const officeExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
     // 4. Calculate Opening Balance (All time collections - disbursements - expenses BEFORE today)
-    // Note: If you want a fixed manual opening balance, it needs a different model.
-    // For now, we compute it dynamically based on all past history.
     // 4a. Penalty Collected today (paymentType = 'PENALTY')
     const penaltyCollected = payments
       .filter(p => p.paymentType === 'PENALTY')
       .reduce((sum, p) => sum + p.amount, 0);
 
     // 4b. Opening Balance:
-    //   = past collections (all payment types)
-    //   - past office expenses only
-    //   (Loan principal is NOT subtracted — loans cycle back as repayments)
     const pastPayments = await prisma.payment.aggregate({
-      where: { collectedAt: { lt: start } },
+      where: { collectedAt: { lt: start }, ...paymentWhere },
       _sum: { amount: true }
     });
     
     const pastExpenses = await prisma.expense.aggregate({
-      where: { date: { lt: start } },
+      where: { date: { lt: start }, ...expenseWhere },
       _sum: { amount: true }
     });
 
@@ -104,6 +104,7 @@ router.post('/expense', authenticate, authorize('ADMIN'), async (req, res) => {
 
     const expense = await prisma.expense.create({
       data: {
+        companyId: req.user.companyId || null,
         amount: parseFloat(amount),
         category: category || 'OFFICE',
         description: description || '',
@@ -120,6 +121,11 @@ router.post('/expense', authenticate, authorize('ADMIN'), async (req, res) => {
 // DELETE /api/daybook/expense/:id
 router.delete('/expense/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
+    const expense = await prisma.expense.findUnique({ where: { id: req.params.id } });
+    if (!expense) return res.status(404).json({ success: false, message: 'Expense not found' });
+    if (req.user.companyId && expense.companyId && expense.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied to this expense' });
+    }
     await prisma.expense.delete({
       where: { id: req.params.id }
     });
