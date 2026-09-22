@@ -235,7 +235,7 @@ export default function Dashboard() {
                       <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.03)" />
+                  {/* Grid removed for floating clean aesthetic */}
                   <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="none" tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-muted)' }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} stroke="none" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
                   <Tooltip cursor={false} 

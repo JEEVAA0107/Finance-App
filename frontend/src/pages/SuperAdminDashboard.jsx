@@ -255,7 +255,8 @@ export default function SuperAdminDashboard() {
           </h3>
         </div>
 
-        <div className="table-container" style={{ overflowX: 'auto', width: '100%' }}>
+        {/* 1. Desktop Table View (>= 850px) */}
+        <div className="superadmin-desktop-table table-container" style={{ overflowX: 'auto', width: '100%' }}>
           <table className="data-table" style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
@@ -368,6 +369,94 @@ export default function SuperAdminDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 2. Mobile & Tablet Card View (<= 850px) */}
+        <div className="superadmin-mobile-cards">
+          {filtered.map(comp => (
+            <div key={comp.id} className="superadmin-company-card">
+              {/* Header: Landmark Icon, Company Name, Code & Status Toggle */}
+              <div className="card-top-row">
+                <div className="company-info-group">
+                  <div className="company-icon-box" style={{ background: comp.isActive ? 'var(--primary-50)' : 'var(--bg-tertiary)', color: comp.isActive ? 'var(--primary-600)' : 'var(--text-muted)' }}>
+                    <Landmark size={20} />
+                  </div>
+                  <div>
+                    <h4 className="company-name">{comp.name}</h4>
+                    <span className="company-code-badge">CODE: {comp.code.toUpperCase()}</span>
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => handleToggleStatus(comp)}
+                  className={`status-toggle-pill ${comp.isActive ? 'active' : 'suspended'}`}
+                  title={comp.isActive ? "Click to Suspend" : "Click to Activate"}
+                >
+                  <Power size={12} />
+                  <span>{comp.isActive ? 'ACTIVE' : 'SUSPENDED'}</span>
+                </button>
+              </div>
+
+              {/* Owner & Direct Phone Call */}
+              <div className="card-contact-row">
+                <div className="contact-item">
+                  <span className="contact-label">Owner:</span>
+                  <span className="contact-val">{comp.ownerName || 'Finance Admin'}</span>
+                </div>
+                {comp.phone && (
+                  <a href={`tel:${comp.phone}`} className="phone-chip" title="Call Owner">
+                    <Phone size={13} />
+                    <span>{comp.phone}</span>
+                  </a>
+                )}
+              </div>
+
+              {/* Metrics Grid (3 equal pills) */}
+              <div className="card-metrics-grid">
+                <div className="metric-pill">
+                  <span className="metric-num">{comp.stats?.loans || 0}</span>
+                  <span className="metric-name">Loans</span>
+                </div>
+                <div className="metric-pill">
+                  <span className="metric-num">{comp.stats?.customers || 0}</span>
+                  <span className="metric-name">Customers</span>
+                </div>
+                <div className="metric-pill">
+                  <span className="metric-num">{comp.stats?.users || 0}</span>
+                  <span className="metric-name">Staff</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="card-actions-row">
+                <button
+                  type="button"
+                  onClick={() => handleOpenPasswordModal(comp)}
+                  className="btn btn-secondary password-btn"
+                >
+                  <KeyRound size={14} />
+                  <span>Reset Admin Password</span>
+                </button>
+                {comp.stats?.loans === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCompany(comp)}
+                    className="btn btn-ghost delete-btn"
+                    title="Delete Company"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+              {searchTerm ? 'No matching finance companies.' : 'No finance companies registered yet. Click "+ Register Finance" to create one.'}
+            </div>
+          )}
         </div>
       </div>
 

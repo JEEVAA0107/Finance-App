@@ -1695,12 +1695,13 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
     padding-right: 42px !important;
   }
 }
-/* ─── Remove Black Lines from Analytics Chart ─── */
+/* ─── Remove All Black Borders & Lines from Recharts Analytics Chart ─── */
 .recharts-cartesian-axis-line,
 .recharts-cartesian-axis-tick-line,
 .recharts-axis-line,
 .recharts-axis-tick-line,
-.recharts-cartesian-axis line {
+.recharts-cartesian-axis line,
+.recharts-wrapper svg line {
   stroke: transparent !important;
   stroke-width: 0 !important;
   display: none !important;
@@ -1709,7 +1710,9 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line,
 .recharts-cartesian-grid line {
-  stroke: rgba(0, 0, 0, 0.04) !important;
+  stroke: transparent !important;
+  stroke-width: 0 !important;
+  display: none !important;
 }
 
 .recharts-surface,
@@ -1718,6 +1721,15 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   outline: none !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+.recharts-wrapper svg rect:not([fill*="url"]) {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+.recharts-wrapper svg path:not(.recharts-curve) {
+  stroke: transparent !important;
 }
 
 /* ─── Mobile Responsiveness Enhancements ─── */
@@ -1779,4 +1791,209 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   .stat-value {
     font-size: 15px !important;
   }
+}
+
+/* ─── SuperAdmin Multi-Device Responsive Layout (Desktop / Tablet / Mobile) ─── */
+.superadmin-desktop-table {
+  display: block;
+  width: 100%;
+}
+.superadmin-mobile-cards {
+  display: none;
+}
+
+@media (max-width: 850px) {
+  .superadmin-desktop-table {
+    display: none !important;
+  }
+  .superadmin-mobile-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+  }
+}
+
+.superadmin-company-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.superadmin-company-card:hover {
+  border-color: var(--primary-300);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.superadmin-company-card .card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.superadmin-company-card .company-info-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.superadmin-company-card .company-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.superadmin-company-card .company-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.superadmin-company-card .company-code-badge {
+  display: inline-block;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  margin-top: 4px;
+}
+
+.superadmin-company-card .status-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+}
+
+.superadmin-company-card .status-toggle-pill.active {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.superadmin-company-card .status-toggle-pill.suspended {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.superadmin-company-card .card-contact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.superadmin-company-card .contact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.superadmin-company-card .contact-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.superadmin-company-card .contact-val {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.superadmin-company-card .phone-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #059669;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.superadmin-company-card .phone-chip:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.superadmin-company-card .card-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.superadmin-company-card .metric-pill {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.superadmin-company-card .metric-num {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.superadmin-company-card .metric-name {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.superadmin-company-card .card-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.superadmin-company-card .password-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 9px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.superadmin-company-card .delete-btn {
+  color: var(--danger-500);
+  padding: 9px 12px;
+  border-radius: 8px;
 }
