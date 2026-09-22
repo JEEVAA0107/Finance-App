@@ -14,6 +14,7 @@ async function seedAdmin() {
       phone: process.env.ADMIN_PHONE || '9999999999',
       passwordHash,
       role: 'ADMIN',
+      companyId: process.env.COMPANY_ID || 'company-finova-001',
     },
   });
   console.log('✅ Admin user seeded:', process.env.ADMIN_EMAIL);
