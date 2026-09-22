@@ -149,7 +149,7 @@ export default function CreateLoan() {
       });
       toast.success(`Loan ${res.loanNumber} created!`);
       navigate(`/loans/${res.id}`);
-    } catch (err) { toast.error(err.message || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || err.message || 'Failed'); }
     finally { setLoading(false); }
   };
 

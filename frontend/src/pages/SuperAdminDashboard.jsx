@@ -84,7 +84,7 @@ export default function SuperAdminDashboard() {
       setRegForm({ name: '', code: '', ownerName: '', phone: '', password: '', address: '' });
       loadCompanies();
     } catch (err) {
-      toast.error(err.message || 'Failed to create finance company');
+      toast.error(err.response?.data?.message || err.message || 'Failed to create finance company');
     }
   };
 
@@ -100,7 +100,7 @@ export default function SuperAdminDashboard() {
       toast.success(newStatus ? `'${company.name}' is now ACTIVE` : `'${company.name}' is now SUSPENDED`);
       setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, isActive: newStatus } : c));
     } catch (err) {
-      toast.error(err.message || 'Failed to update company status');
+      toast.error(err.response?.data?.message || err.message || 'Failed to update company status');
       loadCompanies();
     }
   };
@@ -126,7 +126,7 @@ export default function SuperAdminDashboard() {
       setSelectedCompany(null);
       setNewPassword('');
     } catch (err) {
-      toast.error(err.message || 'Failed to reset password');
+      toast.error(err.response?.data?.message || err.message || 'Failed to reset password');
     } finally {
       setSubmittingPassword(false);
     }
@@ -141,7 +141,7 @@ export default function SuperAdminDashboard() {
       toast.success(`Company '${company.name}' deleted.`);
       loadCompanies();
     } catch (err) {
-      toast.error(err.message || 'Failed to delete company');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete company');
     }
   };
 

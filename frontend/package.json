@@ -10,11 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.1",
-    "@capacitor/app": "^8.1.0",
-    "@capacitor/cli": "^8.3.1",
-    "@capacitor/core": "^8.3.1",
-    "@capacitor/geolocation": "^8.2.0",
     "axios": "^1.15.2",
     "date-fns": "^4.1.0",
     "jspdf": "^4.2.1",
@@ -31,7 +26,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

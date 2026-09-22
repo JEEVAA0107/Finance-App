@@ -9,8 +9,13 @@ const prisma = new PrismaClient();
 // GET /api/users — Admin only
 router.get('/', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
-    const { role, page = 1, limit = 20 } = req.query;
-    const where = role ? { role } : {};
+    const { role, page = 1, limit = 20, excludeCustomers } = req.query;
+    const where = {};
+    if (role) {
+      where.role = role;
+    } else if (excludeCustomers !== 'false') {
+      where.role = { not: 'CUSTOMER' };
+    }
     if (req.user.companyId) { where.companyId = req.user.companyId; }
     const skip = (parseInt(page) - 1) * parseInt(limit);
 

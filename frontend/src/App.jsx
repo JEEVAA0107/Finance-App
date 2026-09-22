@@ -18,8 +18,6 @@ import NotificationsDashboard from './pages/NotificationsDashboard';
 import ProfitPage from './pages/ProfitPage';
 import CollectionRoutePage from './pages/CollectionRoutePage';
 import PaymentsHistoryPage from './pages/PaymentsHistoryPage';
-import { App as CapacitorApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
 import ScrollToTop from './components/ScrollToTop';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -54,14 +52,7 @@ function AppRoutes() {
 }
 
 export default function App() {
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-        if (!canGoBack) CapacitorApp.exitApp();
-        else window.history.back();
-      });
-    }
-  }, []);
+
 
   return (
     <BrowserRouter>

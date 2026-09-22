@@ -1,9 +1,0 @@
-{
-  "name": "finance-app-root",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "cd backend && npm start",
-    "build": "cd backend && npm install --ignore-scripts && npx prisma generate"
-  }
-}

@@ -3,6 +3,23 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function seedAdmin() {
+  const companyId = process.env.COMPANY_ID || 'company-finova-001';
+  let company = await prisma.company.findUnique({ where: { id: companyId } });
+  
+  if (!company) {
+    company = await prisma.company.create({
+      data: {
+        id: companyId,
+        code: 'FINOVA',
+        name: 'Finova Financials',
+        ownerName: 'Super Admin',
+        phone: '9999999999',
+        isActive: true,
+      }
+    });
+    console.log('Default Company created:', company.name);
+  }
+
   const existing = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
   if (existing) return;
 
@@ -14,10 +31,10 @@ async function seedAdmin() {
       phone: process.env.ADMIN_PHONE || '9999999999',
       passwordHash,
       role: 'ADMIN',
-      companyId: process.env.COMPANY_ID || 'company-finova-001',
+      companyId: companyId,
     },
   });
-  console.log('✅ Admin user seeded:', process.env.ADMIN_EMAIL);
+  console.log('Admin user seeded:', process.env.ADMIN_EMAIL);
 }
 
 module.exports = { seedAdmin };

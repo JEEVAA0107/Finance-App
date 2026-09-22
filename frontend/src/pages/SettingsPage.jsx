@@ -14,7 +14,7 @@ export default function SettingsPage() {
           toast.success(res.message || "Database has been reset successfully.");
           setTimeout(() => window.location.reload(), 1500);
         } catch (err) {
-          toast.error(err.message || 'Reset failed');
+          toast.error(err.response?.data?.message || err.message || 'Reset failed');
         }
       }
     }

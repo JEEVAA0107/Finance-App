@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { IndianRupee, Plus, FileText, ArrowDownRight, ArrowUpRight, HandCoins, Building2, Wallet, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -168,7 +168,7 @@ export default function DayBookPage() {
             </div>
             <form onSubmit={handleAddExpense} className="modal-body">
               <div className="form-group">
-                <label className="form-label">Amount (₹)</label>
+                <label className="form-label">Amount (?)</label>
                 <input 
                   type="number" 
                   className="form-input" 

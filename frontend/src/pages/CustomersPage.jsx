@@ -90,7 +90,7 @@ export default function CustomersPage() {
       toast.success('Customer removed');
       load();
     } catch (err) {
-      toast.error(err.message || 'Currently an active loan is running for this customer, so cannot delete.');
+      toast.error(err.response?.data?.message || err.message || 'Currently an active loan is running for this customer, so cannot delete.');
     }
   };
 
@@ -107,40 +107,23 @@ export default function CustomersPage() {
   });
 
   const renderAvatar = (c) => {
-    if (c.photoUrl) {
-      return (
-        <img
-          src={c.photoUrl}
-          alt={c.name}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            objectFit: 'cover',
-            border: '2px solid var(--primary-400)',
-            flexShrink: 0
-          }}
-        />
-      );
-    }
     return (
       <div
         style={{
           width: 40,
           height: 40,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--primary-600), var(--accent-500))',
-          color: '#fff',
+          background: 'linear-gradient(135deg, var(--primary-100), var(--primary-200))',
+          color: 'var(--primary-700)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontWeight: 800,
-          fontSize: 15,
-          flexShrink: 0,
-          boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+          fontSize: 16,
+          flexShrink: 0
         }}
       >
-        {c.name?.charAt(0).toUpperCase() || 'C'}
+        {c.name ? c.name.charAt(0).toUpperCase() : 'C'}
       </div>
     );
   };
@@ -546,4 +529,6 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+
 

@@ -235,9 +235,9 @@ export default function Dashboard() {
                       <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(0,0,0,0.06)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'var(--text-muted)' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.03)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="none" tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} stroke="none" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
                   <Tooltip cursor={false} 
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
@@ -261,9 +261,9 @@ export default function Dashboard() {
                   />
                   <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 20 }} iconType="circle" />
                   
-                  <Area type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorDisbursed)" />
-                  <Area type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
-                  <Area type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
+                  <Area activeDot={false} type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorDisbursed)" />
+                  <Area activeDot={false} type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
+                  <Area activeDot={false} type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

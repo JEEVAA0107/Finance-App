@@ -113,12 +113,12 @@ async function syncOverdueStatus(prisma) {
   });
 
   for (const rep of overdueReps) {
-    const penAmt = rep.penaltyAmount > 0 ? rep.penaltyAmount : 100;
+    const penAmt = rep.penaltyAmount > 0 ? rep.penaltyAmount : 0;
     await prisma.repayment.update({
       where: { id: rep.id },
       data: {
         status: 'OVERDUE',
-        penaltyStatus: rep.penaltyStatus === 'PAID' ? 'PAID' : 'PENDING',
+        penaltyStatus: rep.penaltyStatus === 'PAID' ? 'PAID' : (penAmt > 0 ? 'PENDING' : 'NONE'),
         penaltyAmount: penAmt,
       },
     });

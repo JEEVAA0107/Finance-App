@@ -22,10 +22,10 @@ export default function CollectionPage() {
   }, [searchParams]);
 
   const [payModal, setPayModal] = useState(null);
-  const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
+  const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '', sendSms: true });
   const [paying, setPaying] = useState(false);
   const [penaltyModal, setPenaltyModal] = useState(null);
-  const [penaltyForm, setPenaltyForm] = useState({ amount: '100', paymentMode: 'CASH', reference: '', notes: '' });
+  const [penaltyForm, setPenaltyForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', notes: '' });
   const [payingPenalty, setPayingPenalty] = useState(false);
   const [search, setSearch] = useState('');
   const [loanType, setLoanType] = useState('ALL');
@@ -85,14 +85,14 @@ export default function CollectionPage() {
       toast.success('✓ Payment collected!');
       setPayModal(null);
       load();
-    } catch (err) { toast.error(err.message || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || err.message || 'Failed'); }
     finally { setPaying(false); }
   };
 
   const handleOpenPenaltyModal = (r) => {
     setPenaltyModal(r);
     setPenaltyForm({
-      amount: String(r.penaltyAmount > 0 ? r.penaltyAmount : 100),
+      amount: '',
       paymentMode: 'CASH',
       reference: '',
       notes: ''
@@ -114,7 +114,7 @@ export default function CollectionPage() {
       setPenaltyModal(null);
       load();
     } catch (err) {
-      toast.error(err.message || 'Failed to collect penalty');
+      toast.error(err.response?.data?.message || err.message || 'Failed to collect penalty');
     } finally {
       setPayingPenalty(false);
     }
@@ -126,7 +126,7 @@ export default function CollectionPage() {
       amount: String(r.dueAmount - r.paidAmount),
       paymentMode: 'CASH',
       reference: '',
-      penaltyAmount: r.status === 'OVERDUE' ? String(r.penaltyAmount || 100) : ''
+      penaltyAmount: ''
     });
   };
 
@@ -437,3 +437,4 @@ export default function CollectionPage() {
     </div>
   );
 }
+

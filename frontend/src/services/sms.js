@@ -2,10 +2,8 @@
  * sms.js — Native Android SMS sending via SIM card
  * NO internet needed. Uses phone's own SIM to send SMS.
  */
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-// Register the native plugin
-const SmsSender = registerPlugin('SmsSender');
+// Pure Web SMS helper (native capacitor plugins disabled for web build)
+const SmsSender = null;
 
 /**
  * Send SMS silently via native Android SmsManager (SIM card).
@@ -15,7 +13,7 @@ export async function sendSMS(phone, message) {
   if (!phone || !message) return;
   const withCode = formatPhone(phone);
 
-  if (Capacitor.isNativePlatform()) {
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform()) {
     try {
       await SmsSender.sendSMS({ phone: withCode, message });
       console.log(`[SMS] Sent to ${withCode}`);

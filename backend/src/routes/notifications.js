@@ -17,7 +17,7 @@ router.get('/dashboard', async (req, res) => {
 
     const [dueToday, dueTomorrow, upcoming, overdue, sent, failed] = await Promise.all([
       prisma.repayment.count({ where: { status: 'PENDING', dueDate: { gte: today, lt: tomorrow } } }),
-      prisma.repayment.count({ where: { status: 'PENDING', dueDate: { gte: tomorrow, lt: nextWeek } } }), // using nextWeek as "upcoming" for simplicity, or just tomorrow to nextWeek
+      prisma.repayment.count({ where: { status: 'PENDING', dueDate: { gte: tomorrow, lt: new Date(new Date(tomorrow).getTime() + 86400000) } } }), // using nextWeek as "upcoming" for simplicity, or just tomorrow to nextWeek
       prisma.repayment.count({ where: { status: 'PENDING', dueDate: { gt: tomorrow } } }),
       prisma.repayment.count({ where: { status: 'PENDING', dueDate: { lt: today } } }),
       prisma.notificationLog.count({ where: { status: 'SENT' } }),

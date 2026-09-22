@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
@@ -10,10 +10,10 @@ const prisma = new PrismaClient();
 // round2 MUST be defined before any route that uses it
 const round2 = (num) => Math.round(num * 100) / 100;
 
-// POST /api/payments â€” Collect INTEREST payment
+// POST /api/payments — Collect INTEREST payment
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { repaymentId, amount, paymentMode = 'CASH', reference, notes, penaltyAmount = 0 } = req.body;
+    const { repaymentId, amount, paymentMode = 'CASH', reference, notes, penaltyAmount = 0, sendSms = false } = req.body;
 
     if (!repaymentId || !amount) {
       return res.status(400).json({ success: false, message: 'repaymentId and amount required' });
@@ -29,7 +29,7 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Already fully paid' });
     }
 
-    // â”€â”€ Sequential Order Enforcement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Sequential Order Enforcement ──────────────────────────────────────────
     // Cannot collect installment #N if any earlier installment (#1 to #N-1) is not PAID or CARRIED_FORWARD
     if (repayment.installmentNo > 1) {
       const unpaidPrevious = await prisma.repayment.findFirst({
@@ -43,11 +43,11 @@ router.post('/', authenticate, async (req, res) => {
       if (unpaidPrevious) {
         return res.status(400).json({
           success: false,
-          message: `முதலில் Installment #${unpaidPrevious.installmentNo} (Week ${unpaidPrevious.weekNo || '?'}, Status: ${unpaidPrevious.status}, ₹${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect செய்யுங்கள் அல்லது Penalty செலுத்தி Carry Forward செய்யுங்கள்.`
+          message: `??????? Installment #${unpaidPrevious.installmentNo} (Week ${unpaidPrevious.weekNo || '?'}, Status: ${unpaidPrevious.status}, ?${(unpaidPrevious.dueAmount - unpaidPrevious.paidAmount).toLocaleString('en-IN')} pending) collect ??????????? ?????? Penalty ???????? Carry Forward ???????????.`
         });
       }
     }
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────────────────
 
 
     const baseAmt = parseFloat(amount);
@@ -56,21 +56,41 @@ router.post('/', authenticate, async (req, res) => {
 
     const paymentType = (repayment.principal > 0 && repayment.interest > 0) ? 'EMI' : (repayment.principal > 0 ? 'PRINCIPAL' : 'INTEREST');
 
-    const payment = await prisma.payment.create({
-      data: {
-        repaymentId,
-        collectedById: req.user.id,
-        amount: totalCollectedAmt,
-        paymentMode,
-        paymentType,
-        reference,
-        notes: penaltyAmt > 0 ? (notes ? `${notes} (Includes â‚¹${penaltyAmt} overdue interest/penalty)` : `Includes â‚¹${penaltyAmt} overdue interest/penalty`) : notes,
-      },
-    });
+    let payment;
+    if (baseAmt > 0) {
+      payment = await prisma.payment.create({
+        data: {
+          repaymentId,
+          collectedById: req.user.id,
+          amount: baseAmt,
+          paymentMode,
+          paymentType,
+          reference,
+          notes,
+        },
+      });
+    }
 
-    const totalPaid = repayment.paidAmount + totalCollectedAmt;
-    // For status check, compare against dueAmount + penaltyAmt so it only marks PAID if they cover everything
-    const newStatus = totalPaid >= (repayment.dueAmount + penaltyAmt) ? 'PAID' : 'PARTIAL';
+    if (penaltyAmt > 0) {
+      const penaltyPayment = await prisma.payment.create({
+        data: {
+          repaymentId,
+          collectedById: req.user.id,
+          amount: penaltyAmt,
+          paymentMode,
+          paymentType: 'PENALTY',
+          reference,
+          notes: notes ? `Overdue Penalty: ${notes}` : 'Overdue Penalty',
+        },
+      });
+      if (!payment) payment = penaltyPayment;
+    }
+
+    // paidAmount should ONLY track the actual principal/interest collected, NEVER penalty!
+    const totalPaid = repayment.paidAmount + baseAmt;
+    
+    // For status check, compare ONLY against dueAmount.
+    const newStatus = totalPaid >= repayment.dueAmount ? 'PAID' : 'PARTIAL';
 
     const repUpdateData = {
       paidAmount: totalPaid,
@@ -160,10 +180,10 @@ router.post('/', authenticate, async (req, res) => {
       sendSMS(loanData.customer.phone, smsMessage);
 
       // WhatsApp Message
-      const waMessage = `âœ… *Payment Successful!*
+      const waMessage = `✅ *Payment Successful!*
       
 Hello ${loanData.customer.name},
-We have received your payment of *â‚¹${amount}* for your loan (*${loanData.loanNumber}*).
+We have received your payment of *₹${amount}* for your loan (*${loanData.loanNumber}*).
 
 *Installment:* #${repayment.installmentNo}
 *Mode:* ${paymentMode}
@@ -179,7 +199,7 @@ Thank you for choosing LoanFlow Pro!`;
   }
 });
 
-// POST /api/payments/penalty â€” Pay Penalty for Overdue Installment & Unlock Carry Forward
+// POST /api/payments/penalty — Pay Penalty for Overdue Installment & Unlock Carry Forward
 router.post('/penalty', authenticate, async (req, res) => {
   try {
     const { repaymentId, amount, paymentMode = 'CASH', reference, notes } = req.body;
@@ -326,7 +346,7 @@ router.post('/penalty', authenticate, async (req, res) => {
 });
 
 
-// POST /api/payments/principal â€” Pay PRINCIPAL amount
+// POST /api/payments/principal — Pay PRINCIPAL amount
 router.post('/principal', authenticate, async (req, res) => {
   try {
     const { loanId, amount, paymentMode = 'CASH', reference, notes } = req.body;
@@ -415,7 +435,7 @@ router.post('/principal', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/payments/close â€” Close a loan by paying Principal + Accrued Interest + Penalty
+// POST /api/payments/close — Close a loan by paying Principal + Accrued Interest + Penalty
 router.post('/close', authenticate, async (req, res) => {
   try {
     const { loanId, principalAmount, accruedInterestAmount, penaltyAmount, paymentMode = 'CASH', reference, notes } = req.body;
@@ -538,7 +558,7 @@ router.post('/close', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/payments â€” History
+// GET /api/payments — History
 router.get('/', authenticate, async (req, res) => {
   try {
     const { from, to, collectedById, page = 1, limit = 30 } = req.query;
@@ -582,3 +602,4 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 module.exports = router;
+

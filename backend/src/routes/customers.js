@@ -120,6 +120,8 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 
     const trimmedName = name?.trim();
     const trimmedPhone = phone?.trim();
+      if (trimmedPhone && trimmedPhone.length > 10) return res.status(400).json({ success: false, message: 'Customer phone number cannot exceed 10 digits.' });
+      if (jaminPhone && jaminPhone.trim().length > 10) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) phone number cannot exceed 10 digits.' });
     const cleanEmail = email?.trim() ? email.trim() : null;
     const notId = req.params.id ? { not: req.params.id } : undefined;
     const cid = idNumber?.trim();
@@ -269,6 +271,8 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
 
     const trimmedName = name?.trim();
     const trimmedPhone = phone?.trim();
+      if (trimmedPhone && trimmedPhone.length > 10) return res.status(400).json({ success: false, message: 'Customer phone number cannot exceed 10 digits.' });
+      if (jaminPhone && jaminPhone.trim().length > 10) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) phone number cannot exceed 10 digits.' });
     const cleanEmail = email?.trim() ? email.trim() : null;
     const notId = req.params.id ? { not: req.params.id } : undefined;
     const cid = idNumber?.trim();

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { repaymentsAPI } from '../services/api';
+import { repaymentsAPI, paymentsAPI } from '../services/api';
 import { Navigation, MapPin, Phone, HandCoins, AlertTriangle, Route } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -63,6 +63,30 @@ export default function CollectionRoutePage() {
     }).catch(() => { toast.error('Failed to load'); setLoading(false); });
   }, []);
 
+  const handleQuickCollect = async (r) => {
+    try {
+      const toastId = toast.loading('Processing quick collect...');
+      await paymentsAPI.collect({
+        repaymentId: r.id,
+        amount: String(r.dueAmount - r.paidAmount),
+        paymentMode: 'CASH',
+        reference: 'Route Map Quick Collect',
+        notes: '',
+        penaltyAmount: 0,
+        sendSms: true
+      });
+      toast.dismiss(toastId);
+      toast.success('Collection successful!');
+      // Update Agent Position to this customer!
+      setAgentPos({ lat: r.loan.customer.latitude, lng: r.loan.customer.longitude });
+      // Remove from UI
+      setRepayments(prev => prev.filter(item => item.id !== r.id));
+    } catch(e) {
+      toast.dismiss();
+      toast.error('Failed to collect: ' + (e.response?.data?.message || e.message));
+    }
+  };
+
   const getAgentLocation = () => {
     setLoadingGPS(true);
     if (!navigator.geolocation) {
@@ -89,14 +113,51 @@ export default function CollectionRoutePage() {
     (!r.loan?.customer?.latitude || !r.loan?.customer?.longitude) && r.status !== 'PAID'
   );
 
-  // Sort by nearest distance from agent
-  const sortedByDistance = agentPos
-    ? [...withLocation].sort((a, b) => {
-        const da = haversineKm(agentPos.lat, agentPos.lng, a.loan.customer.latitude, a.loan.customer.longitude);
-        const db = haversineKm(agentPos.lat, agentPos.lng, b.loan.customer.latitude, b.loan.customer.longitude);
-        return da - db;
-      })
-    : withLocation;
+  // Nearest Neighbor TSP algorithm for sequential routing
+  const sortedByDistance = [];
+  if (agentPos && withLocation.length > 0) {
+    let unvisited = [...withLocation];
+    let currentPos = agentPos;
+    
+    while (unvisited.length > 0) {
+      let nearestIdx = 0;
+      let minDa = Infinity;
+      for (let i = 0; i < unvisited.length; i++) {
+        const da = haversineKm(currentPos.lat, currentPos.lng, unvisited[i].loan.customer.latitude, unvisited[i].loan.customer.longitude);
+        if (da < minDa) {
+          minDa = da;
+          nearestIdx = i;
+        }
+      }
+      
+      const nearestNode = unvisited[nearestIdx];
+      sortedByDistance.push(nearestNode);
+      currentPos = { lat: nearestNode.loan.customer.latitude, lng: nearestNode.loan.customer.longitude };
+      unvisited.splice(nearestIdx, 1);
+    }
+  } else if (withLocation.length > 0) {
+    let unvisited = [...withLocation];
+    let currentPos = { lat: unvisited[0].loan.customer.latitude, lng: unvisited[0].loan.customer.longitude };
+    sortedByDistance.push(unvisited[0]);
+    unvisited.splice(0, 1);
+    
+    while (unvisited.length > 0) {
+      let nearestIdx = 0;
+      let minDa = Infinity;
+      for (let i = 0; i < unvisited.length; i++) {
+        const da = haversineKm(currentPos.lat, currentPos.lng, unvisited[i].loan.customer.latitude, unvisited[i].loan.customer.longitude);
+        if (da < minDa) {
+          minDa = da;
+          nearestIdx = i;
+        }
+      }
+      
+      const nearestNode = unvisited[nearestIdx];
+      sortedByDistance.push(nearestNode);
+      currentPos = { lat: nearestNode.loan.customer.latitude, lng: nearestNode.loan.customer.longitude };
+      unvisited.splice(nearestIdx, 1);
+    }
+  }
 
   const mapCenter = agentPos
     ? [agentPos.lat, agentPos.lng]

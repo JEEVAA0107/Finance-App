@@ -53,7 +53,7 @@ export default function AppLayout() {
         ]},
         { section: 'Admin', items: [
           { to: '/notifications', icon: Bell, label: 'Notifications' },
-          { to: '/users', icon: UserCog, label: 'User Management' },
+          { to: '/users', icon: UserCog, label: 'Agent Management' },
           { to: '/settings', icon: Settings, label: 'Settings & Backup' },
         ]},
       ]
@@ -109,7 +109,7 @@ export default function AppLayout() {
     { to: '/loans', label: 'Loans' },
     { to: '/collections', label: 'Collections' },
     { to: '/payment-history', label: 'History' },
-    { to: '/users', label: 'Users' },
+    { to: '/users', label: 'Agent Management' },
   ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'Finova';
 
   return (

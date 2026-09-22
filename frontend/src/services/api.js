@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Hardcoding the production URL directly to avoid any environment variable issues
-const API_URL = (typeof window !== 'undefined' && localStorage.getItem('finova_api_url')) || 'https://finance-app-5k5p.onrender.com/api';
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const defaultUrl = isLocal ? 'http://localhost:5000/api' : 'https://finance-app-5k5p.onrender.com/api';
+const API_URL = (typeof window !== 'undefined' && localStorage.getItem('finova_api_url')) || defaultUrl;
 
 const api = axios.create({
   baseURL: API_URL,

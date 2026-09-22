@@ -17,7 +17,7 @@ export default function LoanDetail() {
   const [payForm, setPayForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', penaltyAmount: '' });
   const [paying, setPaying] = useState(false);
   const [penaltyModal, setPenaltyModal] = useState(null);
-  const [penaltyForm, setPenaltyForm] = useState({ amount: '100', paymentMode: 'CASH', reference: '', notes: '' });
+  const [penaltyForm, setPenaltyForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', notes: '' });
   const [payingPenalty, setPayingPenalty] = useState(false);
   const [principalModal, setPrincipalModal] = useState(false);
   const [principalForm, setPrincipalForm] = useState({ amount: '', accruedInterest: '', penaltyAmount: '', paymentMode: 'CASH', reference: '', notes: '' });
@@ -72,14 +72,14 @@ export default function LoanDetail() {
       toast.success('✓ Payment collected!');
       setPayModal(null);
       load();
-    } catch (err) { toast.error(err.message || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || err.message || 'Failed'); }
     finally { setPaying(false); }
   };
 
   const handleOpenPenaltyModal = (r) => {
     setPenaltyModal(r);
     setPenaltyForm({
-      amount: String(r.penaltyAmount > 0 ? r.penaltyAmount : 100),
+      amount: '',
       paymentMode: 'CASH',
       reference: '',
       notes: ''
@@ -101,7 +101,7 @@ export default function LoanDetail() {
       setPenaltyModal(null);
       load();
     } catch (err) {
-      toast.error(err.message || 'Failed to collect penalty');
+      toast.error(err.response?.data?.message || err.message || 'Failed to collect penalty');
     } finally {
       setPayingPenalty(false);
     }
@@ -123,7 +123,7 @@ export default function LoanDetail() {
       toast.success(res.loanStatus === 'CLOSED' ? '✓ Loan CLOSED!' : `✓ Principal paid! Remaining: ₹${res.outstandingPrincipal?.toLocaleString('en-IN')}`);
       setPrincipalModal(false);
       load();
-    } catch (err) { toast.error(err.message || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || err.message || 'Failed'); }
     finally { setPayingPrincipal(false); }
   };
 
@@ -135,7 +135,7 @@ export default function LoanDetail() {
       setDeleteModal(false);
       navigate('/loans');
     } catch (err) {
-      toast.error(err.message || 'Failed to delete loan');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete loan');
       setDeleting(false);
     }
   };
@@ -143,11 +143,25 @@ export default function LoanDetail() {
   if (loading) return <div className="loading-page"><div className="spinner" /></div>;
   if (!loan) return <div className="card" style={{ textAlign: 'center', padding: 32 }}>Loan not found</div>;
 
-  const outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
   const isWithoutInt = loan.interestType === 'WITHOUT_INTEREST';
   const isMonthly = loan.tenureUnit === 'MONTHS';
   const isDaily = loan.tenureUnit === 'DAYS' || loan.repayments?.some(r => r.dayNo != null && r.dayNo > 1);
   const isWeekly = !isDaily && !isMonthly;
+
+  const type = loan.interestType || 'FLAT';
+  const totalCollected = (loan.repayments || []).reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+  let outstanding = loan.outstandingPrincipal ?? loan.principalAmount;
+  
+  if (type === 'FLAT') {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const unpaidDueInt = (loan.repayments || [])
+      .filter(r => r.status === 'OVERDUE' || (r.status === 'PENDING' && new Date(r.dueDate) <= startOfToday) || r.status === 'PARTIAL')
+      .reduce((acc, r) => acc + Math.max(0, (r.dueAmount || 0) - (r.paidAmount || 0)), 0);
+    outstanding = (loan.outstandingPrincipal ?? loan.principalAmount) + unpaidDueInt;
+  } else {
+    outstanding = Math.max(0, (loan.totalPayable || loan.principalAmount) - totalCollected);
+  }
   const paidCount = loan.repayments?.filter(r => r.status === 'PAID').length || 0;
   const carriedCount = loan.repayments?.filter(r => r.status === 'CARRIED_FORWARD').length || 0;
   const overdueCount = loan.repayments?.filter(r => r.status === 'OVERDUE').length || 0;
@@ -498,7 +512,7 @@ export default function LoanDetail() {
                                 amount: String(r.dueAmount - r.paidAmount),
                                 paymentMode: 'CASH',
                                 reference: '',
-                                penaltyAmount: isOverdue ? String(r.penaltyAmount || 100) : ''
+                                penaltyAmount: ''
                               });
                             }}
                           >
@@ -619,7 +633,7 @@ export default function LoanDetail() {
                     <Clock size={14} /> Penalty Carry-Forward System
                   </div>
                   <div>
-                    Paying the overdue penalty of <b>₹{penaltyForm.amount || 100}</b> will mark this installment as <b>CARRIED FORWARD (Penalty Paid)</b> and unlock subsequent collections.
+                    Paying the overdue penalty of <b>₹{penaltyForm.amount || 0}</b> will mark this installment as <b>CARRIED FORWARD (Penalty Paid)</b> and unlock subsequent collections.
                     The unpaid installment amount of <b>₹{(penaltyModal.dueAmount - penaltyModal.paidAmount).toLocaleString('en-IN')}</b> will be dynamically appended to the end of the loan schedule, shifting the loan end date.
                   </div>
                 </div>

@@ -173,7 +173,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
       update(field, processed);
       toast.success(isPdf ? 'PDF Document attached successfully!' : 'Photo attached successfully!');
     } catch (err) {
-      toast.error(err.message || 'Failed to process document');
+      toast.error(err.response?.data?.message || err.message || 'Failed to process document');
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -236,7 +236,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
       if (onSuccess) onSuccess(res);
       if (onClose) onClose();
     } catch (err) {
-      toast.error(err.message || 'Failed to save customer');
+      toast.error(err.response?.data?.message || err.message || 'Failed to save customer');
     } finally {
       setSubmitting(false);
     }
@@ -587,7 +587,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                       className="form-input"
                       placeholder="10-digit mobile"
                       value={form.phone}
-                      onChange={e => update('phone', e.target.value)}
+                      onChange={e => update('phone', e.target.value.replace(/\\D/g, '').slice(0, 10))}
                       required
                     />
                   </div>
@@ -751,7 +751,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                       className="form-input"
                       placeholder="Jamin Phone Number"
                       value={form.jaminPhone}
-                      onChange={e => update('jaminPhone', e.target.value)}
+                      onChange={e => update('jaminPhone', e.target.value.replace(/\\D/g, '').slice(0, 10))}
                     />
                   </div>
                 </div>
