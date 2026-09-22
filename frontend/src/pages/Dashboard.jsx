@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { dashboardAPI, loansAPI } from '../services/api';
 import { Landmark, Users, HandCoins, AlertTriangle, CheckCircle, Plus, TrendingUp, IndianRupee, Calendar, Clock, BarChart3, ChevronRight, PieChart, X, Search, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ResponsiveContainer, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 function fmt(val) {
   if (!val && val !== 0) return '₹0';
@@ -218,9 +218,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ width: '100%', height: 260, minWidth: 0, position: 'relative' }}>
+            <div id="analytics-chart-container" style={{ width: '100%', height: 260, minWidth: 0, position: 'relative' }}>
               <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
-                <ComposedChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                <AreaChart data={s?.monthlyTrend ? [...s.monthlyTrend] : []} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                   <defs>
                     <linearGradient id="colorDisbursed" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
@@ -236,8 +236,8 @@ export default function Dashboard() {
                     </linearGradient>
                   </defs>
                   {/* Grid removed for floating clean aesthetic */}
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="none" tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-muted)' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} stroke="none" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="transparent" tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} stroke="transparent" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--text-muted)' }} tickFormatter={(v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`} />
                   <Tooltip cursor={false} 
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
@@ -264,7 +264,7 @@ export default function Dashboard() {
                   <Area activeDot={false} type="monotone" dataKey="disbursed" name="Disbursed (வழங்கியது)" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorDisbursed)" />
                   <Area activeDot={false} type="monotone" dataKey="collected" name="Collected (வசூலானது)" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
                   <Area activeDot={false} type="monotone" dataKey="profit" name="Profit (லாபம்)" stroke="#F59E0B" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-                </ComposedChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
             

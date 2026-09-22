@@ -1701,96 +1701,65 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
 .recharts-axis-line,
 .recharts-axis-tick-line,
 .recharts-cartesian-axis line,
-.recharts-wrapper svg line {
+.recharts-wrapper svg line,
+.recharts-surface line,
+#analytics-chart-container svg line {
   stroke: transparent !important;
   stroke-width: 0 !important;
   display: none !important;
 }
 
-.recharts-cartesian-grid-horizontal line,
-.recharts-cartesian-grid-vertical line,
-.recharts-cartesian-grid line {
+.recharts-cartesian-grid,
+.recharts-cartesian-grid-horizontal,
+.recharts-cartesian-grid-vertical,
+.recharts-cartesian-grid line,
+.recharts-cartesian-grid-bg {
+  display: none !important;
   stroke: transparent !important;
   stroke-width: 0 !important;
-  display: none !important;
+  fill: transparent !important;
 }
 
 .recharts-surface,
 .recharts-wrapper,
-.recharts-wrapper svg {
+.recharts-wrapper svg,
+.recharts-responsive-container,
+#analytics-chart-container,
+#analytics-chart-container * {
   outline: none !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-.recharts-wrapper svg rect:not([fill*="url"]) {
-  stroke: none !important;
+/* Eliminate all rect outlines/borders in the chart */
+.recharts-wrapper svg rect,
+.recharts-surface rect,
+#analytics-chart-container svg rect {
+  stroke: transparent !important;
   stroke-width: 0 !important;
 }
 
-.recharts-wrapper svg path:not(.recharts-curve) {
+/* Ensure any polygon or polyline in chart has zero stroke */
+.recharts-surface polygon,
+.recharts-surface polyline,
+#analytics-chart-container svg polygon,
+#analytics-chart-container svg polyline {
   stroke: transparent !important;
+  stroke-width: 0 !important;
 }
 
-/* ─── Mobile Responsiveness Enhancements ─── */
-@media (max-width: 768px) {
-  /* Prevent any horizontal screen wobbling / scrolling */
-  html, body, #root, .app-layout {
-    overflow-x: hidden !important;
-    max-width: 100vw !important;
-  }
-
-  /* Dashboard mobile layout improvements */
-  .stats-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
-  }
-
-  .stat-card {
-    padding: 12px 14px !important;
-    border-radius: 14px !important;
-  }
-
-  .stat-card .stat-value {
-    font-size: 16px !important;
-    word-break: break-word !important;
-  }
-
-  /* Chart card on mobile */
-  .card {
-    padding: 16px 14px !important;
-    border-radius: 14px !important;
-  }
-
-  /* Table container on mobile */
-  .table-container {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* Mobile buttons comfort touch target */
-  .btn {
-    touch-action: manipulation;
-  }
+/* Suppress all paths that are not the 3 colored area curve strokes */
+.recharts-surface path:not([stroke="#3B82F6"]):not([stroke="#10B981"]):not([stroke="#F59E0B"]):not(.recharts-symbols),
+#analytics-chart-container svg path:not([stroke="#3B82F6"]):not([stroke="#10B981"]):not([stroke="#F59E0B"]):not(.recharts-symbols) {
+  stroke: transparent !important;
+  stroke-width: 0 !important;
 }
 
-@media (max-width: 480px) {
-  .page-header h2 {
-    font-size: 18px !important;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-
-  .stat-card {
-    padding: 10px 12px !important;
-  }
-
-  .stat-value {
-    font-size: 15px !important;
-  }
+/* Ensure the area fill polygon itself never has a stroke */
+.recharts-curve.recharts-area-area,
+#analytics-chart-container .recharts-area-area {
+  stroke: transparent !important;
+  stroke-width: 0 !important;
 }
 
 /* ─── SuperAdmin Multi-Device Responsive Layout (Desktop / Tablet / Mobile) ─── */
