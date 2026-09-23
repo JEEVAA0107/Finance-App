@@ -181,20 +181,31 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const cleanPhone = form.phone.replace(/\D/g, '');
+    const cleanJaminPhone = form.jaminPhone ? form.jaminPhone.replace(/\D/g, '') : '';
+    const cleanAadhar = form.idNumber ? form.idNumber.replace(/\D/g, '') : '';
+    const cleanJaminAadhar = form.jaminIdNumber ? form.jaminIdNumber.replace(/\D/g, '') : '';
+
     if (!form.name.trim()) return toast.error('Customer name is required');
-    if (!form.phone.trim()) return toast.error('Customer phone number is required');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return toast.error('Customer phone number must be a valid 10-digit mobile number');
+    }
+
+    if (cleanJaminPhone && cleanJaminPhone.length !== 10) {
+      return toast.error('Guarantor (Jamin) phone number must be a valid 10-digit mobile number');
+    }
 
     if (form.idType === 'AADHAR') {
-      if (form.idNumber.trim().length !== 12) {
+      if (cleanAadhar.length !== 12) {
         return toast.error('Customer Aadhar number must be exactly 12 digits');
       }
     }
     
-    if (form.jaminIdType === 'AADHAR' && form.jaminIdNumber?.trim()) {
-      if (form.jaminIdNumber.trim().length !== 12) {
+    if (form.jaminIdType === 'AADHAR' && cleanJaminAadhar) {
+      if (cleanJaminAadhar.length !== 12) {
         return toast.error('Jamin Aadhar number must be exactly 12 digits');
       }
-      if (form.idType === 'AADHAR' && form.idNumber.trim() === form.jaminIdNumber.trim()) {
+      if (form.idType === 'AADHAR' && cleanAadhar === cleanJaminAadhar) {
         return toast.error('Customer and Jamin Aadhar numbers cannot be the same');
       }
     }
@@ -203,23 +214,23 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
     try {
       const payload = {
         name: form.name.trim(),
-        phone: form.phone.trim(),
+        phone: cleanPhone,
         email: form.email?.trim() || null,
         address: form.address.trim() || 'Address Not Provided',
         city: form.city.trim() || 'N/A',
         idType: form.idType || 'AADHAR',
-        idNumber: form.idNumber.trim() || 'N/A',
+        idNumber: form.idType === 'AADHAR' ? cleanAadhar : (form.idNumber.trim() || 'N/A'),
         idProofUrl: form.idProofUrl || null,
         photoUrl: form.photoUrl || null,
         notificationPref: form.notificationPref || 'WHATSAPP',
         latitude: form.latitude !== null && form.latitude !== undefined && form.latitude !== '' ? parseFloat(form.latitude) : null,
         longitude: form.longitude !== null && form.longitude !== undefined && form.longitude !== '' ? parseFloat(form.longitude) : null,
         jaminName: form.jaminName?.trim() || null,
-        jaminPhone: form.jaminPhone?.trim() || null,
+        jaminPhone: cleanJaminPhone || null,
         jaminAddress: form.jaminAddress?.trim() || null,
         jaminRelationship: form.jaminRelationship || null,
         jaminIdType: form.jaminIdType || 'AADHAR',
-        jaminIdNumber: form.jaminIdNumber?.trim() || null,
+        jaminIdNumber: form.jaminIdType === 'AADHAR' ? (cleanJaminAadhar || null) : (form.jaminIdNumber?.trim() || null),
         jaminPhotoUrl: form.jaminPhotoUrl || null,
         jaminIdProofUrl: form.jaminIdProofUrl || null,
       };

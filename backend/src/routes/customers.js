@@ -5,6 +5,23 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
 const prisma = new PrismaClient();
 
+function sanitizePhone(raw) {
+  if (!raw) return '';
+  let digits = raw.toString().replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+  return digits;
+}
+
+function sanitizeAadhar(raw) {
+  if (!raw) return '';
+  return raw.toString().replace(/\D/g, '');
+}
+
+
 // GET /api/customers
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -114,69 +131,104 @@ router.get('/sync-schema', authenticate, async (req, res) => {
 router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
     const {
-      name, phone, email, address, city, idType, idNumber,
+      name, phone, email, address, city, idType = 'AADHAR', idNumber,
       idProofUrl, photoUrl,
-      notificationPref, latitude, longitude,
+      notificationPref = 'WHATSAPP', latitude, longitude,
       jaminName, jaminPhone, jaminAddress, jaminRelationship,
-      jaminIdType, jaminIdNumber, jaminPhotoUrl, jaminIdProofUrl
+      jaminIdType = 'AADHAR', jaminIdNumber, jaminPhotoUrl, jaminIdProofUrl
     } = req.body;
 
     const trimmedName = name?.trim();
-    const trimmedPhone = phone?.trim();
-      if (trimmedPhone && trimmedPhone.length > 10) return res.status(400).json({ success: false, message: 'Customer phone number cannot exceed 10 digits.' });
-      if (jaminPhone && jaminPhone.trim().length > 10) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) phone number cannot exceed 10 digits.' });
-    const cleanEmail = email?.trim() ? email.trim() : null;
-    const notId = req.params.id ? { not: req.params.id } : undefined;
-    const cid = idNumber?.trim();
-    const jid = jaminIdNumber?.trim();
-
-    if (idType === 'AADHAR' && cid && cid !== 'N/A') {
-      if (!/^\d{12}$/.test(cid)) return res.status(400).json({ success: false, message: 'Customer Aadhar number must be exactly 12 digits' });
-      const existC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: cid, ...(notId && { id: notId }) } });
-      if (existC) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered.' });
-      const existCJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: cid, ...(notId && { id: notId }) } });
-      if (existCJ) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered as a Guarantor (Jamin).' });
-    }
-
-    if (jaminIdType === 'AADHAR' && jid && jid !== 'N/A') {
-      if (!/^\d{12}$/.test(jid)) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar number must be exactly 12 digits' });
-      if (idType === 'AADHAR' && cid === jid) return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
-      const existJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: jid, ...(notId && { id: notId }) } });
-      if (existJ) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered.' });
-      const existJC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: jid, ...(notId && { id: notId }) } });
-      if (existJC) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered as a Customer.' });
-    }
-
-
     if (!trimmedName) {
       return res.status(400).json({ success: false, message: 'Customer name is required' });
     }
-    if (!trimmedPhone) {
-      return res.status(400).json({ success: false, message: 'Customer phone number is required' });
+
+    const cleanPhone = sanitizePhone(phone);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Customer phone number must be a valid 10-digit mobile number.' });
     }
 
-        // Create or find user account for customer
+    const cleanJaminPhone = jaminPhone ? sanitizePhone(jaminPhone) : null;
+    if (cleanJaminPhone && cleanJaminPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Guarantor (Jamin) phone number must be a valid 10-digit mobile number.' });
+    }
+
+    const cleanEmail = email?.trim() ? email.trim() : null;
+    const cid = idNumber?.trim();
+    const cleanAadhar = idType === 'AADHAR' ? sanitizeAadhar(cid) : (cid || 'N/A');
+    const jid = jaminIdNumber?.trim();
+    const cleanJaminAadhar = jaminIdType === 'AADHAR' ? sanitizeAadhar(jid) : (jid || null);
+
+    const companyScope = req.user.companyId ? { companyId: req.user.companyId } : {};
+
+    // 1. Check duplicate phone for active customer in this company
+    const existCustPhone = await prisma.customer.findFirst({
+      where: {
+        phone: cleanPhone,
+        isActive: true,
+        ...companyScope
+      }
+    });
+    if (existCustPhone) {
+      return res.status(400).json({
+        success: false,
+        message: `Customer with phone number ${cleanPhone} is already registered ('${existCustPhone.name}').`
+      });
+    }
+
+    // 2. Validate Customer Aadhar (12 digits & scoped duplicate check)
+    if (idType === 'AADHAR' && cleanAadhar && cleanAadhar !== 'N/A') {
+      if (cleanAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Customer Aadhar number must be exactly 12 digits' });
+      }
+      const existC = await prisma.customer.findFirst({
+        where: {
+          idType: 'AADHAR',
+          idNumber: cleanAadhar,
+          isActive: true,
+          ...companyScope
+        }
+      });
+      if (existC) {
+        return res.status(400).json({
+          success: false,
+          message: `Customer Aadhar (${cleanAadhar}) is already registered with '${existC.name}'.`
+        });
+      }
+    }
+
+    // 3. Validate Jamin Aadhar
+    if (jaminIdType === 'AADHAR' && cleanJaminAadhar && cleanJaminAadhar !== 'N/A') {
+      if (cleanJaminAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar number must be exactly 12 digits' });
+      }
+      if (idType === 'AADHAR' && cleanAadhar === cleanJaminAadhar) {
+        return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
+      }
+    }
+
+    // Create or find user account for customer
     let user = await prisma.user.findFirst({
       where: {
         companyId: req.user.companyId || undefined,
         OR: [
-          { phone: trimmedPhone },
+          { phone: cleanPhone },
           ...(cleanEmail ? [{ email: cleanEmail.toLowerCase() }] : []),
-          { email: `${trimmedPhone}@loanflow.local` }
+          { email: `${cleanPhone}@loanflow.local` }
         ]
       }
     });
 
     if (!user) {
       const bcrypt = require('bcryptjs');
-      const passwordHash = await bcrypt.hash(trimmedPhone || '123456', 10);
-      const userEmail = cleanEmail ? cleanEmail.toLowerCase() : `${trimmedPhone}_${Date.now()}@loanflow.local`;
+      const passwordHash = await bcrypt.hash(cleanPhone || '123456', 10);
+      const userEmail = cleanEmail ? cleanEmail.toLowerCase() : `${cleanPhone}_${Date.now()}@loanflow.local`;
       user = await prisma.user.create({
         data: {
-          companyId: req.user.companyId,
+          companyId: req.user.companyId || null,
           name: trimmedName,
           email: userEmail,
-          phone: trimmedPhone,
+          phone: cleanPhone,
           passwordHash,
           role: 'CUSTOMER'
         },
@@ -187,23 +239,23 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       companyId: req.user.companyId || null,
       userId: user.id,
       name: trimmedName,
-      phone: trimmedPhone,
+      phone: cleanPhone,
       email: cleanEmail,
       address: address?.trim() || 'Address Not Provided',
       city: city?.trim() || 'N/A',
       idType: idType || 'AADHAR',
-      idNumber: idNumber?.trim() || 'N/A',
+      idNumber: cleanAadhar,
       idProofUrl: idProofUrl?.trim() || null,
       photoUrl: photoUrl?.trim() || null,
       notificationPref: notificationPref || 'WHATSAPP',
       latitude: (latitude !== undefined && latitude !== null && latitude !== '') ? parseFloat(latitude) : null,
       longitude: (longitude !== undefined && longitude !== null && longitude !== '') ? parseFloat(longitude) : null,
       jaminName: jaminName?.trim() || null,
-      jaminPhone: jaminPhone?.trim() || null,
+      jaminPhone: cleanJaminPhone || null,
       jaminAddress: jaminAddress?.trim() || null,
       jaminRelationship: jaminRelationship?.trim() || null,
       jaminIdType: jaminIdType || 'AADHAR',
-      jaminIdNumber: jaminIdNumber?.trim() || null,
+      jaminIdNumber: cleanJaminAadhar || null,
       jaminPhotoUrl: jaminPhotoUrl?.trim() || null,
       jaminIdProofUrl: jaminIdProofUrl?.trim() || null,
     };
@@ -242,7 +294,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
             companyId: req.user.companyId || null,
             userId: user.id,
             name: trimmedName,
-            phone: trimmedPhone,
+            phone: cleanPhone,
             email: cleanEmail,
             address: address?.trim() || 'Address Not Provided',
             city: city?.trim() || 'N/A',
@@ -253,7 +305,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       }
     }
 
-    await auditLog(req.user.id, 'CREATE_CUSTOMER', 'Customer', customer.id, { name: trimmedName, phone: trimmedPhone, jaminName }, req);
+    await auditLog(req.user.id, 'CREATE_CUSTOMER', 'Customer', customer.id, { name: trimmedName, phone: cleanPhone, jaminName }, req);
     res.status(201).json({ success: true, data: customer });
   } catch (error) {
     console.error('❌ Failed to create customer:', error);
@@ -279,53 +331,97 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
     }
 
     const trimmedName = name?.trim();
-    const trimmedPhone = phone?.trim();
-      if (trimmedPhone && trimmedPhone.length > 10) return res.status(400).json({ success: false, message: 'Customer phone number cannot exceed 10 digits.' });
-      if (jaminPhone && jaminPhone.trim().length > 10) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) phone number cannot exceed 10 digits.' });
+    if (!trimmedName) {
+      return res.status(400).json({ success: false, message: 'Customer name is required' });
+    }
+
+    const cleanPhone = sanitizePhone(phone);
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Customer phone number must be a valid 10-digit mobile number.' });
+    }
+
+    const cleanJaminPhone = jaminPhone ? sanitizePhone(jaminPhone) : null;
+    if (cleanJaminPhone && cleanJaminPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Guarantor (Jamin) phone number must be a valid 10-digit mobile number.' });
+    }
+
     const cleanEmail = email?.trim() ? email.trim() : null;
-    const notId = req.params.id ? { not: req.params.id } : undefined;
     const cid = idNumber?.trim();
+    const cleanAadhar = idType === 'AADHAR' ? sanitizeAadhar(cid) : (cid || 'N/A');
     const jid = jaminIdNumber?.trim();
+    const cleanJaminAadhar = jaminIdType === 'AADHAR' ? sanitizeAadhar(jid) : (jid || null);
 
-    if (idType === 'AADHAR' && cid && cid !== 'N/A') {
-      if (!/^\d{12}$/.test(cid)) return res.status(400).json({ success: false, message: 'Customer Aadhar number must be exactly 12 digits' });
-      const existC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: cid, ...(notId && { id: notId }) } });
-      if (existC) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered.' });
-      const existCJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: cid, ...(notId && { id: notId }) } });
-      if (existCJ) return res.status(400).json({ success: false, message: 'Customer Aadhar is already registered as a Guarantor (Jamin).' });
+    const companyScope = req.user.companyId ? { companyId: req.user.companyId } : {};
+
+    // 1. Check duplicate phone for another active customer
+    const existCustPhone = await prisma.customer.findFirst({
+      where: {
+        phone: cleanPhone,
+        isActive: true,
+        id: { not: req.params.id },
+        ...companyScope
+      }
+    });
+    if (existCustPhone) {
+      return res.status(400).json({
+        success: false,
+        message: `Customer with phone number ${cleanPhone} is already registered ('${existCustPhone.name}').`
+      });
     }
 
-    if (jaminIdType === 'AADHAR' && jid && jid !== 'N/A') {
-      if (!/^\d{12}$/.test(jid)) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar number must be exactly 12 digits' });
-      if (idType === 'AADHAR' && cid === jid) return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
-      const existJ = await prisma.customer.findFirst({ where: { jaminIdType: 'AADHAR', jaminIdNumber: jid, ...(notId && { id: notId }) } });
-      if (existJ) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered.' });
-      const existJC = await prisma.customer.findFirst({ where: { idType: 'AADHAR', idNumber: jid, ...(notId && { id: notId }) } });
-      if (existJC) return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar is already registered as a Customer.' });
+    // 2. Validate Customer Aadhar
+    if (idType === 'AADHAR' && cleanAadhar && cleanAadhar !== 'N/A') {
+      if (cleanAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Customer Aadhar number must be exactly 12 digits' });
+      }
+      const existC = await prisma.customer.findFirst({
+        where: {
+          idType: 'AADHAR',
+          idNumber: cleanAadhar,
+          isActive: true,
+          id: { not: req.params.id },
+          ...companyScope
+        }
+      });
+      if (existC) {
+        return res.status(400).json({
+          success: false,
+          message: `Customer Aadhar (${cleanAadhar}) is already registered with '${existC.name}'.`
+        });
+      }
     }
 
+    // 3. Validate Jamin Aadhar
+    if (jaminIdType === 'AADHAR' && cleanJaminAadhar && cleanJaminAadhar !== 'N/A') {
+      if (cleanJaminAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhar number must be exactly 12 digits' });
+      }
+      if (idType === 'AADHAR' && cleanAadhar === cleanJaminAadhar) {
+        return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
+      }
+    }
 
     const customer = await prisma.customer.update({
       where: { id: req.params.id },
       data: {
         name: trimmedName,
-        phone: trimmedPhone,
+        phone: cleanPhone,
         email: cleanEmail,
         address: address?.trim() || 'Address Not Provided',
         city: city?.trim() || 'N/A',
         idType: idType || 'AADHAR',
-        idNumber: idNumber?.trim() || 'N/A',
+        idNumber: cleanAadhar,
         idProofUrl: idProofUrl?.trim() || null,
         photoUrl: photoUrl?.trim() || null,
         notificationPref: notificationPref || 'WHATSAPP',
         latitude: (latitude !== undefined && latitude !== null && latitude !== '') ? parseFloat(latitude) : null,
         longitude: (longitude !== undefined && longitude !== null && longitude !== '') ? parseFloat(longitude) : null,
         jaminName: jaminName?.trim() || null,
-        jaminPhone: jaminPhone?.trim() || null,
+        jaminPhone: cleanJaminPhone || null,
         jaminAddress: jaminAddress?.trim() || null,
         jaminRelationship: jaminRelationship?.trim() || null,
         jaminIdType: jaminIdType || 'AADHAR',
-        jaminIdNumber: jaminIdNumber?.trim() || null,
+        jaminIdNumber: cleanJaminAadhar || null,
         jaminPhotoUrl: jaminPhotoUrl?.trim() || null,
         jaminIdProofUrl: jaminIdProofUrl?.trim() || null,
       },
@@ -336,7 +432,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
       try {
         const userUpdateData = {};
         if (trimmedName) userUpdateData.name = trimmedName;
-        if (trimmedPhone) userUpdateData.phone = trimmedPhone;
+        if (cleanPhone) userUpdateData.phone = cleanPhone;
         if (cleanEmail) userUpdateData.email = cleanEmail.toLowerCase();
         if (Object.keys(userUpdateData).length > 0) {
           await prisma.user.update({
