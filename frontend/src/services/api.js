@@ -133,12 +133,23 @@ export const repaymentsAPI = {
   today: () => api.get('/repayments/today').then(extractData),
 };
 
+export const bustDashboardCache = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('dashboard_cache_')) localStorage.removeItem(k);
+      });
+      window.dispatchEvent(new CustomEvent('payment-recorded'));
+    }
+  } catch (e) {}
+};
+
 // ─── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsAPI = {
-  collect: (data) => api.post('/payments', data).then(extractData),
-  collectPenalty: (data) => api.post('/payments/penalty', data).then(extractData),
-  collectPrincipal: (data) => api.post('/payments/principal', data).then(extractData),
-  close: (data) => api.post('/payments/close', data).then(extractData),
+  collect: (data) => api.post('/payments', data).then(extractData).then(res => { bustDashboardCache(); return res; }),
+  collectPenalty: (data) => api.post('/payments/penalty', data).then(extractData).then(res => { bustDashboardCache(); return res; }),
+  collectPrincipal: (data) => api.post('/payments/principal', data).then(extractData).then(res => { bustDashboardCache(); return res; }),
+  close: (data) => api.post('/payments/close', data).then(extractData).then(res => { bustDashboardCache(); return res; }),
   list: (params) => api.get('/payments', { params }).then(extractData),
 };
 

@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
 const { sendSMS } = require('../utils/sms');
 const { sendWhatsAppMessage } = require('../services/whatsappClient');
+const { invalidateDashboardCache } = require('./dashboard');
 const prisma = new PrismaClient();
 
 // round2 MUST be defined before any route that uses it
@@ -196,6 +197,10 @@ Thank you for choosing LoanFlow Pro!`;
       sendWhatsAppMessage(loanData.customer.phone, waMessage);
     } catch (_) { /* SMS/WA failure should not block response */ }
 
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(repayment.loan?.companyId || req.user.companyId);
+    }
+
     res.status(201).json({ success: true, data: payment });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -336,6 +341,10 @@ router.post('/penalty', authenticate, async (req, res) => {
       sendWhatsAppMessage(phone, waMessage);
     } catch (_) {}
 
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(repayment.loan?.companyId || req.user.companyId);
+    }
+
     res.status(201).json({
       success: true,
       message: `Penalty Rs.${penaltyPaidAmt} collected! Installment #${repayment.installmentNo} shifted to ${shiftedDueDate.toLocaleDateString('en-IN')}. ${subsequentRepayments.length} subsequent installment(s) also shifted.`,
@@ -437,6 +446,10 @@ router.post('/principal', authenticate, async (req, res) => {
         : `Dear ${loan.customer.name}, principal payment of Rs. ${payAmount} received. Remaining: Rs. ${newOutstanding}. Thank you.`;
       sendSMS(loan.customer.phone, message);
     } catch (_) { /* SMS failure non-blocking */ }
+
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(loan.companyId || req.user.companyId);
+    }
 
     res.status(201).json({ success: true, data: { payment, outstandingPrincipal: newOutstanding, loanStatus: newOutstanding <= 0 ? 'CLOSED' : 'ACTIVE' } });
   } catch (error) {
@@ -563,6 +576,10 @@ router.post('/close', authenticate, async (req, res) => {
         : `Dear ${loan.customer.name}, payment of Rs. ${totalCollectedNow} received. Remaining: Rs. ${newOutstanding}. Thank you.`;
       sendSMS(loan.customer.phone, message);
     } catch (_) { /* SMS failure non-blocking */ }
+
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(loan.companyId || req.user.companyId);
+    }
 
     res.status(201).json({ success: true, data: { payment, outstandingPrincipal: newOutstanding, loanStatus: newOutstanding <= 0 ? 'CLOSED' : 'ACTIVE' } });
   } catch (error) {

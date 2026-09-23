@@ -3,6 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
+const { invalidateDashboardCache } = require('./dashboard');
 const { generateLoanNumber, syncOverdueStatus } = require('../utils/loanCalc');
 const prisma = new PrismaClient();
 
@@ -497,6 +498,9 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
       include: { customer: true, repayments: { orderBy: { installmentNo: 'asc' } } },
     });
 
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(fullLoan?.companyId || req.user.companyId);
+    }
     res.status(201).json({ success: true, data: fullLoan });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -509,6 +513,9 @@ router.patch('/:id/status', authenticate, authorize('ADMIN'), async (req, res) =
     const { status } = req.body;
     const loan = await prisma.loan.update({ where: { id: req.params.id }, data: { status } });
     await auditLog(req.user.id, 'UPDATE_LOAN_STATUS', 'Loan', loan.id, { status }, req);
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(loan?.companyId || req.user.companyId);
+    }
     res.json({ success: true, data: loan });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -537,6 +544,10 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
     
     await prisma.loan.delete({ where: { id: loanId } });
     await auditLog(req.user.id, 'DELETE_LOAN', 'Loan', loanId, { loanNumber: loan.loanNumber }, req);
+
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(loan?.companyId || req.user.companyId);
+    }
 
     res.json({ success: true, message: 'Loan permanently deleted' });
   } catch (error) {

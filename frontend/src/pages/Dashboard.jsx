@@ -96,8 +96,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30000); // 30s auto-refresh
-    return () => clearInterval(interval);
+    const interval = setInterval(loadData, 5000); // 5s fast auto-refresh
+    const handleRefresh = () => loadData();
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('payment-recorded', handleRefresh);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadData();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('payment-recorded', handleRefresh);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const openBreakdownModal = (type, loanType = 'ALL') => {
@@ -331,6 +343,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', marginTop: 8, fontSize: 11, color: 'var(--text-muted)', borderTop: '1px dashed rgba(16,185,129,0.2)', paddingTop: 6 }}>
                   <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Prin: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.principalCollected)}</b></span>
                   <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Int: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.interestCollected)}</b></span>
+                  <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Pen: <b style={{ color: '#DC2626' }}>{fmt(s?.monthly?.penaltyCollected || 0)}</b></span>
                 </div>
               </Link>
 

@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 // High performance in-memory cache for dashboard data
 const dashboardCache = new Map();
-function getCached(key, ttlMs = 15000) {
+function getCached(key, ttlMs = 2000) {
   const item = dashboardCache.get(key);
   if (item && Date.now() - item.time < ttlMs) {
     return item.data;
@@ -16,6 +16,19 @@ function getCached(key, ttlMs = 15000) {
 function setCached(key, data) {
   dashboardCache.set(key, { time: Date.now(), data });
 }
+function invalidateDashboardCache(companyId) {
+  if (!companyId) {
+    dashboardCache.clear();
+    return;
+  }
+  const idStr = String(companyId);
+  for (const key of dashboardCache.keys()) {
+    if (key.includes(idStr) || key.includes('all')) {
+      dashboardCache.delete(key);
+    }
+  }
+}
+router.invalidateDashboardCache = invalidateDashboardCache;
 
 const { syncOverdueStatus } = require('../utils/loanCalc');
 
@@ -23,7 +36,7 @@ const { syncOverdueStatus } = require('../utils/loanCalc');
 router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
     const cacheKey = `summary_${req.user.companyId || req.user.id || 'all'}`;
-    const cached = getCached(cacheKey, 15000);
+    const cached = getCached(cacheKey, 2000);
     if (cached) {
       return res.json(cached);
     }
@@ -154,12 +167,19 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     let monthlyInterestIncome = 0;
     let monthlyCashPrincipal = 0;
     let monthlyCashInterest = 0;
+    let monthlyCashPenalty = 0;
 
     monthlyPaymentRecords.forEach(p => {
       const loan = p.repayment?.loan;
       const amt = p.amount || 0;
       if (!loan) return;
       const type = loan.interestType || 'FLAT';
+      
+      // Separate PENALTY payments completely so they never pollute Principal or Interest
+      if (p.paymentType === 'PENALTY') {
+        monthlyCashPenalty += amt;
+        return;
+      }
       
       if (type === 'FLAT') {
         if (p.paymentType === 'PRINCIPAL') {
@@ -193,6 +213,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       monthlyInterestIncome += (l.totalInterest || l.processingFee || 0);
     });
 
+    monthlyCashPrincipal = Math.round(monthlyCashPrincipal * 100) / 100;
+    monthlyCashInterest = Math.round(monthlyCashInterest * 100) / 100;
+    monthlyCashPenalty = Math.round(monthlyCashPenalty * 100) / 100;
     monthlyInterestIncome = Math.round(monthlyInterestIncome * 100) / 100;
 
     // === All-Time Actual Profit (what was really collected, not expected) ===
@@ -519,6 +542,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
           collection: monthlyPayments._sum.amount || 0,
           principalCollected: monthlyCashPrincipal,
           interestCollected: monthlyCashInterest,
+          penaltyCollected: monthlyCashPenalty,
           interestIncome: monthlyInterestIncome,
           profit: monthlyInterestIncome,
         },
