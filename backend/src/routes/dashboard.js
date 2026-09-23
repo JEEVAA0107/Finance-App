@@ -217,6 +217,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     monthlyCashInterest = Math.round(monthlyCashInterest * 100) / 100;
     monthlyCashPenalty = Math.round(monthlyCashPenalty * 100) / 100;
     monthlyInterestIncome = Math.round(monthlyInterestIncome * 100) / 100;
+    const monthlyTotalProfit = Math.round((monthlyInterestIncome + monthlyCashPenalty) * 100) / 100;
 
     // === All-Time Actual Profit (what was really collected, not expected) ===
     const allPaymentRecords = await prisma.payment.findMany({
@@ -409,16 +410,20 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         if (t >= startMs && t <= endMs) {
           const amt = p.amount || 0;
           collected += amt;
-          const loan = p.repayment?.loan;
-          if (loan) {
-            const type = loan.interestType || 'FLAT';
-            if (type === 'FLAT') {
-              if (p.paymentType !== 'PRINCIPAL') {
-                mInterest += amt;
+          if (p.paymentType === 'PENALTY') {
+            mInterest += amt;
+          } else {
+            const loan = p.repayment?.loan;
+            if (loan) {
+              const type = loan.interestType || 'FLAT';
+              if (type === 'FLAT') {
+                if (p.paymentType !== 'PRINCIPAL') {
+                  mInterest += amt;
+                }
+              } else if (type === 'EMI') {
+                const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
+                mInterest += amt * interestRatio;
               }
-            } else if (type === 'EMI') {
-              const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
-              mInterest += amt * interestRatio;
             }
           }
         }
@@ -544,7 +549,10 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
           interestCollected: monthlyCashInterest,
           penaltyCollected: monthlyCashPenalty,
           interestIncome: monthlyInterestIncome,
-          profit: monthlyInterestIncome,
+          interestProfit: monthlyInterestIncome,
+          penaltyProfit: monthlyCashPenalty,
+          profit: monthlyTotalProfit,
+          totalProfit: monthlyTotalProfit,
         },
         monthlyTrend: months,
         totalPenaltyCount: penaltyAgg._count || 0,

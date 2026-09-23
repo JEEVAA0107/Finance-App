@@ -350,6 +350,10 @@ export default function Dashboard() {
               <Link to="/profit?period=THIS_MONTH" style={{ textDecoration: 'none', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)', padding: '14px', borderRadius: 12, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>This Month Profit</div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: '#D97706', marginTop: 4 }}>{fmt(s?.monthly?.profit)}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', marginTop: 8, fontSize: 11, color: 'var(--text-muted)', borderTop: '1px dashed rgba(245,158,11,0.2)', paddingTop: 6 }}>
+                  <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Int: <b style={{ color: '#059669' }}>{fmt(s?.monthly?.interestProfit ?? s?.monthly?.interestIncome ?? s?.monthly?.interestCollected)}</b></span>
+                  <span style={{ display: 'flex', gap: 4, whiteSpace: 'nowrap' }}>Pen: <b style={{ color: '#DC2626' }}>{fmt(s?.monthly?.penaltyProfit ?? s?.monthly?.penaltyCollected ?? 0)}</b></span>
+                </div>
               </Link>
             </div>
           </div>
