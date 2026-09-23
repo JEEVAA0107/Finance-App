@@ -232,6 +232,18 @@ export default function CollectionPage() {
                       `₹${(r.dueAmount - r.paidAmount).toLocaleString('en-IN')}`
                     )}
                   </div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    {r.principal > 0 && (
+                      <span style={{ fontSize: 11, background: 'rgba(99, 102, 241, 0.08)', color: 'var(--primary-600, #4f46e5)', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                        Principal: ₹{r.principal.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                    {r.interest > 0 && (
+                      <span style={{ fontSize: 11, background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                        Interest: ₹{r.interest.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
                   {r.loan?.customer?.phone && (
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                       <Phone size={10} /><a href={`tel:${r.loan.customer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{r.loan.customer.phone}</a>
@@ -296,7 +308,7 @@ export default function CollectionPage() {
             <form onSubmit={handlePay}>
               <div className="modal-body">
                 {/* Balance summary */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--bg-glass)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--bg-glass)', borderRadius: 10, padding: '12px 16px', marginBottom: 10 }}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Due</div>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>₹{payModal.dueAmount?.toLocaleString('en-IN')}</div>
@@ -309,6 +321,12 @@ export default function CollectionPage() {
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Balance</div>
                     <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--warning-400)' }}>₹{(payModal.dueAmount - payModal.paidAmount)?.toLocaleString('en-IN')}</div>
                   </div>
+                </div>
+
+                {/* Principal & Interest Breakdown in Modal */}
+                <div style={{ display: 'flex', gap: 10, marginBottom: 16, padding: '8px 12px', background: 'var(--bg-secondary, rgba(0,0,0,0.03))', borderRadius: 8, fontSize: 12, justifyContent: 'space-around' }}>
+                  <span>Principal (அசல்): <b style={{ color: 'var(--primary-600, #4f46e5)' }}>₹{(payModal.principal || 0).toLocaleString('en-IN')}</b></span>
+                  <span>Interest (வட்டி): <b style={{ color: '#d97706' }}>₹{(payModal.interest || 0).toLocaleString('en-IN')}</b></span>
                 </div>
 
                 <div className="form-group">

@@ -210,17 +210,27 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     });
 
     let totalActualProfit = 0;
+    let totalPrincipalCollected = 0;
+
     allPaymentRecords.forEach(p => {
       const loan = p.repayment?.loan;
+      const amt = p.amount || 0;
       if (!loan) return;
       const type = loan.interestType || 'FLAT';
+      if (p.paymentType === 'PENALTY') return; // Handled separately
+
       if (type === 'FLAT') {
         if (p.paymentType !== 'PRINCIPAL') {
-          totalActualProfit += (p.amount || 0);
+          totalActualProfit += amt;
+        } else {
+          totalPrincipalCollected += amt;
         }
       } else if (type === 'EMI') {
         const interestRatio = loan.totalPayable > 0 ? (loan.totalInterest / loan.totalPayable) : 0;
-        totalActualProfit += (p.amount || 0) * interestRatio;
+        totalActualProfit += amt * interestRatio;
+        totalPrincipalCollected += amt * (1 - interestRatio);
+      } else if (type === 'WITHOUT_INTEREST') {
+        totalPrincipalCollected += amt;
       }
     });
 
@@ -233,6 +243,65 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
       totalActualProfit += (l.totalInterest || l.processingFee || 0);
     });
     totalActualProfit = Math.round(totalActualProfit * 100) / 100;
+    totalPrincipalCollected = Math.round(totalPrincipalCollected * 100) / 100;
+
+    // Today's Principal, Interest, and Penalty breakdown
+    const todayPaymentRecords = await prisma.payment.findMany({
+      where: { collectedAt: { gte: startOfToday, lte: endOfToday }, ...paymentWhere },
+      include: {
+        repayment: {
+          include: { loan: { select: { interestType: true, totalPayable: true, totalInterest: true } } }
+        }
+      }
+    });
+
+    let todayPrincipal = 0;
+    let todayInterest = 0;
+    let todayPenalty = 0;
+
+    todayPaymentRecords.forEach(p => {
+      const amt = p.amount || 0;
+      if (p.paymentType === 'PENALTY') {
+        todayPenalty += amt;
+      } else if (p.paymentType === 'PRINCIPAL') {
+        todayPrincipal += amt;
+      } else if (p.paymentType === 'INTEREST') {
+        todayInterest += amt;
+      } else if (p.paymentType === 'EMI') {
+        const loan = p.repayment?.loan;
+        const interestRatio = (loan && loan.totalPayable > 0) ? (loan.totalInterest / loan.totalPayable) : 0;
+        const intPortion = amt * interestRatio;
+        todayInterest += intPortion;
+        todayPrincipal += (amt - intPortion);
+      } else {
+        const loan = p.repayment?.loan;
+        if (loan?.interestType === 'WITHOUT_INTEREST') {
+          todayPrincipal += amt;
+        } else if (loan?.interestType === 'FLAT') {
+          todayInterest += amt;
+        } else {
+          todayPrincipal += amt;
+        }
+      }
+    });
+
+    const todayDeductionLoans = await prisma.loan.findMany({
+      where: {
+        disbursedAt: { gte: startOfToday, lte: endOfToday },
+        interestType: 'WITHOUT_INTEREST',
+        ...loanWhere,
+      },
+      select: { totalInterest: true, processingFee: true }
+    });
+    todayDeductionLoans.forEach(l => {
+      todayInterest += (l.totalInterest || l.processingFee || 0);
+    });
+
+    const todayPrincipalCollected = Math.round(todayPrincipal * 100) / 100;
+    const todayInterestCollected = Math.round(todayInterest * 100) / 100;
+    const todayPenaltyCollected = Math.round(todayPenalty * 100) / 100;
+    const todayCombinedProfit = Math.round((todayInterestCollected + todayPenaltyCollected) * 100) / 100;
+    const totalCombinedProfit = Math.round((totalActualProfit + totalPenaltyCollectedAmt) * 100) / 100;
 
 
     // Upcoming Dues (Next 7 days)
@@ -426,10 +495,17 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
         outstandingInterest: totalOutstandingInterest,
         totalDisbursed: loanAgg._sum.principalAmount || 0,
         totalCollected: paymentAgg._sum.amount || 0,
-        totalInterestCollected: totalActualProfit, // Actual profit collected so far
+        totalPrincipalCollected,
+        totalInterestCollected: totalActualProfit, // Pure interest profit collected so far
+        totalPenaltyCollected: totalPenaltyCollectedAmt, // Total penalty collected
+        totalCombinedProfit, // Total Profit (Interest + Penalty)
         activeCustomers,
         activeLoans,
         todayCollection: todaysPayments._sum.amount || 0,
+        todayPrincipalCollected,
+        todayInterestCollected,
+        todayPenaltyCollected,
+        todayCombinedProfit,
         todayDueAmount: todayDueAmt,
         remainingToday: Math.max(0, todayDueAmt - todayPaidAmt), // Rough approximation
         pendingCollections: (pendingDues._sum.dueAmount || 0) - (pendingDues._sum.paidAmount || 0),
@@ -447,9 +523,7 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
           profit: monthlyInterestIncome,
         },
         monthlyTrend: months,
-        totalPenaltyCollected: totalPenaltyCollectedAmt,
         totalPenaltyCount: penaltyAgg._count || 0,
-        todayPenaltyCollected: todayPenaltyAgg._sum.amount || 0,
         todayPenaltyCount: todayPenaltyAgg._count || 0,
       },
     };

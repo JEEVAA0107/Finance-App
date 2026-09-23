@@ -183,54 +183,70 @@ export default function Dashboard() {
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Overall Financials</div>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
             <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed (வழங்கியது)" value={fmt(s?.totalDisbursed)} color="green" />
-            <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல்)" value={fmt(s?.outstandingPrincipal)} color="purple" />
-            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி)" value={fmt(s?.outstandingInterest)} color="yellow" />
+            <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல் நிலுவை)" value={fmt(s?.outstandingPrincipal)} color="purple" />
+            <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி நிலுவை)" value={fmt(s?.outstandingInterest)} color="yellow" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
-            <StatCard to="/payment-history" icon={HandCoins} label="Total Collected (வசூலானது)" value={fmt(s?.totalCollected)} color="purple" />
-            <StatCard to="/profit" icon={TrendingUp} label="Total Profit (லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
-            <StatCard to="/payment-history" icon={AlertTriangle} label="Total Penalty (அபராதம்)" value={fmt(s?.totalPenaltyCollected)} color="red" />
+            <StatCard to="/payment-history" icon={HandCoins} label="Total Collected (மொத்த வசூல்)" value={fmt(s?.totalCollected)} color="purple" />
+            <StatCard to="/payment-history" icon={HandCoins} label="Principal Collected (அசல் வசூல்)" value={fmt(s?.totalPrincipalCollected)} color="green" />
+            <StatCard to="/profit" icon={TrendingUp} label="Interest Profit (வட்டி லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
+            <StatCard to="/payment-history" icon={AlertTriangle} label="Penalty Profit (அபராதம்)" value={fmt(s?.totalPenaltyCollected)} color="red" />
+            <StatCard to="/profit" icon={TrendingUp} label="Total Profit (மொத்த லாபம்)" value={fmt(s?.totalCombinedProfit)} color="green" />
           </div>
 
-          {/* Section: Penalty Collections */}
-          <div className="card" style={{ padding: '16px 20px', marginBottom: 20, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.02) 100%)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
-                  <AlertTriangle size={22} />
+          {/* Section: Dedicated Profit & Penalty Breakdown Section */}
+          <div className="card" style={{ padding: '20px', marginBottom: 20, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(217, 119, 6, 0.02) 100%)', border: '1.5px solid rgba(245, 158, 11, 0.28)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(245, 158, 11, 0.3)' }}>
+                  <TrendingUp size={22} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>Penalty Collected Section (அபராதம் வசூல்)</span>
-                    {s?.totalPenaltyCount > 0 && (
-                      <span style={{ fontSize: 11, background: 'rgba(239, 68, 68, 0.15)', color: '#b91c1c', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
-                        {s.totalPenaltyCount} payments
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#b91c1c', marginTop: 2 }}>
-                    {fmt(s?.totalPenaltyCollected || 0)}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    Collected from carry forward shifts & late fee charges
-                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#d97706' }}>Profit Breakdown Section (லாப விவரம்)</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pure Interest Profit + Late Penalty Profit = Total Profit</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{ textAlign: 'right', background: 'var(--bg-glass)', padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Today's Penalty</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>{fmt(s?.todayPenaltyCollected || 0)}</div>
+              <Link to="/profit" className="btn btn-ghost btn-sm" style={{ borderColor: 'rgba(245, 158, 11, 0.35)', color: '#d97706', fontSize: 12, fontWeight: 700 }}>
+                View Full Profit Analysis →
+              </Link>
+            </div>
+
+            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              {/* Interest Profit */}
+              <div style={{ background: 'var(--bg-glass)', padding: '14px 16px', borderRadius: 12, border: '1px solid rgba(5, 150, 105, 0.2)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Pure Interest Profit (வட்டி லாபம்)</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#059669', marginTop: 4 }}>{fmt(s?.totalInterestCollected)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                  Today: <b style={{ color: '#059669' }}>{fmt(s?.todayInterestCollected || 0)}</b>
                 </div>
-                <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#dc2626', fontSize: 12, fontWeight: 700 }}>
-                  View History →
-                </Link>
+              </div>
+
+              {/* Penalty Profit */}
+              <div style={{ background: 'var(--bg-glass)', padding: '14px 16px', borderRadius: 12, border: '1px solid rgba(220, 38, 38, 0.2)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Penalty Profit (அபராத லாபம்)</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 4 }}>{fmt(s?.totalPenaltyCollected)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                  Today: <b style={{ color: '#dc2626' }}>{fmt(s?.todayPenaltyCollected || 0)}</b> ({s?.totalPenaltyCount || 0} payments)
+                </div>
+              </div>
+
+              {/* Total Combined Profit */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.08))', padding: '14px 16px', borderRadius: 12, border: '1.5px solid rgba(245, 158, 11, 0.45)' }}>
+                <div style={{ fontSize: 11, color: '#b45309', fontWeight: 700 }}>Total Combined Profit (மொத்த லாபம்)</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#d97706', marginTop: 4 }}>{fmt(s?.totalCombinedProfit)}</div>
+                <div style={{ fontSize: 11, color: '#b45309', marginTop: 4, fontWeight: 600 }}>
+                  Today: <b>{fmt(s?.todayCombinedProfit || 0)}</b> (வட்டி + அபராதம்)
+                </div>
               </div>
             </div>
           </div>
 
           {/* Section 2: Today's Metrics */}
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Today's Performance</div>
-          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Today's Performance (இன்றைய செயல்பாடு)</div>
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 20 }}>
             <StatCard to="/collections" icon={Calendar} label="Today's Collection (இன்றைய வசூல்)" value={fmt(s?.todayCollection)} color="green" />
+            <StatCard to="/collections" icon={HandCoins} label="Today's Principal (அசல் வசூல்)" value={fmt(s?.todayPrincipalCollected)} color="purple" />
+            <StatCard to="/profit" icon={TrendingUp} label="Today's Interest (வட்டி லாபம்)" value={fmt(s?.todayInterestCollected)} color="yellow" />
+            <StatCard to="/payment-history" icon={AlertTriangle} label="Today's Penalty (அபராதம்)" value={fmt(s?.todayPenaltyCollected)} color="red" />
             <StatCard to="/collections" icon={Clock} label="Today's Due (இன்றைய டியூ)" value={fmt(s?.todayDueAmount)} color="blue" />
             <StatCard to="/collections" icon={AlertTriangle} label="Remaining Due (மீதமுள்ள டியூ)" value={fmt(s?.remainingToday)} color="yellow" />
             <StatCard to="/collections" icon={PieChart} label="Pending (All) (நிலுவையில் உள்ளவை)" value={fmt(s?.pendingCollections)} color="purple" />
