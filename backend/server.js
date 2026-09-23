@@ -195,6 +195,16 @@ async function syncDatabaseSchema() {
 
 async function syncTenantIntegrity() {
   try {
+    // 1. Ensure composite unique constraint on (companyId, loanNumber) instead of global
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Loan" DROP CONSTRAINT IF EXISTS "Loan_loanNumber_key";`);
+      await prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "Loan_loanNumber_key";`);
+      await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Loan_company_loanNumber_key" ON "Loan" ("companyId", "loanNumber");`);
+    } catch (idxErr) {
+      console.warn('Loan index migration note:', idxErr.message);
+    }
+
+    // 2. Link unlinked loans to customer's company
     const unlinkedLoans = await prisma.loan.findMany({
       where: { companyId: null },
       include: { customer: { select: { companyId: true } } },
@@ -206,6 +216,44 @@ async function syncTenantIntegrity() {
           where: { id: loan.id },
           data: { companyId: loan.customer.companyId },
         });
+      }
+    }
+
+    // 3. Auto-fix company loan sequences so each company starts cleanly from LN-0001
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true }
+    });
+
+    for (const company of companies) {
+      const companyLoans = await prisma.loan.findMany({
+        where: { companyId: company.id },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, loanNumber: true }
+      });
+
+      if (companyLoans.length === 0) continue;
+
+      const needsResequence = companyLoans.some((l, idx) => {
+        const expected = `LN-${String(idx + 1).padStart(4, '0')}`;
+        return l.loanNumber !== expected;
+      });
+
+      if (needsResequence) {
+        console.log(`[Tenant Integrity] Re-sequencing ${companyLoans.length} loan(s) for "${company.name}" to start from LN-0001...`);
+        for (let i = 0; i < companyLoans.length; i++) {
+          await prisma.loan.update({
+            where: { id: companyLoans[i].id },
+            data: { loanNumber: `TEMP-${Date.now()}-${i + 1}` }
+          });
+        }
+        for (let i = 0; i < companyLoans.length; i++) {
+          const properLoanNumber = `LN-${String(i + 1).padStart(4, '0')}`;
+          await prisma.loan.update({
+            where: { id: companyLoans[i].id },
+            data: { loanNumber: properLoanNumber }
+          });
+          console.log(`  - Loan ${companyLoans[i].id} assigned ${properLoanNumber}`);
+        }
       }
     }
   } catch (err) {

@@ -110,7 +110,7 @@ model Loan {
   id                String    @id @default(uuid())
   companyId         String?
   company           Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  loanNumber        String    @unique
+  loanNumber        String
   customerId        String
   customer          Customer  @relation(fields: [customerId], references: [id])
   agentId           String?
@@ -144,6 +144,7 @@ model Loan {
 
   repayments        Repayment[]
 
+  @@unique([companyId, loanNumber])
   @@index([customerId])
   @@index([status])
   @@index([loanNumber])

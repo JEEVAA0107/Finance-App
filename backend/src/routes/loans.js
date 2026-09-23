@@ -382,22 +382,31 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     else if (frequency === 'WEEKLY' || tenureUnit === 'WEEKS') end.setDate(end.getDate() + batchSize * 7);
     else end.setDate(end.getDate() + batchSize);
 
-    // Generate sequential loan number
-    const lastLoan = await prisma.loan.findFirst({
-      orderBy: { createdAt: 'desc' },
-      select: { loanNumber: true }
+    // Generate sequential loan number strictly scoped to this company
+    const companyLoanWhere = effectiveCompanyId ? { companyId: effectiveCompanyId } : {};
+    const companyLoans = await prisma.loan.findMany({
+      where: companyLoanWhere,
+      select: { loanNumber: true },
     });
-    let nextSeq = 1;
-    if (lastLoan && lastLoan.loanNumber && lastLoan.loanNumber.startsWith('LN-')) {
-      const parts = lastLoan.loanNumber.split('-');
-      if (parts.length === 2 && !isNaN(parts[1])) {
-        nextSeq = parseInt(parts[1], 10) + 1;
+    let maxSeq = 0;
+    const existingLoanNumbers = new Set();
+    for (const l of companyLoans) {
+      if (l.loanNumber) {
+        existingLoanNumbers.add(l.loanNumber);
+        if (l.loanNumber.startsWith('LN-')) {
+          const num = parseInt(l.loanNumber.replace(/^LN-0*/, ''), 10);
+          if (!isNaN(num) && num > maxSeq) {
+            maxSeq = num;
+          }
+        }
       }
-    } else {
-      const count = await prisma.loan.count();
-      nextSeq = count + 1;
     }
-    const loanNumber = `LN-${String(nextSeq).padStart(4, '0')}`;
+    let nextSeq = maxSeq + 1;
+    let loanNumber = `LN-${String(nextSeq).padStart(4, '0')}`;
+    while (existingLoanNumbers.has(loanNumber)) {
+      nextSeq += 1;
+      loanNumber = `LN-${String(nextSeq).padStart(4, '0')}`;
+    }
 
     const loan = await prisma.loan.create({
       data: {
