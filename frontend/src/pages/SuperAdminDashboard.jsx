@@ -3,7 +3,7 @@ import { companiesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import {
   Landmark, Plus, ShieldCheck, ShieldAlert, Phone,
-  Users, KeyRound, Search, RefreshCw, Trash2, Power
+  Users, KeyRound, Search, RefreshCw, Trash2, Power, Edit2
 } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
@@ -27,6 +27,19 @@ export default function SuperAdminDashboard() {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [submittingPassword, setSubmittingPassword] = useState(false);
+
+  // Edit Finance & Credentials Modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: '',
+    name: '',
+    code: '',
+    ownerName: '',
+    phone: '',
+    password: '',
+    address: ''
+  });
+  const [submittingEdit, setSubmittingEdit] = useState(false);
 
   const loadCompanies = async () => {
     try {
@@ -62,10 +75,28 @@ export default function SuperAdminDashboard() {
     }));
   };
 
+  // Helper to normalize Indian phone number (+91, spaces, dashes supported)
+  const cleanPhone = (val) => {
+    if (!val) return '';
+    let cleaned = String(val).replace(/[\s\-\(\)\.\,\+]/g, '');
+    if (cleaned.length === 12 && cleaned.startsWith('91')) {
+      cleaned = cleaned.slice(2);
+    } else if (cleaned.length === 11 && cleaned.startsWith('0')) {
+      cleaned = cleaned.slice(1);
+    }
+    return cleaned;
+  };
+
   const handleCreateCompany = async (e) => {
     e.preventDefault();
     if (!regForm.name.trim() || !regForm.code.trim() || !regForm.phone.trim() || !regForm.password.trim()) {
       toast.error('Please fill all required fields');
+      return;
+    }
+
+    const normPhone = cleanPhone(regForm.phone);
+    if (normPhone.length !== 10 || !/^\d{10}$/.test(normPhone)) {
+      toast.error('Please enter a valid 10-digit mobile number (+91 is optional)');
       return;
     }
 
@@ -74,7 +105,7 @@ export default function SuperAdminDashboard() {
         name: regForm.name.trim(),
         code: regForm.code.trim().toLowerCase(),
         ownerName: regForm.ownerName.trim() || regForm.name.trim(),
-        phone: regForm.phone.trim(),
+        phone: normPhone,
         password: regForm.password.trim(),
         address: regForm.address.trim()
       });
@@ -85,6 +116,61 @@ export default function SuperAdminDashboard() {
       loadCompanies();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to create finance company');
+    }
+  };
+
+  const handleOpenEditModal = (comp) => {
+    setEditForm({
+      id: comp.id,
+      name: comp.name || '',
+      code: comp.code || '',
+      ownerName: comp.ownerName || '',
+      phone: comp.phone || comp.admin?.phone || '',
+      password: '',
+      address: comp.address || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateCompany = async (e) => {
+    e.preventDefault();
+    if (!editForm.name.trim() || !editForm.code.trim() || !editForm.phone.trim()) {
+      toast.error('Finance Name, Code, and Mobile Number are required');
+      return;
+    }
+
+    const normPhone = cleanPhone(editForm.phone);
+    if (normPhone.length !== 10 || !/^\d{10}$/.test(normPhone)) {
+      toast.error('Please enter a valid 10-digit mobile number (+91 is optional)');
+      return;
+    }
+
+    if (editForm.password && editForm.password.trim().length > 0 && editForm.password.trim().length < 4) {
+      toast.error('Password must be at least 4 characters');
+      return;
+    }
+
+    try {
+      setSubmittingEdit(true);
+      const payload = {
+        name: editForm.name.trim(),
+        code: editForm.code.trim().toLowerCase(),
+        ownerName: editForm.ownerName.trim() || editForm.name.trim(),
+        phone: normPhone,
+        address: editForm.address.trim()
+      };
+      if (editForm.password && editForm.password.trim().length >= 4) {
+        payload.password = editForm.password.trim();
+      }
+
+      const res = await companiesAPI.update(editForm.id, payload);
+      toast.success(res?.message || 'Finance company updated successfully!');
+      setShowEditModal(false);
+      loadCompanies();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to update company');
+    } finally {
+      setSubmittingEdit(false);
     }
   };
 
@@ -335,6 +421,17 @@ export default function SuperAdminDashboard() {
                     <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                       <button
                         type="button"
+                        onClick={() => handleOpenEditModal(comp)}
+                        className="btn btn-secondary"
+                        style={{ padding: '5px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
+                        title="Edit Finance Details & Phone"
+                      >
+                        <Edit2 size={12} />
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => handleOpenPasswordModal(comp)}
                         className="btn btn-secondary"
                         style={{ padding: '5px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
@@ -432,11 +529,20 @@ export default function SuperAdminDashboard() {
               <div className="card-actions-row">
                 <button
                   type="button"
+                  onClick={() => handleOpenEditModal(comp)}
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
+                >
+                  <Edit2 size={14} />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleOpenPasswordModal(comp)}
                   className="btn btn-secondary password-btn"
                 >
                   <KeyRound size={14} />
-                  <span>Reset Admin Password</span>
+                  <span>Reset Password</span>
                 </button>
                 {comp.stats?.loans === 0 && (
                   <button
@@ -597,6 +703,119 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
+
+      {/* Modal 3: Edit Finance & Admin Credentials */}
+      {showEditModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+          <div className="modal animate-in" style={{ background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '460px', width: '100%', padding: '24px', boxSizing: 'border-box', maxHeight: '90vh', overflowY: 'auto' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: 'var(--primary-50)', color: 'var(--primary-600)', padding: '8px', borderRadius: '10px' }}>
+                  <Edit2 size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Edit Finance & Credentials</h3>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '11px' }}>Update company profile & login details</p>
+                </div>
+              </div>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateCompany}>
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label">Finance Business Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Sri Murugan Finance"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">Company Login Code *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. smf"
+                    value={editForm.code}
+                    onChange={(e) => setEditForm({ ...editForm, code: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Owner Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Murugan"
+                    value={editForm.ownerName}
+                    onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Login Phone Number *</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'normal' }}>+91 & spaces optional</span>
+                </label>
+                <input
+                  type="tel"
+                  className="form-input"
+                  placeholder="e.g. 9876543210 or +91 98765 43210"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  required
+                />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Must be a 10-digit number. Any formatting (+91, spaces) will be accepted automatically.
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label">New Password (Optional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Leave blank to keep existing password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Only enter if you wish to reset this Finance Admin's password.
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '18px' }}>
+                <label className="form-label">Business Address</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. 12, Main Road, Madurai"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={submittingEdit}>
+                  {submittingEdit ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
-}
+}

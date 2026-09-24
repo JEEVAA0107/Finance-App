@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const { auditLog } = require('../utils/audit');
+const { getPhoneSearchVariants } = require('../utils/phone');
 const prisma = new PrismaClient();
 
 function signTokens(userId, role, companyId = null) {
@@ -166,12 +167,13 @@ router.post('/login', async (req, res) => {
         });
       }
 
-      // Find user matching phone / email / agentId inside THIS company
+      // Find user matching phone / email / agentId inside THIS company (supports +91, spaces, 10-digit)
+      const phoneVariants = getPhoneSearchVariants(identifier);
       const users = await prisma.user.findMany({
         where: {
           companyId: company.id,
           OR: [
-            { phone: identifier },
+            { phone: { in: phoneVariants } },
             { email: identifier.toLowerCase() },
             { agentId: identifier.toUpperCase() }
           ]
@@ -241,10 +243,11 @@ router.post('/login', async (req, res) => {
     // =========================================================================
     // CASE 2: Super Admin / Direct Master Login (No financeCode specified)
     // =========================================================================
+    const masterPhoneVariants = getPhoneSearchVariants(identifier);
     let users = await prisma.user.findMany({
       where: {
         OR: [
-          { phone: identifier },
+          { phone: { in: masterPhoneVariants } },
           { email: identifier.toLowerCase() },
           { agentId: identifier.toUpperCase() },
         ]

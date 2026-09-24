@@ -631,19 +631,122 @@ router.get('/agent', authenticate, authorize('ADMIN', 'AGENT'), async (req, res)
   }
 });
 
-// POST /api/dashboard/reset-all-data — Reset production database
-router.post('/reset-all-data', authenticate, authorize('ADMIN'), async (req, res) => {
+// POST /api/dashboard/reset-all-data — Reset data strictly scoped to caller's finance company
+router.post('/reset-all-data', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
   try {
-    try { await prisma.notificationLog.deleteMany({}); } catch (e) {}
-    await prisma.payment.deleteMany({});
-    try { await prisma.auditLog.deleteMany({}); } catch (e) {}
-    await prisma.repayment.deleteMany({});
-    await prisma.loan.deleteMany({});
-    await prisma.customer.deleteMany({});
-    await prisma.user.deleteMany({ where: { role: 'CUSTOMER' } });
+    // If Super Admin, allow companyId from body; if Company Admin, strictly use their assigned companyId
+    const targetCompanyId = req.user.role === 'SUPER_ADMIN' ? (req.body.companyId || req.user.companyId) : req.user.companyId;
 
-    res.json({ success: true, message: 'All test data reset successfully!' });
+    if (!targetCompanyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'No company identified for data reset. Action aborted to protect other finances.'
+      });
+    }
+
+    const company = await prisma.company.findUnique({
+      where: { id: targetCompanyId },
+      select: { id: true, name: true }
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    // 1. Find all loans belonging ONLY to this company
+    const companyLoans = await prisma.loan.findMany({
+      where: { companyId: targetCompanyId },
+      select: { id: true }
+    });
+    const loanIds = companyLoans.map(l => l.id);
+
+    // 2. Find all repayments belonging ONLY to this company's loans
+    const companyRepayments = await prisma.repayment.findMany({
+      where: { loanId: { in: loanIds } },
+      select: { id: true }
+    });
+    const repaymentIds = companyRepayments.map(r => r.id);
+
+    // 3. Find all customers belonging ONLY to this company
+    const companyCustomers = await prisma.customer.findMany({
+      where: { companyId: targetCompanyId },
+      select: { id: true, userId: true }
+    });
+    const customerIds = companyCustomers.map(c => c.id);
+    const customerUserIds = companyCustomers.map(c => c.userId).filter(Boolean);
+
+    // 4. Cascade delete in strict dependency order for THIS company only
+    // a. Notification logs
+    if (repaymentIds.length > 0 || customerIds.length > 0) {
+      try {
+        await prisma.notificationLog.deleteMany({
+          where: {
+            OR: [
+              ...(repaymentIds.length > 0 ? [{ repaymentId: { in: repaymentIds } }] : []),
+              ...(customerIds.length > 0 ? [{ customerId: { in: customerIds } }] : []),
+            ]
+          }
+        });
+      } catch (e) {
+        console.warn('Error deleting notification logs for company:', e.message);
+      }
+    }
+
+    // b. Payments
+    if (repaymentIds.length > 0) {
+      await prisma.payment.deleteMany({
+        where: { repaymentId: { in: repaymentIds } }
+      });
+    }
+
+    // c. Repayments
+    if (loanIds.length > 0) {
+      await prisma.repayment.deleteMany({
+        where: { loanId: { in: loanIds } }
+      });
+    }
+
+    // d. Loans
+    await prisma.loan.deleteMany({
+      where: { companyId: targetCompanyId }
+    });
+
+    // e. Customers
+    await prisma.customer.deleteMany({
+      where: { companyId: targetCompanyId }
+    });
+
+    // f. Customer User accounts (Only role 'CUSTOMER', never delete ADMIN or AGENT users!)
+    if (customerUserIds.length > 0) {
+      await prisma.user.deleteMany({
+        where: {
+          id: { in: customerUserIds },
+          role: 'CUSTOMER',
+          companyId: targetCompanyId
+        }
+      });
+    }
+
+    // g. Expenses for this company
+    try {
+      await prisma.expense.deleteMany({
+        where: { companyId: targetCompanyId }
+      });
+    } catch (e) {}
+
+    // Invalidate in-memory dashboard cache for this company
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(targetCompanyId);
+    }
+
+    await auditLog(req.user.id, 'RESET_COMPANY_DATA', 'Company', targetCompanyId, { companyName: company.name }, req);
+
+    res.json({
+      success: true,
+      message: `All loans, customers, repayments, and collection data for '${company.name}' have been reset successfully! Other finances were unaffected.`
+    });
   } catch (error) {
+    console.error('Error during company data reset:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

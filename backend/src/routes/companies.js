@@ -5,6 +5,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { authenticate, authorize } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
+const { normalizePhone, isValid10DigitPhone, getPhoneSearchVariants } = require('../utils/phone');
+const { invalidateDashboardCache } = require('./dashboard');
 
 // Middleware helper: only allow SUPER_ADMIN or ADMIN with no companyId
 const requireSuperAdmin = (req, res, next) => {
@@ -79,7 +81,14 @@ router.post('/', authenticate, requireSuperAdmin, async (req, res) => {
       });
     }
 
-    const cleanPhone = phone.trim();
+    if (!isValid10DigitPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid mobile number. Please enter a valid 10-digit phone number (+91 is optional).'
+      });
+    }
+
+    const cleanPhone = normalizePhone(phone);
 
     // Check if code already exists
     const existingCode = await prisma.company.findUnique({
@@ -93,8 +102,9 @@ router.post('/', authenticate, requireSuperAdmin, async (req, res) => {
     }
 
     // Check if phone already registered
+    const phoneVariants = getPhoneSearchVariants(cleanPhone);
     const existingUser = await prisma.user.findFirst({
-      where: { phone: cleanPhone }
+      where: { phone: { in: phoneVariants } }
     });
     if (existingUser) {
       return res.status(409).json({
@@ -152,6 +162,139 @@ router.post('/', authenticate, requireSuperAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating company:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /api/companies/:id - Super Admin updates company details & Admin user credentials
+router.put('/:id', authenticate, requireSuperAdmin, async (req, res) => {
+  try {
+    const companyId = req.params.id;
+    const { name, code, ownerName, phone, password, address } = req.body;
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      include: {
+        users: { where: { role: 'ADMIN' }, take: 1 }
+      }
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Finance company not found' });
+    }
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Finance company name is required' });
+    }
+
+    if (!code || !code.trim()) {
+      return res.status(400).json({ success: false, message: 'Company code is required' });
+    }
+
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!cleanCode) {
+      return res.status(400).json({ success: false, message: 'Invalid company code. Use letters and numbers only.' });
+    }
+
+    // Check code collision if code changed
+    if (cleanCode !== company.code.toLowerCase()) {
+      const existingCode = await prisma.company.findUnique({ where: { code: cleanCode } });
+      if (existingCode && existingCode.id !== companyId) {
+        return res.status(409).json({ success: false, message: `Company code '${cleanCode}' is already registered.` });
+      }
+    }
+
+    if (!phone || !isValid10DigitPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid mobile number. Please enter a valid 10-digit phone number (+91 is optional).'
+      });
+    }
+
+    const cleanPhone = normalizePhone(phone);
+
+    // Check phone collision with other accounts outside this company
+    const phoneVariants = getPhoneSearchVariants(cleanPhone);
+    const collisionUser = await prisma.user.findFirst({
+      where: {
+        phone: { in: phoneVariants },
+        companyId: { not: companyId }
+      }
+    });
+    if (collisionUser) {
+      return res.status(409).json({
+        success: false,
+        message: `Phone number '${cleanPhone}' is already in use by another account.`
+      });
+    }
+
+    // Find admin user of this company
+    const adminUser = company.users[0] || await prisma.user.findFirst({
+      where: { companyId, role: 'ADMIN' }
+    });
+
+    // Execute update in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedCompany = await tx.company.update({
+        where: { id: companyId },
+        data: {
+          name: name.trim(),
+          code: cleanCode,
+          ownerName: ownerName?.trim() || name.trim(),
+          phone: cleanPhone,
+          address: address?.trim() || null,
+        }
+      });
+
+      let updatedAdmin = null;
+      if (adminUser) {
+        const adminUpdate = {
+          name: ownerName?.trim() || `${name.trim()} Admin`,
+          phone: cleanPhone,
+        };
+        if (cleanCode !== company.code) {
+          adminUpdate.email = `${cleanCode}_admin@loanflow.local`;
+        }
+        if (password && password.trim().length >= 4) {
+          adminUpdate.passwordHash = await bcrypt.hash(password.trim(), 12);
+          // Invalidate existing sessions on password change
+          await tx.refreshToken.deleteMany({ where: { userId: adminUser.id } });
+        }
+        updatedAdmin = await tx.user.update({
+          where: { id: adminUser.id },
+          data: adminUpdate
+        });
+      }
+
+      return { company: updatedCompany, admin: updatedAdmin };
+    });
+
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(companyId);
+    }
+
+    await auditLog(req.user.id, 'UPDATE_COMPANY', 'Company', companyId, {
+      name: result.company.name,
+      code: result.company.code,
+      phone: cleanPhone,
+      passwordChanged: !!(password && password.trim().length >= 4)
+    }, req);
+
+    res.json({
+      success: true,
+      message: `Company '${result.company.name}' and credentials updated successfully!`,
+      data: {
+        company: result.company,
+        admin: result.admin ? {
+          id: result.admin.id,
+          name: result.admin.name,
+          phone: result.admin.phone,
+          email: result.admin.email,
+        } : null
+      }
+    });
+  } catch (error) {
+    console.error('Error updating company:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
