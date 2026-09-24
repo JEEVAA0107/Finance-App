@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
+const { normalizePhone } = require('../utils/phone');
 const prisma = new PrismaClient();
 
 // GET /api/users — Admin only
@@ -73,9 +74,40 @@ router.get('/me', authenticate, async (req, res) => {
 router.patch('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
     const { name, email, phone, role, isActive } = req.body;
+
+    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!targetUser) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Multi-tenant isolation: cannot modify user belonging to another company
+    if (req.user.companyId && targetUser.companyId && targetUser.companyId !== req.user.companyId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Admin accounts cannot be deactivated from Agent Management
+    if (targetUser.role === 'ADMIN' && isActive === false) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin accounts cannot be deactivated from Agent Management.'
+      });
+    }
+
+    if (targetUser.id === req.user.id && isActive === false) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot deactivate your own logged-in account.'
+      });
+    }
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (email !== undefined) updateData.email = email.trim().toLowerCase();
+    if (phone !== undefined) updateData.phone = normalizePhone(phone);
+    if (role !== undefined) updateData.role = role;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data: { name, email, phone, role, isActive },
+      data: updateData,
     });
     await auditLog(req.user.id, 'UPDATE_USER', 'User', user.id, { isActive }, req);
     res.json({ success: true, data: user });

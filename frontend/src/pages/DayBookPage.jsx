@@ -1,21 +1,37 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { IndianRupee, Plus, FileText, ArrowDownRight, ArrowUpRight, HandCoins, Building2, Wallet, AlertTriangle, TrendingUp, Landmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function DayBookPage() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const { user } = useAuth();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [date, setDate] = useState(todayStr);
+
+  const cacheKey = `daybook_cache_${user?.companyId || 'default'}_${date}`;
+
+  const [data, setData] = useState(() => {
+    try {
+      const cached = localStorage.getItem(`daybook_cache_${user?.companyId || 'default'}_${todayStr}`);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(!data);
   const [showModal, setShowModal] = useState(false);
   const [expenseForm, setExpenseForm] = useState({ amount: '', category: 'OFFICE', description: '' });
 
   const fetchDayBook = async () => {
-    setLoading(true);
+    if (!data) setLoading(true);
     try {
       const res = await api.get(`/daybook/summary?date=${date}`);
       if (res.data.success) {
         setData(res.data.data);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(res.data.data));
+        } catch (_) {}
       }
     } catch (err) {
       toast.error('Failed to load daybook data');
@@ -43,7 +59,14 @@ export default function DayBookPage() {
 
   const fmt = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
 
-  if (loading && !data) return <div className="p-4">Loading day book...</div>;
+  if (loading && !data) {
+    return (
+      <div className="loading-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '12px' }}>
+        <div className="spinner" />
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600 }}>Loading Day Book...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container animate-in">

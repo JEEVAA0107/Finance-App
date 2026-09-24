@@ -21,22 +21,47 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     const loanWhere = companyId ? { companyId } : {};
     const expenseWhere = companyId ? { companyId } : {};
 
-    // 1. Collections (Payments made on this date) with Repayment & Loan details for accurate Principal vs Interest separation
-    const payments = await prisma.payment.findMany({
-      where: { collectedAt: { gte: start, lte: end }, ...paymentWhere },
-      include: {
-        repayment: {
-          select: {
-            principal: true,
-            interest: true,
-            dueAmount: true,
-            loan: {
-              select: { interestType: true, principalAmount: true, totalPayable: true, totalInterest: true }
+    // Fetch all daybook aggregates in parallel for high performance
+    const [payments, disbursedLoans, expenses, pastPayments, pastExpenses, pastFees] = await Promise.all([
+      prisma.payment.findMany({
+        where: { collectedAt: { gte: start, lte: end }, ...paymentWhere },
+        include: {
+          repayment: {
+            select: {
+              principal: true,
+              interest: true,
+              dueAmount: true,
+              loan: {
+                select: { interestType: true, principalAmount: true, totalPayable: true, totalInterest: true }
+              }
             }
           }
         }
-      }
-    });
+      }),
+      prisma.loan.findMany({
+        where: { 
+          disbursedAt: { gte: start, lte: end },
+          status: { not: 'PENDING' },
+          ...loanWhere
+        }
+      }),
+      prisma.expense.findMany({
+        where: { date: { gte: start, lte: end }, ...expenseWhere },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.payment.aggregate({
+        where: { collectedAt: { lt: start }, ...paymentWhere },
+        _sum: { amount: true }
+      }),
+      prisma.expense.aggregate({
+        where: { date: { lt: start }, ...expenseWhere },
+        _sum: { amount: true }
+      }),
+      prisma.loan.aggregate({
+        where: { disbursedAt: { lt: start }, status: { not: 'PENDING' }, ...loanWhere },
+        _sum: { processingFee: true }
+      })
+    ]);
 
     let principalCollected = 0;
     let interestCollected = 0;
@@ -84,41 +109,12 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     // Total Inflow from payments:
     const collections = Math.round((principalCollected + interestCollected + penaltyCollected) * 100) / 100;
 
-    // 2. Loan Distributed (Principal of Loans disbursed on this date)
-    const disbursedLoans = await prisma.loan.findMany({
-      where: { 
-        disbursedAt: { gte: start, lte: end },
-        status: { not: 'PENDING' },
-        ...loanWhere
-      }
-    });
+    // Loan Distributed & Fees
     const loanDistributed = disbursedLoans.reduce((sum, l) => sum + (l.principalAmount || 0), 0);
     const processingFees = disbursedLoans.reduce((sum, l) => sum + (l.processingFee || 0), 0);
 
-    // 3. Office Expenses today
-    const expenses = await prisma.expense.findMany({
-      where: { date: { gte: start, lte: end }, ...expenseWhere },
-      orderBy: { createdAt: 'desc' }
-    });
+    // Office Expenses
     const officeExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-    // 4. Calculate Opening Balance:
-    // Past Inflow = past payments + past processing fees
-    // Past Outflow = past office expenses
-    const pastPayments = await prisma.payment.aggregate({
-      where: { collectedAt: { lt: start }, ...paymentWhere },
-      _sum: { amount: true }
-    });
-    
-    const pastExpenses = await prisma.expense.aggregate({
-      where: { date: { lt: start }, ...expenseWhere },
-      _sum: { amount: true }
-    });
-
-    const pastFees = await prisma.loan.aggregate({
-      where: { disbursedAt: { lt: start }, status: { not: 'PENDING' }, ...loanWhere },
-      _sum: { processingFee: true }
-    });
 
     const totalPastIn = (pastPayments._sum.amount || 0) + (pastFees._sum.processingFee || 0);
     const totalPastOut = pastExpenses._sum.amount || 0;

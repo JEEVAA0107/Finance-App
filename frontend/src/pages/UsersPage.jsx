@@ -68,11 +68,17 @@ export default function UsersPage() {
   };
 
   const toggleActive = async (user) => {
+    if (user.role === 'ADMIN') {
+      toast.error('Admin account cannot be deactivated from Agent Management.');
+      return;
+    }
     try {
       await usersAPI.update(user.id, { isActive: !user.isActive });
       toast.success(`Agent ${user.isActive ? 'deactivated' : 'activated'}`);
       load();
-    } catch { toast.error('Update failed'); }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Update failed');
+    }
   };
 
   const deleteUser = async (user) => {
@@ -167,13 +173,19 @@ export default function UsersPage() {
                     {new Date(u.createdAt).toLocaleDateString('en-IN')}
                   </td>
                   <td data-label="Actions">
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} style={{ padding: '6px 8px' }} title="Edit Agent">
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} style={{ padding: '6px 8px' }} title="Edit Agent Details">
                         <Edit2 size={14} />
                       </button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(u)}>
-                        {u.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
+                      {u.role !== 'ADMIN' ? (
+                        <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(u)}>
+                          {u.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, padding: '4px 8px', background: 'var(--bg-tertiary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                          Primary Admin
+                        </span>
+                      )}
                       {u.role !== 'ADMIN' && (
                         <button className="btn btn-ghost btn-sm" onClick={() => deleteUser(u)} style={{ padding: '6px 8px', color: 'var(--danger-600)' }} title="Delete Agent">
                           <Trash2 size={14} />
