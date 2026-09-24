@@ -1,26 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Landmark, Phone, Lock, Eye, EyeOff, Building2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Landmark, Phone, Lock, Eye, EyeOff, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
-  const [financeCode, setFinanceCode] = useState('');
-  const [showFinanceCode, setShowFinanceCode] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loginMode, setLoginMode] = useState('admin'); // 'admin' | 'agent'
-
-  // Restore remembered finance code if previously used
-  useEffect(() => {
-    const saved = localStorage.getItem('finova_last_finance_code');
-    if (saved) {
-      setFinanceCode(saved);
-      setShowFinanceCode(true);
-    }
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,10 +17,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(userId.trim(), password.trim(), financeCode.trim());
-      if (financeCode.trim()) {
-        localStorage.setItem('finova_last_finance_code', financeCode.trim());
-      }
+      await login(userId.trim(), password.trim());
     } catch (err) {
       const msg = err.message || err.response?.data?.message || 'Invalid credentials. Please try again.';
       setError(msg);
@@ -65,7 +51,7 @@ export default function LoginPage() {
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-secondary)', padding: '6px', borderRadius: '12px' }}>
           <button
             type="button"
-            onClick={() => { setLoginMode('admin'); setShowFinanceCode(false); }}
+            onClick={() => setLoginMode('admin')}
             style={{
               flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px',
               background: loginMode === 'admin' ? 'var(--bg-glass)' : 'transparent',
@@ -79,7 +65,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => { setLoginMode('agent'); setShowFinanceCode(true); }}
+            onClick={() => setLoginMode('agent')}
             style={{
               flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px',
               background: loginMode === 'agent' ? 'var(--bg-glass)' : 'transparent',
@@ -127,10 +113,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Password */}
-          <div className="form-group" style={{ marginBottom: '16px' }}>
+          {/* Password or Agent ID */}
+          <div className="form-group" style={{ marginBottom: '22px' }}>
             <label className="form-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-              Password
+              {loginMode === 'agent' ? 'Agent ID' : 'Password'}
             </label>
             <div style={{ position: 'relative', width: '100%' }}>
               <Lock
@@ -146,101 +132,39 @@ export default function LoginPage() {
                 }}
               />
               <input
-                className="form-input input-with-icon-both"
-                type={showPass ? 'text' : 'password'}
-                placeholder="Enter your password"
+                className={loginMode === 'agent' ? "form-input input-with-icon-left" : "form-input input-with-icon-both"}
+                type={loginMode === 'agent' ? 'text' : (showPass ? 'text' : 'password')}
+                placeholder={loginMode === 'agent' ? "e.g. AGT123" : "Enter your password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  zIndex: 2
-                }}
-                aria-label={showPass ? "Hide password" : "Show password"}
-              >
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              {loginMode !== 'agent' && (
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    zIndex: 2
+                  }}
+                  aria-label={showPass ? "Hide password" : "Show password"}
+                >
+                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              )}
             </div>
-          </div>
-
-          {/* Optional Finance Code Section */}
-          <div style={{ marginBottom: '22px' }}>
-            {!showFinanceCode && loginMode !== 'agent' ? (
-              <button
-                type="button"
-                onClick={() => setShowFinanceCode(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-accent)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                + Have a Finance Code? (Optional)
-              </button>
-            ) : (
-              <div className="animate-in" style={{ marginTop: '6px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label className="form-label" style={{ fontWeight: 600, margin: 0, fontSize: '12px' }}>
-                    Finance Code or Name {loginMode === 'agent' && <span style={{color: 'var(--danger-500)'}}>*</span>}
-                  </label>
-                  {loginMode !== 'agent' && (
-                    <button
-                      type="button"
-                      onClick={() => { setShowFinanceCode(false); setFinanceCode(''); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', padding: 0 }}
-                    >
-                      Hide
-                    </button>
-                  )}
-                </div>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <Building2
-                    size={18}
-                    style={{
-                      position: 'absolute',
-                      left: '14px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--text-muted)',
-                      pointerEvents: 'none',
-                      zIndex: 2
-                    }}
-                  />
-                  <input
-                    className="form-input input-with-icon-left"
-                    type="text"
-                    placeholder="e.g. SMF or leave empty for auto-detect"
-                    value={financeCode}
-                    onChange={(e) => setFinanceCode(e.target.value)}
-                    required={loginMode === 'agent'}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Submit Button */}
