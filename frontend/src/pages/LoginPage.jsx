@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginMode, setLoginMode] = useState('admin'); // 'admin' | 'agent'
 
   // Restore remembered finance code if previously used
   useEffect(() => {
@@ -54,11 +55,43 @@ export default function LoginPage() {
 
         {/* Error Notification */}
         {error && (
-          <div className="login-error animate-in" style={{ textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 14px' }}>
+          <div className="login-error animate-in" style={{ textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 14px', marginBottom: '16px' }}>
             <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
             <div style={{ wordBreak: 'break-word', fontSize: '13px', lineHeight: '1.4' }}>{error}</div>
           </div>
         )}
+
+        {/* Login Type Tabs */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-secondary)', padding: '6px', borderRadius: '12px' }}>
+          <button
+            type="button"
+            onClick={() => { setLoginMode('admin'); setShowFinanceCode(false); }}
+            style={{
+              flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px',
+              background: loginMode === 'admin' ? 'var(--bg-glass)' : 'transparent',
+              color: loginMode === 'admin' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: loginMode === 'admin' ? 700 : 600,
+              boxShadow: loginMode === 'admin' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            Admin Login
+          </button>
+          <button
+            type="button"
+            onClick={() => { setLoginMode('agent'); setShowFinanceCode(true); }}
+            style={{
+              flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px',
+              background: loginMode === 'agent' ? 'var(--bg-glass)' : 'transparent',
+              color: loginMode === 'agent' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: loginMode === 'agent' ? 700 : 600,
+              boxShadow: loginMode === 'agent' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            Field Agent Login
+          </button>
+        </div>
 
         {/* Unified Login Form */}
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
@@ -66,7 +99,7 @@ export default function LoginPage() {
           {/* Mobile / User ID */}
           <div className="form-group" style={{ marginBottom: '16px' }}>
             <label className="form-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-              Mobile Number or Agent ID
+              {loginMode === 'agent' ? 'Field Agent Mobile Number' : 'Admin Email or Mobile'}
             </label>
             <div style={{ position: 'relative', width: '100%' }}>
               <Phone
@@ -148,7 +181,7 @@ export default function LoginPage() {
 
           {/* Optional Finance Code Section */}
           <div style={{ marginBottom: '22px' }}>
-            {!showFinanceCode ? (
+            {!showFinanceCode && loginMode !== 'agent' ? (
               <button
                 type="button"
                 onClick={() => setShowFinanceCode(true)}
@@ -171,15 +204,17 @@ export default function LoginPage() {
               <div className="animate-in" style={{ marginTop: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <label className="form-label" style={{ fontWeight: 600, margin: 0, fontSize: '12px' }}>
-                    Finance Code or Name
+                    Finance Code or Name {loginMode === 'agent' && <span style={{color: 'var(--danger-500)'}}>*</span>}
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => { setShowFinanceCode(false); setFinanceCode(''); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', padding: 0 }}
-                  >
-                    Hide
-                  </button>
+                  {loginMode !== 'agent' && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowFinanceCode(false); setFinanceCode(''); }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', padding: 0 }}
+                    >
+                      Hide
+                    </button>
+                  )}
                 </div>
                 <div style={{ position: 'relative', width: '100%' }}>
                   <Building2
@@ -200,6 +235,7 @@ export default function LoginPage() {
                     placeholder="e.g. SMF or leave empty for auto-detect"
                     value={financeCode}
                     onChange={(e) => setFinanceCode(e.target.value)}
+                    required={loginMode === 'agent'}
                     style={{ width: '100%', boxSizing: 'border-box' }}
                   />
                 </div>

@@ -386,8 +386,12 @@ export default function LoanDetail() {
             {displayedRepayments.map(r => {
               const isBlocked = lowestUnpaidInstNo !== null && r.installmentNo > lowestUnpaidInstNo && r.status !== 'PAID' && r.status !== 'CARRIED_FORWARD';
               const isCarriedForward = r.status === 'CARRIED_FORWARD';
-              const isOverdue = r.status === 'OVERDUE';
               const isPaid = r.status === 'PAID';
+              const todayDate = new Date();
+              todayDate.setHours(0,0,0,0);
+              const dueD = new Date(r.dueDate);
+              dueD.setHours(0,0,0,0);
+              const isOverdue = r.status === 'OVERDUE' || (!isPaid && !isCarriedForward && dueD.getTime() < todayDate.getTime());
 
               const unitTitle = isDaily
                 ? `Day #${r.installmentNo}`
