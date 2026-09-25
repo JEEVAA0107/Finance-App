@@ -430,6 +430,26 @@ router.post('/principal', authenticate, async (req, res) => {
           where: { id: { in: ids } }
         });
       }
+    } else {
+      if (loan.interestType === 'FLAT') {
+        const newInterestPerPeriod = newOutstanding * (loan.interestRate / 100);
+        const pendingRepayments = await prisma.repayment.findMany({
+          where: { loanId, status: 'PENDING', paidAmount: 0 }
+        });
+        for (const rep of pendingRepayments) {
+          const newDue = (rep.principal || 0) + newInterestPerPeriod;
+          await prisma.repayment.update({
+            where: { id: rep.id },
+            data: { 
+              interest: newInterestPerPeriod,
+              dueAmount: newDue
+            }
+          });
+        }
+      }
+    }
+
+    if (newOutstanding <= 0) {
       await prisma.repayment.updateMany({
         where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
         data: { status: 'PAID', paidAt: new Date() },
@@ -559,6 +579,26 @@ router.post('/close', authenticate, async (req, res) => {
           where: { id: { in: ids } }
         });
       }
+    } else {
+      if (loan.interestType === 'FLAT') {
+        const newInterestPerPeriod = newOutstanding * (loan.interestRate / 100);
+        const pendingRepayments = await prisma.repayment.findMany({
+          where: { loanId, status: 'PENDING', paidAmount: 0 }
+        });
+        for (const rep of pendingRepayments) {
+          const newDue = (rep.principal || 0) + newInterestPerPeriod;
+          await prisma.repayment.update({
+            where: { id: rep.id },
+            data: { 
+              interest: newInterestPerPeriod,
+              dueAmount: newDue
+            }
+          });
+        }
+      }
+    }
+
+    if (newOutstanding <= 0) {
       await prisma.repayment.updateMany({
         where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } },
         data: { status: 'PAID', paidAt: new Date() },
