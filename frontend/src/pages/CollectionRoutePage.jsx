@@ -101,7 +101,7 @@ export default function CollectionRoutePage() {
         toast.success('📍 உங்கள் location found!');
       },
       () => { toast.error('GPS denied. Please allow location.'); setLoadingGPS(false); },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 30000, enableHighAccuracy: true }
     );
   };
 

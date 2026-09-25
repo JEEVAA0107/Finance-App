@@ -60,7 +60,7 @@ export default function MapPickerModal({ onClose, onConfirm, initialLat, initial
         alert('GPS access denied. Please allow location permission.');
         setLoadingGPS(false);
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 30000, enableHighAccuracy: true }
     );
   };
 
