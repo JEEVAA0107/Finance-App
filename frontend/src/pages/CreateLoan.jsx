@@ -290,7 +290,7 @@ export default function CreateLoan() {
 
           <div className="form-group">
             <label className="form-label">Loan Amount (₹) *</label>
-            <input className="form-input" type="number" min="1" placeholder="e.g. 50000" value={form.principalAmount} onChange={e => set('principalAmount', e.target.value)} required />
+            <input className="form-input" type="number" min="1" max="9999999" placeholder="e.g. 50000" value={form.principalAmount} onChange={e => set('principalAmount', e.target.value)} required />
           </div>
 
           {form.interestType === 'WITHOUT_INTEREST' ? (
@@ -376,7 +376,7 @@ export default function CreateLoan() {
             <>
               <div className="form-group">
                 <label className="form-label">Interest Rate (% per period) *</label>
-                <input className="form-input" type="number" step="0.1" min="0" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
+                <input className="form-input" type="number" step="0.1" min="0" max="100" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
               </div>
 
               <div className="form-group">
@@ -396,7 +396,7 @@ export default function CreateLoan() {
             <>
               <div className="form-group">
                 <label className="form-label">Interest Rate (% per period) *</label>
-                <input className="form-input" type="number" step="0.1" min="0" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
+                <input className="form-input" type="number" step="0.1" min="0" max="100" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
               </div>
 
               <div className="form-group">

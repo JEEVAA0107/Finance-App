@@ -582,9 +582,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label" style={{ fontWeight: 700 }}>Customer Full Name *</label>
                     <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. R. Murugan"
+                      type="text" className="form-input" placeholder="e.g. R. Murugan" maxLength="50"
                       value={form.name}
                       onChange={e => update('name', e.target.value)}
                       required
@@ -594,9 +592,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label" style={{ fontWeight: 700 }}>Mobile Phone Number *</label>
                     <input
-                      type="tel"
-                      className="form-input"
-                      placeholder="10-digit mobile"
+                      type="tel" className="form-input" placeholder="10-digit mobile" maxLength="10"
                       value={form.phone}
                       onChange={e => update('phone', e.target.value.replace(/\\D/g, '').slice(0, 10))}
                       required
@@ -608,9 +604,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">City / Town *</label>
                     <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. Coimbatore"
+                      type="text" className="form-input" placeholder="e.g. Coimbatore" maxLength="50"
                       value={form.city}
                       onChange={e => update('city', e.target.value)}
                       required
@@ -747,9 +741,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label" style={{ fontWeight: 700 }}>Jamin Person Full Name</label>
                     <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. S. Kumar (Guarantor Name)"
+                      type="text" className="form-input" placeholder="e.g. S. Kumar (Guarantor Name)" maxLength="50"
                       value={form.jaminName}
                       onChange={e => update('jaminName', e.target.value)}
                     />
@@ -758,9 +750,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label" style={{ fontWeight: 700 }}>Jamin Mobile Phone</label>
                     <input
-                      type="tel"
-                      className="form-input"
-                      placeholder="Jamin Phone Number"
+                      type="tel" className="form-input" placeholder="Jamin Phone Number" maxLength="10"
                       value={form.jaminPhone}
                       onChange={e => update('jaminPhone', e.target.value.replace(/\\D/g, '').slice(0, 10))}
                     />
