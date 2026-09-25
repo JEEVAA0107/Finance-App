@@ -147,6 +147,8 @@ model Loan {
   @@unique([companyId, loanNumber])
   @@index([customerId])
   @@index([status])
+  @@index([createdAt, interestType])
+  @@index([status, companyId])
   @@index([loanNumber])
   @@index([companyId])
 }
@@ -184,6 +186,7 @@ model Repayment {
   @@index([dueDate])
   @@index([status])
   @@index([weekNo])
+  @@index([dueDate, status])
 }
 
 model Payment {
@@ -201,6 +204,7 @@ model Payment {
 
   @@index([repaymentId])
   @@index([collectedAt])
+  @@index([collectedAt, paymentType])
 }
 
 model AuditLog {
