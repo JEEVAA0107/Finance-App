@@ -300,7 +300,7 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/loans — Create loan
 router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
-    const {
+    let {
       customerId, agentId, principalAmount, interestRate,
       interestType = 'FLAT', tenure, tenureUnit = 'MONTHS',
       processingFee = 0, advanceDeduction, repaymentFrequency, startDate, alreadyCollectedAmount = 0,
@@ -329,11 +329,7 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     let batchSize, interestPerPeriod, principalPerPeriod, installmentAmount, totalPayable, totalInterest;
     let frequency = repaymentFrequency || (tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY');
       if (interestType === 'FLAT' || interestType === 'EMI') {
-        frequency = tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
-        if (interestType === 'FLAT' && frequency === 'DAILY') {
-          frequency = 'MONTHLY';
-          tenureUnit = 'MONTHS';
-        }
+        frequency = repaymentFrequency || (tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY');
       }
 
     if (interestType === 'WITHOUT_INTEREST') {

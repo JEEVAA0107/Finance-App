@@ -272,12 +272,17 @@ export default function CreateLoan() {
                 else if (sch.calculationMethod === 'METHOD_2_REDUCING') iType = 'EMI';
                 
                 setForm(f => {
-                    const next = { ...f, schemeId: sid, interestType: iType, interestRate: sch.interestRate || '' };
+                    const next = { 
+                      ...f, 
+                      schemeId: sid, 
+                      interestType: iType, 
+                      interestRate: sch.interestRate !== undefined ? sch.interestRate : '' 
+                    };
                     if (iType === 'EMI' && next.tenureUnit === 'DAYS') {
                       next.tenureUnit = 'MONTHS';
                       next.tenure = '12';
+                      next.repaymentFrequency = 'MONTHLY';
                     }
-                    if (iType === 'EMI') next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
                     return next;
                 });
               } else {
@@ -385,9 +390,18 @@ export default function CreateLoan() {
 
               <div className="form-group">
                 <label className="form-label">Collection Frequency *</label>
-                <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
+                <select 
+                  className="form-select" 
+                  value={form.tenureUnit} 
+                  onChange={e => {
+                    const unit = e.target.value;
+                    const freq = unit === 'DAYS' ? 'DAILY' : unit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+                    setForm(f => ({ ...f, tenureUnit: unit, repaymentFrequency: freq }));
+                  }}
+                >
                   <option value="MONTHS">Monthly</option>
                   <option value="WEEKS">Weekly</option>
+                  <option value="DAYS">Daily</option>
                 </select>
               </div>
 
@@ -405,7 +419,16 @@ export default function CreateLoan() {
 
               <div className="form-group">
                 <label className="form-label">Collection Frequency *</label>
-                <select className="form-select" value={form.tenureUnit} onChange={e => set('tenureUnit', e.target.value)}>
+                <select 
+                  className="form-select" 
+                  value={form.tenureUnit} 
+                  onChange={e => {
+                    const unit = e.target.value;
+                    const freq = unit === 'DAYS' ? 'DAILY' : unit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+                    setForm(f => ({ ...f, tenureUnit: unit, repaymentFrequency: freq }));
+                  }}
+                >
+                  <option value="DAYS">Daily</option>
                   <option value="WEEKS">Weekly</option>
                   <option value="MONTHS">Monthly</option>
                 </select>
