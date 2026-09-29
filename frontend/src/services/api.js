@@ -190,5 +190,8 @@ export const updateApiBaseUrl = (url) => {
 };
 
 export const schemesAPI = {
-  list: () => api.get('/schemes').then(r => r.data.data),
+  list: (params) => api.get('/schemes', { params }).then(extractData),
+  create: (data) => api.post('/schemes', data).then(extractData),
+  update: (id, data) => api.put(`/schemes/${id}`, data).then(extractData),
+  delete: (id) => api.delete(`/schemes/${id}`).then(extractData),
 };

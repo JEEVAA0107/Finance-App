@@ -20,7 +20,7 @@ export default function CreateLoan() {
 
   const loadCustomers = () => {
     customersAPI.list({ limit: 200 }).then(r => setCustomers(r)).catch(() => {});
-    schemesAPI.list().then(r => setSchemes(r)).catch(() => {});
+    schemesAPI.list().then(r => setSchemes(Array.isArray(r) ? r : [])).catch(() => {});
   };
 
   useEffect(() => {

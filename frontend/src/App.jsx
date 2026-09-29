@@ -53,6 +53,7 @@ function AppRoutes() {
           <Route path="notifications" element={<NotificationsDashboard />} />
           <Route path="users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="schemes" element={(isAdmin || isSuperAdmin) ? <LoanSchemesPage /> : <Navigate to="/" replace />} />
           <Route path="profit" element={isAdmin ? <ProfitPage /> : <Navigate to="/" replace />} />
           <Route path="payment-history" element={isAdmin ? <PaymentsHistoryPage /> : <Navigate to="/" replace />} />
           <Route path="collection-route" element={<CollectionRoutePage />} />

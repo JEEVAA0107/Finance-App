@@ -65,6 +65,7 @@ app.use('/api/dashboard',  require('./src/routes/dashboard'));
 app.use('/api/reports',    require('./src/routes/reports'));
 app.use('/api/audit',      require('./src/routes/audit'));
 app.use('/api/notifications', require('./src/routes/notifications'));
+app.use('/api/schemes',       require('./src/routes/schemes'));
 
 // Health check
 app.get('/health', (req, res) => res.json({

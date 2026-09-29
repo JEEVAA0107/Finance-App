@@ -30,6 +30,7 @@ export default function AppLayout() {
     ? [
         { section: 'System', items: [
           { to: '/', icon: LayoutDashboard, label: 'Super Panel' },
+          { to: '/schemes', icon: FileText, label: 'Loan Schemes' },
         ]},
         { section: 'Config', items: [
           { to: '/notifications', icon: Bell, label: 'Notifications' },
