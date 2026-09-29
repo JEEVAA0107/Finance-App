@@ -16,6 +16,7 @@ const CreateLoan = lazy(() => import('./pages/CreateLoan'));
 const CollectionPage = lazy(() => import('./pages/CollectionPage'));
 const UsersPage = lazy(() => import('./pages/UsersPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const LoanSchemesPage = lazy(() => import('./pages/LoanSchemesPage'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 const NotificationsDashboard = lazy(() => import('./pages/NotificationsDashboard'));
 const ProfitPage = lazy(() => import('./pages/ProfitPage'));

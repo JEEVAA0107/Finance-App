@@ -54,6 +54,7 @@ export default function AppLayout() {
         { section: 'Admin', items: [
           { to: '/notifications', icon: Bell, label: 'Notifications' },
           { to: '/users', icon: UserCog, label: 'Staff Management' },
+          { to: '/schemes', icon: FileText, label: 'Loan Schemes' },
           { to: '/settings', icon: Settings, label: 'Settings & Backup' },
         ]},
       ]
@@ -110,6 +111,7 @@ export default function AppLayout() {
     { to: '/collections', label: 'Collections' },
     { to: '/payment-history', label: 'History' },
     { to: '/users', label: 'Staff Management' },
+    { to: '/schemes', label: 'Loan Schemes' },
   ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'Finova';
 
   return (

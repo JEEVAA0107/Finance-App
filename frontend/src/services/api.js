@@ -188,3 +188,7 @@ export default api;
 export const updateApiBaseUrl = (url) => {
   api.defaults.baseURL = url;
 };
+
+export const schemesAPI = {
+  list: () => api.get('/schemes').then(r => r.data.data),
+};

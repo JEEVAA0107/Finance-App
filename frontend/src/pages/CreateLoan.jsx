@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loansAPI, customersAPI } from '../services/api';
+import { loansAPI, customersAPI, schemesAPI } from '../services/api';
 import AddCustomerModal from '../components/AddCustomerModal';
 import toast from 'react-hot-toast';
 import { Landmark, UserPlus, User, ShieldCheck, Phone, CheckCircle2, Edit2 } from 'lucide-react';
@@ -8,17 +8,19 @@ import { Landmark, UserPlus, User, ShieldCheck, Phone, CheckCircle2, Edit2 } fro
 export default function CreateLoan() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
+  const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [form, setForm] = useState({
-    customerId: '', principalAmount: '', interestRate: '',
+    customerId: '', schemeId: '', principalAmount: '', interestRate: '',
     interestType: 'WITHOUT_INTEREST', tenure: '100', advanceDeduction: '', alreadyCollectedAmount: '',
     tenureUnit: 'DAYS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
   });
 
   const loadCustomers = () => {
     customersAPI.list({ limit: 200 }).then(r => setCustomers(r)).catch(() => {});
+    schemesAPI.list().then(r => setSchemes(r)).catch(() => {});
   };
 
   useEffect(() => {
@@ -260,32 +262,34 @@ export default function CreateLoan() {
           )}
 
           <div className="form-group">
-            <label className="form-label">Loan Type *</label>
-            <select className="form-select" value={form.interestType} onChange={e => {
-              const val = e.target.value;
-              setForm(f => {
-                const next = { ...f, interestType: val };
-                if (val === 'EMI') {
-                  if (f.tenureUnit === 'DAYS') {
-                    next.tenureUnit = 'MONTHS';
-                    next.tenure = '12';
-                  }
-                  next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
-                } else if (val === 'FLAT') {
-                  if (next.tenureUnit === 'DAYS') next.tenureUnit = 'MONTHS';
-                  next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
-                } else if (val === 'WITHOUT_INTEREST') {
-                  if (!next.repaymentFrequency) next.repaymentFrequency = 'DAILY';
-                  if (!next.tenureUnit) next.tenureUnit = 'DAYS';
-                  if (!next.tenure || next.tenure === '12') next.tenure = '100';
-                }
-                return next;
-              });
-            }}>
-              <option value="FLAT">Regular Flat Interest (வட்டி கடன்)</option>
-              <option value="WITHOUT_INTEREST">Deduction Based (கந்து வட்டி)</option>
-              <option value="EMI">EMI (அசலோடு தவணை)</option>
+            <label className="form-label">Loan Scheme / Plan *</label>
+            <select className="form-select" value={form.schemeId} onChange={e => {
+              const sid = e.target.value;
+              const sch = schemes.find(s => s.id === sid);
+              if(sch) {
+                let iType = 'WITHOUT_INTEREST';
+                if (sch.calculationMethod === 'METHOD_1_FIXED') iType = 'FLAT';
+                else if (sch.calculationMethod === 'METHOD_2_REDUCING') iType = 'EMI';
+                
+                setForm(f => {
+                    const next = { ...f, schemeId: sid, interestType: iType, interestRate: sch.interestRate || '' };
+                    if (iType === 'EMI' && next.tenureUnit === 'DAYS') {
+                      next.tenureUnit = 'MONTHS';
+                      next.tenure = '12';
+                    }
+                    if (iType === 'EMI') next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+                    return next;
+                });
+              } else {
+                setForm(f => ({ ...f, schemeId: sid }));
+              }
+            }} required>
+              <option value="">-- Select a Plan --</option>
+              {schemes.map(s => <option key={s.id} value={s.id}>{s.name} ({s.interestRate}%)</option>)}
             </select>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+              Select a scheme defined in your settings.
+            </div>
           </div>
 
           <div className="form-group">
