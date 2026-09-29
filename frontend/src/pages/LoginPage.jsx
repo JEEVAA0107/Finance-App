@@ -75,7 +75,7 @@ export default function LoginPage() {
               cursor: 'pointer', transition: 'all 0.2s'
             }}
           >
-            Field Agent Login
+            Field Executive Login
           </button>
         </div>
 
@@ -85,7 +85,7 @@ export default function LoginPage() {
           {/* Mobile / User ID */}
           <div className="form-group" style={{ marginBottom: '16px' }}>
             <label className="form-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-              {loginMode === 'agent' ? 'Field Agent Mobile Number' : 'Admin Email or Mobile'}
+              {loginMode === 'agent' ? 'Field Executive Mobile Number' : 'Admin Email or Mobile'}
             </label>
             <div style={{ position: 'relative', width: '100%' }}>
               <Phone
@@ -116,7 +116,7 @@ export default function LoginPage() {
           {/* Password or Agent ID */}
           <div className="form-group" style={{ marginBottom: '22px' }}>
             <label className="form-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-              {loginMode === 'agent' ? 'Agent ID' : 'Password'}
+              {loginMode === 'agent' ? 'Executive ID' : 'Password'}
             </label>
             <div style={{ position: 'relative', width: '100%' }}>
               <Lock

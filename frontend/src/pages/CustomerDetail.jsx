@@ -451,7 +451,7 @@ export default function CustomerDetail() {
               </div>
               <div style={{ padding: '10px 14px', background: totalCustomerPenalty > 0 ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-glass)', borderRadius: 10, border: totalCustomerPenalty > 0 ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: 11, color: totalCustomerPenalty > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <AlertTriangle size={13} /> Total Penalty (அபராதம்)
+                  <AlertTriangle size={13} /> Total Late Fee
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: totalCustomerPenalty > 0 ? '#dc2626' : 'var(--text-primary)' }}>
                   ₹{totalCustomerPenalty.toLocaleString('en-IN')}
@@ -462,7 +462,7 @@ export default function CustomerDetail() {
           <div className="table-container" style={{ border: 'none' }}>
             <table className="data-table">
               <thead>
-                <tr><th>Loan #</th><th>Principal</th><th>Payable</th><th>Tenure</th><th>Penalty</th><th>Status</th><th>Start Date</th></tr>
+                <tr><th>Loan #</th><th>Principal</th><th>Payable</th><th>Tenure</th><th>Late Fee</th><th>Status</th><th>Start Date</th></tr>
               </thead>
               <tbody>
                 {customer.loans.map((l) => (
@@ -493,7 +493,7 @@ export default function CustomerDetail() {
                         return rAcc + Math.max(r.penaltyPaid || 0, payPen);
                       }, 0);
                       return (
-                        <td data-label="Penalty">
+                        <td data-label="Late Fee">
                           {loanPen > 0 ? (
                             <span style={{ fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: 6, fontSize: 12 }}>
                               ₹{loanPen.toLocaleString('en-IN')}

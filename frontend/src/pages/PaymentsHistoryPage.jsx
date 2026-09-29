@@ -207,14 +207,14 @@ export default function PaymentsHistoryPage() {
             
             {(currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN') && (
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Field Agent</label>
+                <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Field Executive</label>
                 <select 
                   className="form-select"
                   value={filters.collectedById}
                   onChange={e => setFilters({ ...filters, collectedById: e.target.value })}
                   style={{ background: 'var(--card-bg)' }}
                 >
-                  <option value="">All Agents</option>
+                  <option value="">All Executives</option>
                   {agents.map(a => (
                     <option key={a.id} value={a.id}>{a.name} ({a.role})</option>
                   ))}

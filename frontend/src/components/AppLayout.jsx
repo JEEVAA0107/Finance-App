@@ -53,7 +53,7 @@ export default function AppLayout() {
         ]},
         { section: 'Admin', items: [
           { to: '/notifications', icon: Bell, label: 'Notifications' },
-          { to: '/users', icon: UserCog, label: 'Agent Management' },
+          { to: '/users', icon: UserCog, label: 'Staff Management' },
           { to: '/settings', icon: Settings, label: 'Settings & Backup' },
         ]},
       ]
@@ -109,7 +109,7 @@ export default function AppLayout() {
     { to: '/loans', label: 'Loans' },
     { to: '/collections', label: 'Collections' },
     { to: '/payment-history', label: 'History' },
-    { to: '/users', label: 'Agent Management' },
+    { to: '/users', label: 'Staff Management' },
   ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'Finova';
 
   return (
@@ -173,7 +173,7 @@ export default function AppLayout() {
             <img src="/logo-icon.png" alt="Finova" style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'contain' }} />
             <div>
               <h1>Finova</h1>
-              <span>{isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin Panel' : 'Agent Panel'}</span>
+              <span>{isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin Panel' : 'Executive Panel'}</span>
             </div>
             <button className="mobile-menu-btn" onClick={() => setSidebarOpen(false)}
               style={{ marginLeft: 'auto', display: sidebarOpen ? 'flex' : 'none' }}>

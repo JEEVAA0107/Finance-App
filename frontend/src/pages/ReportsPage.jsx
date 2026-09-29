@@ -9,7 +9,7 @@ function formatDate(d) { return d ? new Date(d).toLocaleDateString('en-IN', { da
 export default function ReportsPage() {
   const [tab, setTab] = useState('daily');
   const [dailyData, setDailyData] = useState({ payments: [], total: 0 });
-  const [defaulters, setDefaulters] = useState([]);
+  const [defaulters, setOverdue Accounts] = useState([]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
 
@@ -22,18 +22,18 @@ export default function ReportsPage() {
     finally { setLoading(false); }
   };
 
-  const loadDefaulters = async () => {
+  const loadOverdue Accounts = async () => {
     setLoading(true);
     try {
       const res = await reportsAPI.defaulters();
-      setDefaulters(res);
+      setOverdue Accounts(res);
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   };
 
   useEffect(() => {
     if (tab === 'daily') loadDaily();
-    else if (tab === 'defaulters') loadDefaulters();
+    else if (tab === 'defaulters') loadOverdue Accounts();
   }, [tab, date]);
 
   const exportCSV = (data, filename) => {
@@ -59,7 +59,7 @@ export default function ReportsPage() {
           <Calendar size={14} style={{ marginRight: 4 }} />Daily Collection
         </button>
         <button className={`tab ${tab === 'defaulters' ? 'active' : ''}`} onClick={() => setTab('defaulters')}>
-          <AlertTriangle size={14} style={{ marginRight: 4 }} />Defaulter List
+          <AlertTriangle size={14} style={{ marginRight: 4 }} />Overdue Accounts
         </button>
       </div>
 
@@ -132,11 +132,11 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Defaulters */}
+      {/* Overdue Accounts */}
       {tab === 'defaulters' && (
         <div className="card">
           <div className="card-header">
-            <div className="card-title flex items-center gap-8"><AlertTriangle size={18} style={{ color: 'var(--danger-400)' }} />Defaulter List</div>
+            <div className="card-title flex items-center gap-8"><AlertTriangle size={18} style={{ color: 'var(--danger-400)' }} />Overdue Accounts</div>
             <div className="flex-mobile-stack items-center gap-8">
               <span className="badge badge-danger" style={{ justifyContent: 'center' }}>{defaulters.length} overdue</span>
               <button className="btn btn-ghost btn-sm" style={{ width: '100%' }} onClick={() => {
@@ -167,7 +167,7 @@ export default function ReportsPage() {
             <div className="table-container" style={{ border: 'none' }}>
               <table className="data-table">
                 <thead>
-                  <tr><th>Customer</th><th>Phone</th><th>Loan #</th><th>Due Date</th><th>Amount Due</th><th>Agent</th></tr>
+                  <tr><th>Customer</th><th>Phone</th><th>Loan #</th><th>Due Date</th><th>Amount Due</th><th>Executive</th></tr>
                 </thead>
                 <tbody>
                   {defaulters.map((d, i) => (
@@ -187,7 +187,7 @@ export default function ReportsPage() {
                       <td data-label="Loan #" className="fw-600">{d.loan?.loanNumber}</td>
                       <td data-label="Due Date" style={{ color: 'var(--danger-400)' }}>{formatDate(d.dueDate)}</td>
                       <td data-label="Amount Due" className="fw-700" style={{ color: 'var(--danger-400)' }}>₹{d.dueAmount?.toLocaleString('en-IN')}</td>
-                      <td data-label="Agent">{d.loan?.agent?.name || '-'}</td>
+                      <td data-label="Executive">{d.loan?.agent?.name || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

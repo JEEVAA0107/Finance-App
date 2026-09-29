@@ -201,7 +201,7 @@ export default function Dashboard() {
             <StatCard to="/payment-history" icon={HandCoins} label="Total Collected (மொத்த வசூல்)" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/payment-history" icon={HandCoins} label="Principal Collected (அசல் வசூல்)" value={fmt(s?.totalPrincipalCollected)} color="green" />
             <StatCard to="/profit" icon={TrendingUp} label="Interest Profit (வட்டி லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
-            <StatCard to="/payment-history" icon={AlertTriangle} label="Penalty Profit (அபராதம்)" value={fmt(s?.totalPenaltyCollected)} color="red" />
+            <StatCard to="/payment-history" icon={AlertTriangle} label="Late Fee Collected (அபராதம்)" value={fmt(s?.totalPenaltyCollected)} color="red" />
             <StatCard to="/profit" icon={TrendingUp} label="Total Profit (மொத்த லாபம்)" value={fmt(s?.totalCombinedProfit)} color="green" />
           </div>
 
@@ -214,7 +214,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: '#d97706' }}>Profit Breakdown Section (லாப விவரம்)</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pure Interest Profit + Late Penalty Profit = Total Profit</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pure Interest Profit + Late Late Fee Collected = Total Profit</div>
                 </div>
               </div>
               <Link to="/profit" className="btn btn-ghost btn-sm" style={{ borderColor: 'rgba(245, 158, 11, 0.35)', color: '#d97706', fontSize: 12, fontWeight: 700 }}>
@@ -232,9 +232,9 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Penalty Profit */}
+              {/* Late Fee Collected */}
               <div style={{ background: 'var(--bg-glass)', padding: '14px 16px', borderRadius: 12, border: '1px solid rgba(220, 38, 38, 0.2)' }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Penalty Profit (அபராத லாபம்)</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Late Fee Collected</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 4 }}>{fmt(s?.totalPenaltyCollected)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                   Today: <b style={{ color: '#dc2626' }}>{fmt(s?.todayPenaltyCollected || 0)}</b> ({s?.totalPenaltyCount || 0} payments)
@@ -258,7 +258,7 @@ export default function Dashboard() {
             <StatCard to="/collections" icon={Calendar} label="Today's Collection (இன்றைய வசூல்)" value={fmt(s?.todayCollection)} color="green" />
             <StatCard to="/collections" icon={HandCoins} label="Today's Principal (அசல் வசூல்)" value={fmt(s?.todayPrincipalCollected)} color="purple" />
             <StatCard to="/profit" icon={TrendingUp} label="Today's Interest (வட்டி லாபம்)" value={fmt(s?.todayInterestCollected)} color="yellow" />
-            <StatCard to="/payment-history" icon={AlertTriangle} label="Today's Penalty (அபராதம்)" value={fmt(s?.todayPenaltyCollected)} color="red" />
+            <StatCard to="/payment-history" icon={AlertTriangle} label="Today's Late Fee" value={fmt(s?.todayPenaltyCollected)} color="red" />
             <StatCard to="/collections" icon={Clock} label="Today's Due (இன்றைய டியூ)" value={fmt(s?.todayDueAmount)} color="blue" />
             <StatCard to="/collections" icon={AlertTriangle} label="Remaining Due (மீதமுள்ள டியூ)" value={fmt(s?.remainingToday)} color="yellow" />
             <StatCard to="/collections" icon={PieChart} label="Pending (All) (நிலுவையில் உள்ளவை)" value={fmt(s?.pendingCollections)} color="purple" />

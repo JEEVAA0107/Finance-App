@@ -279,7 +279,7 @@ export default function CollectionPage() {
                             alignItems: 'center',
                             gap: 4,
                           }}
-                          title="Pay Penalty Only & Carry Forward"
+                          title="Pay Late Fee Only & Carry Forward"
                           onClick={() => handleOpenPenaltyModal(r)}
                         >
                           <Clock size={13} /> Carry Fwd
@@ -374,7 +374,7 @@ export default function CollectionPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>Pay Penalty & Carry Forward</div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Pay Late Fee & Carry Forward</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {penaltyModal.loan?.customer?.name} · {penaltyModal.loan?.loanNumber} #{penaltyModal.installmentNo}
                 </div>
@@ -402,7 +402,7 @@ export default function CollectionPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Penalty Amount (₹) *</label>
+                  <label className="form-label">Late Fee Amount (₹) *</label>
                   <input
                     className="form-input"
                     type="number"

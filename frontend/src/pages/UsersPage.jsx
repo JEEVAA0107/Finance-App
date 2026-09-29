@@ -55,10 +55,10 @@ export default function UsersPage() {
         if (form.password.trim()) {
           await usersAPI.changePassword(editUser.id, { password: form.password });
         }
-        toast.success('Agent updated successfully');
+        toast.success('Executive updated successfully');
       } else {
         await usersAPI.create({ ...form, phone: cleanPhone });
-        toast.success('Agent created successfully');
+        toast.success('Executive created successfully');
       }
       setShowModal(false);
       setForm({ name: '', email: '', phone: '', password: '', role: 'AGENT' });
@@ -89,7 +89,7 @@ export default function UsersPage() {
     if (window.confirm(`Are you sure you want to completely delete the agent "${user.name}"? This action cannot be undone.`)) {
       try {
         await usersAPI.delete(user.id);
-        toast.success('Agent deleted successfully');
+        toast.success('Executive deleted successfully');
         load();
       } catch (err) {
         toast.error(err.response?.data?.message || err.message || 'Delete failed');
@@ -103,12 +103,12 @@ export default function UsersPage() {
     <div className="animate-in">
       <div className="page-header page-header-actions">
         <div>
-          <h2>Agent Management</h2>
+          <h2>Staff Management</h2>
           <p>Manage field agents, collectors & staff accounts</p>
         </div>
         <div className="flex-mobile-stack items-center gap-12">
           <button className="btn btn-primary" onClick={openAdd} style={{ whiteSpace: 'nowrap' }}>
-            <Plus size={18} />Add Agent
+            <Plus size={18} />Add Executive
           </button>
         </div>
       </div>
@@ -117,8 +117,8 @@ export default function UsersPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Agent</th>
-              <th>Agent ID</th>
+              <th>Executive</th>
+              <th>Executive ID</th>
               <th>Email</th>
               <th>Phone</th>
               <th>Role</th>
@@ -131,13 +131,13 @@ export default function UsersPage() {
             {users.length === 0 ? (
               <tr>
                 <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                  No agents found. Click "Add Agent" to register an agent.
+                  No agents found. Click "Add Executive" to register an agent.
                 </td>
               </tr>
             ) : (
               users.map(u => (
                 <tr key={u.id}>
-                  <td data-label="Agent">
+                  <td data-label="Executive">
                     <div className="flex items-center gap-12">
                       <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 13, background: 'linear-gradient(135deg, var(--primary-500), var(--primary-700))', color: '#fff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
                         {u.name?.charAt(0)?.toUpperCase()}
@@ -145,7 +145,7 @@ export default function UsersPage() {
                       <div className="fw-600">{u.name}</div>
                     </div>
                   </td>
-                  <td data-label="Agent ID">
+                  <td data-label="Executive ID">
                     <div className="fw-700" style={{ color: 'var(--primary-600)' }}>{u.agentId || '-'}</div>
                   </td>
                   <td data-label="Email">
@@ -174,7 +174,7 @@ export default function UsersPage() {
                   </td>
                   <td data-label="Actions">
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} style={{ padding: '6px 8px' }} title="Edit Agent Details">
+                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} style={{ padding: '6px 8px' }} title="Edit Executive Details">
                         <Edit2 size={14} />
                       </button>
                       {u.role !== 'ADMIN' ? (
@@ -187,7 +187,7 @@ export default function UsersPage() {
                         </span>
                       )}
                       {u.role !== 'ADMIN' && (
-                        <button className="btn btn-ghost btn-sm" onClick={() => deleteUser(u)} style={{ padding: '6px 8px', color: 'var(--danger-600)' }} title="Delete Agent">
+                        <button className="btn btn-ghost btn-sm" onClick={() => deleteUser(u)} style={{ padding: '6px 8px', color: 'var(--danger-600)' }} title="Delete Executive">
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -200,14 +200,14 @@ export default function UsersPage() {
         </table>
       </div>
 
-      {/* Add / Edit Agent Modal */}
+      {/* Add / Edit Executive Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <UserCheck size={20} color="var(--primary-500)" />
-                {editUser ? 'Edit Agent' : 'Add New Agent'}
+                {editUser ? 'Edit Executive' : 'Add New Agent'}
               </h3>
               <button className="modal-close" onClick={() => setShowModal(false)}><X size={18} /></button>
             </div>
@@ -242,13 +242,13 @@ export default function UsersPage() {
                   )}
                   <div className="form-group">
                     <label className="form-label">Role *</label>
-                    <input className="form-input" value="Field Agent" disabled />
+                    <input className="form-input" value="Field Executive" disabled />
                   </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editUser ? 'Save Changes' : 'Create Agent'}</button>
+                <button type="submit" className="btn btn-primary">{editUser ? 'Save Changes' : 'Create Executive'}</button>
               </div>
             </form>
           </div>

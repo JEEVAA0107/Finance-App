@@ -259,7 +259,7 @@ export default function LoanDetail() {
           </div>
         )}
 
-        {/* Total Penalty Collected Section */}
+        {/* Total Late Fee Collected Section */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -274,7 +274,7 @@ export default function LoanDetail() {
           <div>
             <div style={{ fontWeight: 700, color: totalLoanPenalty > 0 ? '#dc2626' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <AlertTriangle size={15} color={totalLoanPenalty > 0 ? '#ef4444' : 'var(--text-muted)'} />
-              <span>Total Penalty Collected (அபராதம்)</span>
+              <span>Total Late Fee Collected (அபராதம்)</span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
               Carry forward fee & overdue penalties
@@ -538,7 +538,7 @@ export default function LoanDetail() {
                                 alignItems: 'center',
                                 gap: 3,
                               }}
-                              title="Pay Penalty Only & Carry Forward to End of Loan Schedule"
+                              title="Pay Late Fee Only & Carry Forward to End of Loan Schedule"
                               onClick={() => handleOpenPenaltyModal(r)}
                             >
                               <Clock size={12} /> Carry Fwd
@@ -613,7 +613,7 @@ export default function LoanDetail() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>Pay Penalty & Carry Forward</div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Pay Late Fee & Carry Forward</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Installment #{penaltyModal.installmentNo} {penaltyModal.weekNo ? `(Week ${penaltyModal.weekNo})` : ''} · {loan.customer?.name}
                 </div>
@@ -656,7 +656,7 @@ export default function LoanDetail() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Penalty Amount (₹) *</label>
+                  <label className="form-label">Late Fee Amount (₹) *</label>
                   <input
                     className="form-input"
                     type="number"
@@ -744,7 +744,7 @@ export default function LoanDetail() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Overdue Penalty / Extra Charges (₹) - optional</label>
+                  <label className="form-label">Late Fee / Overdue Charges (₹) - optional</label>
                   <input className="form-input" type="number" step="0.01" min="0" value={principalForm.penaltyAmount} onChange={e => setPrincipalForm({ ...principalForm, penaltyAmount: e.target.value })} />
                 </div>
 

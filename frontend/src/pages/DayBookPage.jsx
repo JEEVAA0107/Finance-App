@@ -134,7 +134,7 @@ export default function DayBookPage() {
               <span className="font-bold" style={{ color: 'var(--primary-600)' }}>{fmt(data?.processingFees)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-              <span className="color-muted font-medium">Penalty Collected (அபராத வசூல்)</span>
+              <span className="color-muted font-medium">Late Fee Collected (அபராத வசூல்)</span>
               <span className="font-bold" style={{ color: 'var(--danger)' }}>{fmt(data?.penaltyCollected)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '8px', marginTop: 4 }}>
@@ -192,9 +192,9 @@ export default function DayBookPage() {
             </div>
           </div>
 
-          {/* Penalty Profit */}
+          {/* Late Fee Collected */}
           <div style={{ background: 'var(--bg-secondary)', padding: '16px 18px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Penalty Profit (அபராத லாபம்)</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Late Fee Collected</div>
             <div style={{ fontSize: '22px', fontWeight: 800, color: '#dc2626', marginTop: '6px' }}>
               {fmt(data?.penaltyProfit || 0)}
             </div>
