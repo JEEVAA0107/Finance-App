@@ -144,6 +144,9 @@ export default function LoanDetail() {
   if (!loan) return <div className="card" style={{ textAlign: 'center', padding: 32 }}>Loan not found</div>;
 
   const isWithoutInt = loan.interestType === 'WITHOUT_INTEREST';
+  const currentInstallmentAmount = (loan.interestType === 'FLAT' && loan.outstandingPrincipal !== null && loan.outstandingPrincipal !== undefined)
+    ? (loan.repayments?.find(r => r.status === 'PENDING')?.dueAmount ?? Math.round(loan.outstandingPrincipal * (loan.interestRate / 100)))
+    : (loan.installmentAmount ?? 0);
   const isMonthly = loan.tenureUnit === 'MONTHS';
   const isDaily = loan.tenureUnit === 'DAYS' || loan.repayments?.some(r => r.dayNo != null && r.dayNo > 1);
   const isWeekly = !isDaily && !isMonthly;
@@ -228,7 +231,7 @@ export default function LoanDetail() {
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isWithoutInt ? (loan.tenureUnit === 'DAYS' ? 'Daily Due' : loan.tenureUnit === 'MONTHS' ? 'Monthly Due' : 'Weekly Due') : 'Per Period'}</div>
-            <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--accent-400)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--accent-400)' }}>₹{currentInstallmentAmount?.toLocaleString('en-IN')}</div>
           </div>
           <div style={{ textAlign: 'center', background: 'var(--bg-glass)', borderRadius: 10, padding: '10px 6px' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Outstanding</div>
@@ -319,7 +322,7 @@ export default function LoanDetail() {
               {isDaily ? 'Daily Repayment Schedule' : isWeekly ? 'Weekly Repayment Schedule' : isMonthly ? 'Monthly Repayment Schedule' : 'Repayment Schedule'}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {totalCount} {isDaily ? 'Days' : isWeekly ? 'Weeks' : isMonthly ? 'Months' : 'Installments'} · ₹{loan.installmentAmount?.toLocaleString('en-IN')} / {isDaily ? 'Day' : isWeekly ? 'Week' : isMonthly ? 'Month' : 'Period'}
+              {totalCount} {isDaily ? 'Days' : isWeekly ? 'Weeks' : isMonthly ? 'Months' : 'Installments'} · ₹{currentInstallmentAmount?.toLocaleString('en-IN')} / {isDaily ? 'Day' : isWeekly ? 'Week' : isMonthly ? 'Month' : 'Period'}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

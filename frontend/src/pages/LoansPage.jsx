@@ -197,7 +197,7 @@ export default function LoansPage() {
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{loan.interestType === 'WITHOUT_INTEREST' ? (loan.tenureUnit === 'DAYS' ? 'DAILY DUE' : loan.tenureUnit === 'MONTHS' ? 'MONTHLY DUE' : 'WEEKLY DUE') : 'INTEREST/PERIOD'}</div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent-600)' }}>₹{loan.installmentAmount?.toLocaleString('en-IN')}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent-600)' }}>₹{((loan.interestType === 'FLAT' && loan.outstandingPrincipal !== null && loan.outstandingPrincipal !== undefined) ? Math.round(loan.outstandingPrincipal * (loan.interestRate / 100)) : loan.installmentAmount)?.toLocaleString('en-IN')}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>OUTSTANDING</div>

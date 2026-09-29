@@ -412,6 +412,7 @@ router.post('/principal', authenticate, async (req, res) => {
 
     if (newOutstanding <= 0) {
       updateData.status = 'CLOSED';
+      updateData.installmentAmount = 0;
       
       const repaymentsToDelete = await prisma.repayment.findMany({
         where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, paidAmount: 0, id: { not: linkRepayment.id } },
@@ -433,6 +434,7 @@ router.post('/principal', authenticate, async (req, res) => {
     } else {
       if (loan.interestType === 'FLAT') {
         const newInterestPerPeriod = newOutstanding * (loan.interestRate / 100);
+        updateData.installmentAmount = round2(newInterestPerPeriod);
         const pendingRepayments = await prisma.repayment.findMany({
           where: { loanId, status: 'PENDING', paidAmount: 0 }
         });
@@ -561,6 +563,7 @@ router.post('/close', authenticate, async (req, res) => {
 
     if (newOutstanding <= 0) {
       updateData.status = 'CLOSED';
+      updateData.installmentAmount = 0;
       
       const repaymentsToDelete = await prisma.repayment.findMany({
         where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }, paidAmount: 0, id: { not: linkRepayment.id } },
@@ -582,6 +585,7 @@ router.post('/close', authenticate, async (req, res) => {
     } else {
       if (loan.interestType === 'FLAT') {
         const newInterestPerPeriod = newOutstanding * (loan.interestRate / 100);
+        updateData.installmentAmount = round2(newInterestPerPeriod);
         const pendingRepayments = await prisma.repayment.findMany({
           where: { loanId, status: 'PENDING', paidAmount: 0 }
         });

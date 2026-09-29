@@ -177,6 +177,13 @@ router.get('/', authenticate, async (req, res) => {
       prisma.loan.count({ where }),
     ]);
 
+        loans.forEach(l => {
+      if (l.interestType === 'FLAT' && l.outstandingPrincipal !== null && l.outstandingPrincipal !== undefined) {
+        const activeRate = l.interestRate / 100;
+        l.installmentAmount = round2(l.outstandingPrincipal * activeRate);
+      }
+    });
+
     res.json({ success: true, data: loans, meta: { total, page: parseInt(page), limit: parseInt(limit) } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -283,6 +290,19 @@ router.get('/:id', authenticate, async (req, res) => {
     });
     const repPenaltySum = (loan.repayments || []).reduce((sum, r) => sum + (r.penaltyPaid || 0), 0);
     const loanPenaltyCollected = Math.max(penaltyAgg._sum.amount || 0, repPenaltySum);
+
+        // Ensure installmentAmount reflects current outstandingPrincipal for FLAT loans
+    if (loan.interestType === 'FLAT' && loan.outstandingPrincipal !== null && loan.outstandingPrincipal !== undefined) {
+      const activeRate = loan.interestRate / 100;
+      const expectedDue = round2(loan.outstandingPrincipal * activeRate);
+      if (loan.installmentAmount !== expectedDue) {
+        loan.installmentAmount = expectedDue;
+        prisma.loan.update({
+          where: { id: loan.id },
+          data: { installmentAmount: expectedDue }
+        }).catch(() => {});
+      }
+    }
 
     res.json({
       success: true,
