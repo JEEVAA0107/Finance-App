@@ -8,15 +8,7 @@ const { auditLog } = require('../utils/audit');
 // Default starter templates if no schemes exist for the company
 const DEFAULT_SCHEMES = [
   {
-    name: 'Standard Daily (Principal Recovery)',
-    calculationMethod: 'METHOD_3_PRINCIPAL_ONLY',
-    interestRate: 0,
-    processingFee: 10,
-    penaltyName: 'Late Fee',
-    penaltyRate: 0,
-  },
-  {
-    name: 'Fixed Rate (Standard Plan)',
+    name: 'Flat Interest Scheme',
     calculationMethod: 'METHOD_1_FIXED',
     interestRate: 2,
     processingFee: 0,
@@ -24,7 +16,15 @@ const DEFAULT_SCHEMES = [
     penaltyRate: 0,
   },
   {
-    name: 'Diminishing EMI (Amortized)',
+    name: 'Deduction Based Scheme',
+    calculationMethod: 'METHOD_3_PRINCIPAL_ONLY',
+    interestRate: 0,
+    processingFee: 10,
+    penaltyName: 'Late Fee',
+    penaltyRate: 0,
+  },
+  {
+    name: 'EMI Scheme',
     calculationMethod: 'METHOD_2_REDUCING',
     interestRate: 1.5,
     processingFee: 1,

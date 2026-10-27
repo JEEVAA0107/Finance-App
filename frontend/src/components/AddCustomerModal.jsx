@@ -183,7 +183,6 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
     e.preventDefault();
     const cleanPhone = form.phone.replace(/\D/g, '');
     const cleanJaminPhone = form.jaminPhone ? form.jaminPhone.replace(/\D/g, '') : '';
-    const cleanAadhar = form.idNumber ? form.idNumber.replace(/\D/g, '') : '';
     const cleanJaminAadhar = form.jaminIdNumber ? form.jaminIdNumber.replace(/\D/g, '') : '';
 
     if (!form.name.trim()) return toast.error('Customer name is required');
@@ -194,19 +193,10 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
     if (cleanJaminPhone && cleanJaminPhone.length !== 10) {
       return toast.error('Guarantor (Jamin) phone number must be a valid 10-digit mobile number');
     }
-
-    if (form.idType === 'AADHAR') {
-      if (cleanAadhar.length !== 12) {
-        return toast.error('Customer Aadhar number must be exactly 12 digits');
-      }
-    }
     
     if (form.jaminIdType === 'AADHAR' && cleanJaminAadhar) {
       if (cleanJaminAadhar.length !== 12) {
         return toast.error('Jamin Aadhar number must be exactly 12 digits');
-      }
-      if (form.idType === 'AADHAR' && cleanAadhar === cleanJaminAadhar) {
-        return toast.error('Customer and Jamin Aadhar numbers cannot be the same');
       }
     }
 
@@ -219,7 +209,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
         address: form.address.trim() || 'Address Not Provided',
         city: form.city.trim() || 'N/A',
         idType: form.idType || 'AADHAR',
-        idNumber: form.idType === 'AADHAR' ? cleanAadhar : (form.idNumber.trim() || 'N/A'),
+        idNumber: (form.idNumber && form.idNumber.trim()) ? form.idNumber.trim() : 'N/A',
         idProofUrl: form.idProofUrl || null,
         photoUrl: form.photoUrl || null,
         notificationPref: form.notificationPref || 'WHATSAPP',
@@ -600,31 +590,18 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">City / Town *</label>
-                    <input
-                      type="text" className="form-input" placeholder="e.g. Coimbatore" maxLength="50"
-                      value={form.city}
-                      onChange={e => update('city', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Email (Optional)</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      placeholder="customer@email.com"
-                      value={form.email}
-                      onChange={e => update('email', e.target.value)}
-                    />
-                  </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 700 }}>City / Town *</label>
+                  <input
+                    type="text" className="form-input" placeholder="e.g. Coimbatore" maxLength="50"
+                    value={form.city}
+                    onChange={e => update('city', e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Complete Street Address *</label>
+                  <label className="form-label" style={{ fontWeight: 700 }}>Complete Street Address *</label>
                   <textarea
                     className="form-input"
                     rows={2}
@@ -635,45 +612,10 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   />
                 </div>
 
-                {/* Identity proof section */}
-                <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: 12 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">ID Type *</label>
-                    <select
-                      className="form-select"
-                      value={form.idType}
-                      onChange={e => update('idType', e.target.value)}
-                    >
-                      <option value="AADHAR">Aadhar</option>
-                      <option value="PAN">PAN Card</option>
-                      <option value="VOTER">Voter ID</option>
-                      <option value="DRIVING">Driving License</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">{form.idType} Card Number *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder={`Enter ${form.idType} Number`}
-                      value={form.idNumber}
-                      onChange={e => {
-                        let val = e.target.value;
-                        if (form.idType === 'AADHAR') {
-                          val = val.replace(/\D/g, '').slice(0, 12);
-                        }
-                        update('idNumber', val);
-                      }}
-                      required
-                    />
-                  </div>
-                </div>
-
                 {/* Customer Photo & ID Proof upload cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12, marginTop: 4 }}>
                   {renderImageUploader('photoUrl', 'Customer Photo (புகைப்படம்)', 'Photo', true)}
-                  {renderImageUploader('idProofUrl', `Customer ${form.idType} Document Proof *`, 'Document', false)}
+                  {renderImageUploader('idProofUrl', 'Customer Document Proof (ஆவண ஆதாரம்)', 'Document', false)}
                 </div>
 
                 {/* GPS Pin location */}

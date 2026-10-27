@@ -79,7 +79,7 @@ async function processReminders() {
 const axios = require('axios');
 
 function pingSelf() {
-  const url = process.env.RENDER_EXTERNAL_URL || 'https://finance-app-awae.onrender.com/health';
+  const url = process.env.RENDER_EXTERNAL_URL || 'https://finance-app-5k5p.onrender.com/health';
   axios.get(url).then(() => {
     console.log('[Cron] Keep-alive ping sent to', url);
   }).catch(() => {});

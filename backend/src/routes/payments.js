@@ -641,7 +641,11 @@ router.get('/', authenticate, async (req, res) => {
       where.repayment = { loan: { companyId: req.user.companyId } };
     }
 
-    if (collectedById) where.collectedById = collectedById;
+    if (req.user.role === 'AGENT') {
+      where.collectedById = req.user.id;
+    } else if (collectedById) {
+      where.collectedById = collectedById;
+    }
     if (from || to) {
       where.collectedAt = {};
       if (from) where.collectedAt.gte = new Date(from);

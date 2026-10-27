@@ -2,8 +2,9 @@ import axios from 'axios';
 
 // Hardcoding the production URL directly to avoid any environment variable issues
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('finova_api_url') : null;
 const defaultUrl = isLocal ? 'http://localhost:5000/api' : 'https://finance-app-5k5p.onrender.com/api';
-const API_URL = (typeof window !== 'undefined' && localStorage.getItem('finova_api_url')) || defaultUrl;
+const API_URL = import.meta.env?.VITE_API_URL || storedUrl || defaultUrl;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -77,6 +78,7 @@ const extractData = (res) => {
 export const authAPI = {
   login: (data) => api.post('/auth/login', data).then(extractData),
   me: () => api.get('/auth/me').then(extractData),
+  syncDb: () => api.get('/auth/sync-db').then(extractData),
   logout: () => {
     const refreshToken = localStorage.getItem('refreshToken');
     const promise = refreshToken ? api.post('/auth/logout', { refreshToken }) : Promise.resolve();

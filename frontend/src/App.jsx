@@ -18,6 +18,7 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LoanSchemesPage = lazy(() => import('./pages/LoanSchemesPage'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const AgentDashboard = lazy(() => import('./pages/AgentDashboard'));
 const NotificationsDashboard = lazy(() => import('./pages/NotificationsDashboard'));
 const ProfitPage = lazy(() => import('./pages/ProfitPage'));
 const CollectionRoutePage = lazy(() => import('./pages/CollectionRoutePage'));
@@ -34,14 +35,14 @@ const PageLoader = () => (
 );
 
 function AppRoutes() {
-  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
+  const { user, loading, isAdmin, isSuperAdmin, isAgent } = useAuth();
   if (loading) return <div className="loading-page"><div className="spinner" /><p>Loading...</p></div>;
   if (!user) return <LoginPage />;
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<AppLayout />}>
-          <Route index element={isSuperAdmin ? <SuperAdminDashboard /> : <Dashboard />} />
+          <Route index element={isSuperAdmin ? <SuperAdminDashboard /> : isAgent ? <AgentDashboard /> : <Dashboard />} />
           <Route path="super-admin" element={isSuperAdmin ? <SuperAdminDashboard /> : <Navigate to="/" replace />} />
           <Route path="daybook" element={<DayBookPage />} />
           <Route path="customers" element={<CustomersPage />} />

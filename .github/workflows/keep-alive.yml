@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Ping Render Backend Health Endpoint
         run: |
-          curl -s -f https://finance-app-awae.onrender.com/health || echo "Backend pinged"
+          curl -s -f https://finance-app-5k5p.onrender.com/health || echo "Backend pinged"

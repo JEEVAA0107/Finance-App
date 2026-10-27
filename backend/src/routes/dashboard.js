@@ -466,9 +466,9 @@ router.get('/summary', authenticate, authorize('ADMIN'), async (req, res) => {
     let totalOutstandingInterest = 0;
 
     const outstandingByLoanType = {
-      FLAT: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Regular Interest (வட்டி)' },
-      WITHOUT_INTEREST: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Deduction Based (கழித்து தருவது)' },
-      EMI: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Reducing Principal (அசலோடு தவணை)' },
+      FLAT: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Flat Interest' },
+      WITHOUT_INTEREST: { count: 0, amount: 0, principal: 0, interest: 0, label: 'Deduction Based' },
+      EMI: { count: 0, amount: 0, principal: 0, interest: 0, label: 'EMI' },
     };
 
     activeLoanRecords.forEach(loan => {

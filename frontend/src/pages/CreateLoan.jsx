@@ -14,7 +14,7 @@ export default function CreateLoan() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [form, setForm] = useState({
     customerId: '', schemeId: '', principalAmount: '', interestRate: '',
-    interestType: 'WITHOUT_INTEREST', tenure: '100', advanceDeduction: '', alreadyCollectedAmount: '',
+    interestType: 'WITHOUT_INTEREST', tenure: '0', advanceDeduction: '', alreadyCollectedAmount: '',
     tenureUnit: 'DAYS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
   });
 
@@ -97,13 +97,13 @@ export default function CreateLoan() {
       };
     } else if (form.interestType === 'EMI') {
       const r = parseFloat(form.interestRate);
-      const tenureVal = parseInt(form.tenure || 12);
+      const tenureVal = parseInt(form.tenure || 0);
       if (isNaN(r)) return null;
       
       const interestPerPeriod = p * (r / 100);
       const principalPerPeriod = tenureVal > 0 ? p / tenureVal : 0;
-      const installmentDue = interestPerPeriod + principalPerPeriod;
-      const totalInterest = interestPerPeriod * tenureVal;
+      const installmentDue = tenureVal > 0 ? (interestPerPeriod + principalPerPeriod) : 0;
+      const totalInterest = tenureVal > 0 ? (interestPerPeriod * tenureVal) : 0;
       const totalPayable = p + totalInterest;
       
       return {
@@ -136,7 +136,12 @@ export default function CreateLoan() {
       const principal = parseFloat(form.principalAmount);
       const fee = isWithoutInterest ? parseFloat(form.advanceDeduction || 0) : 0;
       const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate || 0);
-      const tenureVal = (isWithoutInterest || isEMI) ? parseInt(form.tenure) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
+      const tenureVal = (isWithoutInterest || isEMI) ? parseInt(form.tenure || 0) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
+
+      if ((isWithoutInterest || isEMI) && (!tenureVal || tenureVal <= 0)) {
+        setLoading(false);
+        return toast.error('Please enter a valid repayment period (greater than 0)');
+      }
 
       const res = await loansAPI.create({
         ...form,
@@ -280,7 +285,7 @@ export default function CreateLoan() {
                     };
                     if (iType === 'EMI' && next.tenureUnit === 'DAYS') {
                       next.tenureUnit = 'MONTHS';
-                      next.tenure = '12';
+                      next.tenure = '0';
                       next.repaymentFrequency = 'MONTHLY';
                     }
                     return next;
@@ -321,7 +326,7 @@ export default function CreateLoan() {
                       ...f,
                       repaymentFrequency: freq,
                       tenureUnit: freq === 'DAILY' ? 'DAYS' : freq === 'WEEKLY' ? 'WEEKS' : 'MONTHS',
-                      tenure: freq === 'DAILY' ? '100' : '10',
+                      tenure: '0',
                     }));
                   }}
                 >
@@ -338,7 +343,7 @@ export default function CreateLoan() {
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder="e.g. 100"
+                    placeholder="0"
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
@@ -354,13 +359,13 @@ export default function CreateLoan() {
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder="e.g. 10"
+                    placeholder="0"
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
                   />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    Total schedule length in weeks (1 collection per week, e.g. 10 weeks)
+                    Total schedule length in weeks (1 collection per week)
                   </span>
                 </div>
               ) : (
@@ -370,13 +375,13 @@ export default function CreateLoan() {
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder="e.g. 10"
+                    placeholder="0"
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
                   />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    Total schedule length in months (1 collection per month, e.g. 10 months)
+                    Total schedule length in months (1 collection per month)
                   </span>
                 </div>
               )}
@@ -407,7 +412,7 @@ export default function CreateLoan() {
 
               <div className="form-group">
                 <label className="form-label">Number of {form.tenureUnit.charAt(0) + form.tenureUnit.slice(1).toLowerCase()} *</label>
-                <input className="form-input" type="number" min="1" placeholder={form.tenureUnit === 'MONTHS' ? 'e.g. 12' : 'e.g. 52'} value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
+                <input className="form-input" type="number" min="1" placeholder="0" value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
               </div>
             </>
           ) : (

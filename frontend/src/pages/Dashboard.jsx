@@ -454,7 +454,7 @@ export default function Dashboard() {
                     }}
                   >
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Regular Flat Interest (வட்டி கடன்)</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Flat Interest</span>
                       {modalLoanType === 'FLAT' && <span style={{ fontSize: 9, background: '#2563EB', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
                     </div>
                     <div style={{ fontWeight: 800, fontSize: 16, color: '#2563EB', marginTop: 2 }}>
@@ -480,7 +480,7 @@ export default function Dashboard() {
                     }}
                   >
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deduction Based (கந்து வட்டி)</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deduction Based</span>
                       {modalLoanType === 'WITHOUT_INTEREST' && <span style={{ fontSize: 9, background: '#059669', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
                     </div>
                     <div style={{ fontWeight: 800, fontSize: 16, color: '#059669', marginTop: 2 }}>
@@ -506,7 +506,7 @@ export default function Dashboard() {
                     }}
                   >
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>EMI (அசலோடு தவணை)</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>EMI</span>
                       {modalLoanType === 'EMI' && <span style={{ fontSize: 9, background: '#7C3AED', color: '#fff', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>✓</span>}
                     </div>
                     <div style={{ fontWeight: 800, fontSize: 16, color: '#7C3AED', marginTop: 2 }}>
@@ -523,9 +523,9 @@ export default function Dashboard() {
                 <div className="tabs" style={{ marginBottom: 14 }}>
                   {[
                     ['ALL', 'All Types'],
-                    ['FLAT', 'Regular Flat Interest (வட்டி கடன்)'],
-                    ['WITHOUT_INTEREST', 'Deduction Based (கந்து வட்டி)'],
-                    ['EMI', 'EMI (அசலோடு தவணை)']
+                    ['FLAT', 'Flat Interest'],
+                    ['WITHOUT_INTEREST', 'Deduction Based'],
+                    ['EMI', 'EMI']
                   ].map(([val, label]) => (
                     <button 
                       key={val} 

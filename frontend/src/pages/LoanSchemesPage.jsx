@@ -98,9 +98,9 @@ export default function LoanSchemesPage() {
 
   const getMethodName = (m) => {
     switch (m) {
-      case 'METHOD_1_FIXED': return 'Fixed (Flat Interest)';
-      case 'METHOD_2_REDUCING': return 'Amortized (Diminishing EMI)';
-      case 'METHOD_3_PRINCIPAL_ONLY': return 'Principal Recovery (0% Interest)';
+      case 'METHOD_1_FIXED': return 'Flat Interest';
+      case 'METHOD_3_PRINCIPAL_ONLY': return 'Deduction Based';
+      case 'METHOD_2_REDUCING': return 'EMI';
       default: return m;
     }
   };
@@ -248,16 +248,16 @@ export default function LoanSchemesPage() {
                   value={form.calculationMethod} 
                   onChange={e => setForm({...form, calculationMethod: e.target.value})}
                 >
-                  <option value="METHOD_1_FIXED">Method 1: Fixed Rate (Standard Flat Model)</option>
-                  <option value="METHOD_2_REDUCING">Method 2: Amortized (Diminishing EMI Model)</option>
-                  <option value="METHOD_3_PRINCIPAL_ONLY">Method 3: Principal Recovery Only (0% Interest)</option>
+                  <option value="METHOD_1_FIXED">Flat Interest</option>
+                  <option value="METHOD_3_PRINCIPAL_ONLY">Deduction Based</option>
+                  <option value="METHOD_2_REDUCING">EMI</option>
                 </select>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
                   <Info size={14} style={{ flexShrink: 0, marginTop: 1 }} />
                   <span>
-                    {form.calculationMethod === 'METHOD_1_FIXED' && 'Fixed Interest calculated across the full principal.'}
-                    {form.calculationMethod === 'METHOD_2_REDUCING' && 'Amortized reducing balance where interest diminishes as principal is repaid.'}
-                    {form.calculationMethod === 'METHOD_3_PRINCIPAL_ONLY' && 'Principal recovery schedule with upfront processing fee, without continuous interest.'}
+                    {form.calculationMethod === 'METHOD_1_FIXED' && 'Flat Interest: Fixed periodic interest calculated on the principal amount.'}
+                    {form.calculationMethod === 'METHOD_3_PRINCIPAL_ONLY' && 'Deduction Based: Upfront deduction subtracted from loan amount before disbursal.'}
+                    {form.calculationMethod === 'METHOD_2_REDUCING' && 'EMI: Fixed regular installments covering both principal and interest.'}
                   </span>
                 </div>
               </div>

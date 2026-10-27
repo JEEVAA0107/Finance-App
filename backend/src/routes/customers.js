@@ -445,7 +445,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
 });
 
 // DELETE /api/customers/:id
-router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
+router.delete('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => {
   try {
     const existingCust = await prisma.customer.findUnique({ where: { id: req.params.id } });
     if (!existingCust) return res.status(404).json({ success: false, message: 'Customer not found' });

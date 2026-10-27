@@ -3,12 +3,12 @@ import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { notificationsAPI } from '../services/api';
 import {
-  LayoutDashboard, Users, Landmark, HandCoins, ChevronRight, Plus,
+  LayoutDashboard, Users, Landmark, HandCoins, ChevronRight,
   FileBarChart, Shield, UserCog, LogOut, Menu, X, Settings, Bell, History
 , FileText} from 'lucide-react';
 
 export default function AppLayout() {
-  const { user, logout, isSuperAdmin, isAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, isAdmin, isAgent } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
@@ -45,7 +45,6 @@ export default function AppLayout() {
         { section: 'Management', items: [
           { to: '/customers', icon: Users, label: 'Customers' },
           { to: '/loans', icon: Landmark, label: 'Loans' },
-          { to: '/loans/create', icon: Plus, label: 'Create Loan' },
         ]},
         { section: 'Operations', items: [
           { to: '/collections', icon: HandCoins, label: 'Collections' },
@@ -60,17 +59,13 @@ export default function AppLayout() {
         ]},
       ]
     : [
-        { section: 'My Work', items: [
-          { to: '/', icon: LayoutDashboard, label: 'Home' },
+        { section: 'Field Operations', items: [
+          { to: '/', icon: LayoutDashboard, label: 'My Dashboard' },
           { to: '/collections', icon: HandCoins, label: 'Collections' },
-        ]},
-        { section: 'Data', items: [
           { to: '/customers', icon: Users, label: 'Customers' },
-          { to: '/loans', icon: Landmark, label: 'Loans' },
-          { to: '/loans/create', icon: Plus, label: 'Create Loan' },
         ]},
-        { section: 'Tools', items: [
-          { to: '/notifications', icon: Bell, label: 'Notifications' },
+        { section: 'Account', items: [
+          { to: '/settings', icon: Settings, label: 'Profile' },
         ]},
       ];
 
@@ -89,11 +84,10 @@ export default function AppLayout() {
         { to: '/settings', icon: Settings, label: 'Settings' },
       ]
     : [
-        { to: '/', icon: LayoutDashboard, label: 'Home' },
+        { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/collections', icon: HandCoins, label: 'Collections' },
         { to: '/customers', icon: Users, label: 'Customers' },
-        { to: '/loans', icon: Landmark, label: 'Loans' },
-        { to: '/settings', icon: Settings, label: 'Settings' },
+        { to: '/settings', icon: Settings, label: 'Profile' },
       ];
 
   const isActive = (to) => {
@@ -105,7 +99,7 @@ export default function AppLayout() {
 
   // Get current page label for header title
   const currentPage = [
-    { to: '/', label: isSuperAdmin ? 'Super Admin Panel' : 'Dashboard' },
+    { to: '/', label: isSuperAdmin ? 'Super Admin Panel' : isAgent ? 'Agent Dashboard' : 'Dashboard' },
     { to: '/customers', label: 'Customers' },
     { to: '/loans/create', label: 'Create Loan' },
     { to: '/loans', label: 'Loans' },
@@ -113,6 +107,7 @@ export default function AppLayout() {
     { to: '/payment-history', label: 'History' },
     { to: '/users', label: 'Staff Management' },
     { to: '/schemes', label: 'Loan Schemes' },
+    { to: '/settings', label: 'Profile & Settings' },
   ].find(l => l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to))?.label || 'Finova';
 
   return (

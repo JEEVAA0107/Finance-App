@@ -13,9 +13,9 @@ function fmt(val) {
 
 const LOAN_TYPE_LABELS = {
   ALL: 'All Types',
-  FLAT: 'Regular Flat Interest (வட்டி கடன்)',
-  EMI: 'EMI (அசலோடு தவணை)',
-  WITHOUT_INTEREST: 'Deduction Based (கந்து வட்டி)',
+  FLAT: 'Flat Interest',
+  EMI: 'EMI',
+  WITHOUT_INTEREST: 'Deduction Based',
 };
 
 const LOAN_TYPE_COLORS = {
@@ -73,15 +73,15 @@ export default function ProfitPage() {
 
   const loanTypeOptions = [
     { key: 'ALL', label: 'All Types', sublabel: 'View Everything' },
-    { key: 'FLAT', label: 'Regular Flat Interest', sublabel: '(வட்டி கடன்)' },
-    { key: 'EMI', label: 'EMI', sublabel: '(அசலோடு தவணை)' },
-    { key: 'WITHOUT_INTEREST', label: 'Deduction Based', sublabel: '(கந்து வட்டி)' },
+    { key: 'FLAT', label: 'Flat Interest', sublabel: 'Fixed Periodic Interest' },
+    { key: 'EMI', label: 'EMI', sublabel: 'Equal Periodic Installments' },
+    { key: 'WITHOUT_INTEREST', label: 'Deduction Based', sublabel: 'Upfront Advance Deduction' },
   ];
 
   const typeSummaryCards = [
-    { key: 'FLAT', label: 'Regular Flat Interest', sublabel: '(வட்டி கடன்)' },
-    { key: 'EMI', label: 'EMI', sublabel: '(அசலோடு தவணை)' },
-    { key: 'WITHOUT_INTEREST', label: 'Deduction Based', sublabel: '(கந்து வட்டி)' },
+    { key: 'FLAT', label: 'Flat Interest', sublabel: 'Periodic Interest' },
+    { key: 'EMI', label: 'EMI', sublabel: 'Principal + Interest' },
+    { key: 'WITHOUT_INTEREST', label: 'Deduction Based', sublabel: 'Upfront Fee/Deduction' },
   ];
 
   return (
@@ -272,7 +272,7 @@ export default function ProfitPage() {
               <div>
                 {data.entries.map((entry, i) => {
                   const c = LOAN_TYPE_COLORS[entry.loanType] || LOAN_TYPE_COLORS.FLAT;
-                  const typeLabel = entry.loanType === 'FLAT' ? 'Regular Flat Interest (வட்டி கடன்)' : entry.loanType === 'EMI' ? 'EMI (அசலோடு தவணை)' : 'Deduction Based (கந்து வட்டி)';
+                  const typeLabel = entry.loanType === 'FLAT' ? 'Flat Interest' : entry.loanType === 'EMI' ? 'EMI' : 'Deduction Based';
                   return (
                     <div
                       key={entry.loanId + i}
