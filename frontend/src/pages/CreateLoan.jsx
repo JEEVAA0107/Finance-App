@@ -301,41 +301,129 @@ export default function CreateLoan() {
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label">Loan Scheme / Plan *</label>
-            <select className="form-select" value={form.schemeId} onChange={e => {
-              const sid = e.target.value;
-              const sch = schemes.find(s => s.id === sid);
-              if(sch) {
-                let iType = 'WITHOUT_INTEREST';
-                if (sch.calculationMethod === 'METHOD_1_FIXED') iType = 'FLAT';
-                else if (sch.calculationMethod === 'METHOD_2_REDUCING') iType = 'EMI';
-                
-                setForm(f => {
-                    const next = { 
-                      ...f, 
-                      schemeId: sid, 
-                      interestType: iType, 
-                      interestRate: sch.interestRate !== undefined ? sch.interestRate : '' 
-                    };
-                    if (iType === 'EMI' && next.tenureUnit === 'DAYS') {
-                      next.tenureUnit = 'MONTHS';
-                      next.tenure = '0';
-                      next.repaymentFrequency = 'MONTHLY';
-                    }
-                    return next;
-                });
-              } else {
-                setForm(f => ({ ...f, schemeId: sid }));
-              }
-            }} required>
-              <option value="">-- Select a Plan --</option>
-              {schemes.map(s => <option key={s.id} value={s.id}>{s.name} ({s.interestRate}%)</option>)}
-            </select>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-              Select a scheme defined in your settings.
+          {/* 3 Core Loan Models */}
+          <div className="form-group" style={{ marginBottom: 16 }}>
+            <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Loan Type (கடன் முறை) *</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>Choose calculation model</span>
+            </label>
+            <div className="loan-type-selector-grid">
+              {[
+                {
+                  id: 'WITHOUT_INTEREST',
+                  title: 'Deduction Based',
+                  tamil: 'முன்பணம் பிடித்தம்',
+                  sub: '100 Days Daily / Weekly',
+                  badge: 'Standard'
+                },
+                {
+                  id: 'FLAT',
+                  title: 'Flat Interest',
+                  tamil: 'வட்டி கடன்',
+                  sub: 'Monthly Flat Rate %',
+                  badge: 'Monthly/Weekly'
+                },
+                {
+                  id: 'EMI',
+                  title: 'EMI Repayment',
+                  tamil: 'அசலோடு சம தவணை',
+                  sub: 'Equal Monthly EMI',
+                  badge: 'Reducing'
+                }
+              ].map(opt => {
+                const isSelected = form.interestType === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => {
+                      setForm(f => {
+                        const next = { ...f, interestType: opt.id };
+                        if (opt.id === 'WITHOUT_INTEREST') {
+                          if (!next.repaymentFrequency) next.repaymentFrequency = 'DAILY';
+                          next.tenureUnit = next.repaymentFrequency === 'DAILY' ? 'DAYS' : next.repaymentFrequency === 'WEEKLY' ? 'WEEKS' : 'MONTHS';
+                          next.tenure = next.tenure && next.tenure !== '0' ? next.tenure : (next.repaymentFrequency === 'DAILY' ? '100' : '10');
+                          next.interestRate = '0';
+                        } else if (opt.id === 'FLAT') {
+                          next.tenureUnit = next.tenureUnit === 'DAYS' ? 'MONTHS' : next.tenureUnit || 'MONTHS';
+                          next.repaymentFrequency = next.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
+                          next.tenure = next.tenure && next.tenure !== '0' ? next.tenure : '12';
+                          next.interestRate = next.interestRate && next.interestRate !== '0' ? next.interestRate : '2';
+                        } else if (opt.id === 'EMI') {
+                          next.tenureUnit = 'MONTHS';
+                          next.repaymentFrequency = 'MONTHLY';
+                          next.tenure = next.tenure && next.tenure !== '0' ? next.tenure : '12';
+                          next.interestRate = next.interestRate && next.interestRate !== '0' ? next.interestRate : '2';
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`loan-type-card ${isSelected ? 'selected' : ''}`}
+                  >
+                    <div className="loan-type-header">
+                      <span className="loan-type-title">{opt.title}</span>
+                      <span className={`loan-type-badge ${isSelected ? 'active' : ''}`}>{opt.badge}</span>
+                    </div>
+                    <div className="loan-type-tamil">{opt.tamil}</div>
+                    <div className="loan-type-sub">{opt.sub}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          {/* Optional Scheme Selection if Schemes exist */}
+          {schemes.length > 0 && (
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <label className="form-label" style={{ marginBottom: 0, fontSize: 12, fontWeight: 600 }}>
+                  Apply Custom Loan Scheme (விருப்பத் திட்டம் - Optional)
+                </label>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{schemes.length} schemes configured</span>
+              </div>
+              <select
+                className="form-select"
+                value={form.schemeId}
+                onChange={e => {
+                  const sid = e.target.value;
+                  const sch = schemes.find(s => s.id === sid);
+                  if (sch) {
+                    let iType = 'WITHOUT_INTEREST';
+                    if (sch.calculationMethod === 'METHOD_1_FIXED') iType = 'FLAT';
+                    else if (sch.calculationMethod === 'METHOD_2_REDUCING') iType = 'EMI';
+
+                    setForm(f => {
+                      const next = {
+                        ...f,
+                        schemeId: sid,
+                        interestType: iType,
+                        interestRate: sch.interestRate !== undefined ? String(sch.interestRate) : '2',
+                      };
+                      if (iType === 'EMI') {
+                        next.tenureUnit = 'MONTHS';
+                        next.repaymentFrequency = 'MONTHLY';
+                        next.tenure = next.tenure && next.tenure !== '0' ? next.tenure : '12';
+                      } else if (iType === 'WITHOUT_INTEREST') {
+                        next.tenure = next.tenure && next.tenure !== '0' ? next.tenure : '100';
+                      } else {
+                        next.tenure = next.tenure && next.tenure !== '0' ? next.tenure : '12';
+                      }
+                      return next;
+                    });
+                  } else {
+                    setForm(f => ({ ...f, schemeId: '' }));
+                  }
+                }}
+              >
+                <option value="">-- Manual / Direct Setup (நேரடி கடன் முறை) --</option>
+                {schemes.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.interestRate}%)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid-2">
             <div className="form-group">
@@ -377,7 +465,7 @@ export default function CreateLoan() {
                   step="0.1"
                   min="0"
                   max="100"
-                  placeholder="e.g. 3"
+                  placeholder="e.g. 2"
                   onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
                   value={form.interestRate}
                   onChange={e => set('interestRate', e.target.value)}
@@ -400,7 +488,7 @@ export default function CreateLoan() {
                       ...f,
                       repaymentFrequency: freq,
                       tenureUnit: freq === 'DAILY' ? 'DAYS' : freq === 'WEEKLY' ? 'WEEKS' : 'MONTHS',
-                      tenure: '0',
+                      tenure: freq === 'DAILY' ? '100' : '10',
                     }));
                   }}
                 >
@@ -417,14 +505,14 @@ export default function CreateLoan() {
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder="0"
+                    placeholder="e.g. 100"
                     onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
                   />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    Total {form.tenure || 0} daily installments
+                    Total {form.tenure || 100} daily installments
                   </span>
                 </div>
               ) : form.repaymentFrequency === 'WEEKLY' ? (
@@ -434,7 +522,7 @@ export default function CreateLoan() {
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder="0"
+                    placeholder="e.g. 10"
                     onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
@@ -451,7 +539,7 @@ export default function CreateLoan() {
                     className="form-input"
                     type="number"
                     min="1"
-                    placeholder="0"
+                    placeholder="e.g. 10"
                     onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
@@ -488,7 +576,7 @@ export default function CreateLoan() {
                   className="form-input"
                   type="number"
                   min="1"
-                  placeholder="0"
+                  placeholder="e.g. 12"
                   onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                   value={form.tenure}
                   onChange={e => set('tenure', e.target.value)}

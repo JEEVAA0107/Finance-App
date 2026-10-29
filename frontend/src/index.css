@@ -2134,11 +2134,166 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   }
 }
 
-/* Ensure no floating buttons or footers are clipped by the 58px bottom navigation */
+/* ─── Loan Type Selection Cards (Create Loan) ─── */
+.loan-type-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.loan-type-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-default);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  outline: none;
+}
+
+.loan-type-card:hover {
+  border-color: var(--primary-400);
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.loan-type-card.selected {
+  border-color: var(--primary-600);
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 0 1.5px var(--primary-600);
+}
+
+.loan-type-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.loan-type-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.loan-type-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
+.loan-type-badge.active {
+  background: var(--primary-600);
+  color: #ffffff;
+}
+
+.loan-type-tamil {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-600);
+}
+
+.loan-type-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .loan-type-selector-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .loan-type-card {
+    padding: 10px 12px !important;
+  }
+}
+
+/* ─── Loan Schemes Responsive Dual Layout ─── */
+.schemes-desktop-table {
+  display: block;
+}
+.schemes-mobile-cards {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .schemes-desktop-table {
+    display: none !important;
+  }
+  .schemes-mobile-cards {
+    display: block !important;
+  }
+}
+
+/* ─── Day Book Responsiveness ─── */
+.daybook-income-outflow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.daybook-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.daybook-profit-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .daybook-income-outflow-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .daybook-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  .daybook-header-actions .daybook-date-input {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .daybook-header-actions .btn {
+    flex-shrink: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .daybook-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .daybook-stats-grid .stat-card {
+    padding: 14px 12px !important;
+  }
+  .daybook-stats-grid .stat-value {
+    font-size: 16px !important;
+  }
+  .daybook-stats-grid .stat-label {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+  .daybook-profit-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+/* Ensure no floating buttons or footers are clipped by the bottom navigation */
 @media (max-width: 1024px) {
   .main-content {
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px) !important;
   }
 }
+
 
 

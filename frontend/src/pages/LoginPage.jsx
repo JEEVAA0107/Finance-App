@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Landmark, Phone, Lock, Eye, EyeOff, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Phone, Lock, Eye, EyeOff, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -54,11 +54,27 @@ export default function LoginPage() {
         
         {/* Logo Section */}
         <div className="login-logo">
-          <div className="login-logo-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Landmark size={26} color="#ffffff" />
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: '14px' }}>
+            <img
+              src="/logo-icon.png"
+              alt="Finova Logo"
+              style={{
+                width: 68,
+                height: 68,
+                borderRadius: '18px',
+                objectFit: 'cover',
+                display: 'block',
+                boxShadow: '0 10px 25px -4px rgba(37, 99, 235, 0.35), 0 4px 10px rgba(0, 0, 0, 0.08)',
+                margin: '0 auto',
+              }}
+            />
           </div>
-          <h2>Finova</h2>
-          <p>Daily & Weekly Finance Management</p>
+          <h2 style={{ fontSize: '26px', fontWeight: '800', letterSpacing: '-0.5px', color: 'var(--text-primary)', margin: 0 }}>
+            Finova
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
+            Daily & Weekly Finance Management
+          </p>
         </div>
 
         {/* Error Notification */}

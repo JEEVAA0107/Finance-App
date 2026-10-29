@@ -74,15 +74,15 @@ export default function DayBookPage() {
 
   return (
     <div className="page-container animate-in">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="page-title">Day Book</h1>
-          <p className="page-subtitle">Daily cash flow, collections & profit breakdown</p>
+          <h1 className="page-title" style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Day Book</h1>
+          <p className="page-subtitle" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>Daily cash flow, collections & profit breakdown</p>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="daybook-header-actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input 
             type="date" 
-            className="form-input" 
+            className="form-input daybook-date-input" 
             value={date} 
             onChange={(e) => setDate(e.target.value)} 
             style={{ width: 'auto', minWidth: 140 }}
@@ -94,7 +94,7 @@ export default function DayBookPage() {
       </div>
 
       {/* Top Summary Cards */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+      <div className="stats-grid daybook-stats-grid" style={{ gap: '14px', marginBottom: '24px' }}>
         <div className="stat-card blue">
           <div className="stat-icon blue"><Wallet size={20} /></div>
           <div className="stat-value">{fmt(data?.openingBalance)}</div>
@@ -118,9 +118,9 @@ export default function DayBookPage() {
       </div>
 
       {/* Income & Outflow Details */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+      <div className="daybook-income-outflow-grid" style={{ marginBottom: '24px' }}>
         {/* Income Details */}
-        <div className="card" style={{ padding: '24px' }}>
+        <div className="card" style={{ padding: '20px' }}>
           <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
             <HandCoins size={18} className="color-success" /> Income Details (வரவு விவரம்)
           </h3>
@@ -184,7 +184,7 @@ export default function DayBookPage() {
           </span>
         </div>
 
-        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div className="stats-grid daybook-profit-grid" style={{ gap: '14px' }}>
           {/* Interest Profit */}
           <div style={{ background: 'var(--bg-secondary)', padding: '16px 18px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Pure Interest Profit (வட்டி லாபம்)</div>

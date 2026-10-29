@@ -122,7 +122,8 @@ export default function LoanSchemesPage() {
         </div>
       </div>
 
-      <div className="card table-container">
+      {/* DESKTOP TABLE VIEW (>= 768px) */}
+      <div className="card table-container schemes-desktop-table">
         <table className="data-table">
           <thead>
             <tr>
@@ -165,7 +166,7 @@ export default function LoanSchemesPage() {
                       fontSize: 12, 
                       padding: '3px 8px', 
                       borderRadius: 6, 
-                      background: 'rgba(59, 130, 246, 0.08)',
+                      background: 'rgba(59, 130, 246, 0.08)', 
                       color: 'var(--primary-600)',
                       fontWeight: 600
                     }}>
@@ -201,6 +202,86 @@ export default function LoanSchemesPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* MOBILE CARD VIEW (< 768px) */}
+      <div className="schemes-mobile-cards">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div className="spinner" style={{ margin: '0 auto 10px auto' }} />
+            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading schemes...</span>
+          </div>
+        ) : schemes.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', padding: '36px 16px' }}>
+            <AlertCircle size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 8px auto', display: 'block' }} />
+            <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>No Loan Schemes Configured</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>Click Create Scheme to set up your first template.</p>
+            <button className="btn btn-primary btn-sm" onClick={openAdd} style={{ width: '100%', justifyContent: 'center' }}>
+              <Plus size={16} /> Create Scheme Now
+            </button>
+          </div>
+        ) : (
+          schemes.map(s => (
+            <div key={s.id} className="card scheme-mobile-card" style={{ padding: '16px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>{s.name}</div>
+                  <div style={{ marginTop: 4 }}>
+                    <span style={{
+                      fontSize: 11,
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      background: 'rgba(59, 130, 246, 0.08)',
+                      color: 'var(--primary-600)',
+                      fontWeight: 700
+                    }}>
+                      {getMethodName(s.calculationMethod)}
+                    </span>
+                  </div>
+                </div>
+                <span className={`badge ${s.isActive !== false ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: 10, padding: '2px 6px' }}>
+                  {s.isActive !== false ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              {/* Stats Chips */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, margin: '12px 0', background: 'var(--bg-secondary)', padding: '10px 8px', borderRadius: 8, textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>INTEREST</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary-600)' }}>{s.interestRate}%</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>FEE</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{s.processingFee ? `${s.processingFee}%` : '-'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>LATE FEE</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>{s.penaltyRate || 0}%</div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => openEdit(s)}
+                  style={{ flex: 1, justifyContent: 'center', height: 36 }}
+                >
+                  <Edit2 size={14} /> Edit
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm color-danger"
+                  onClick={() => deleteScheme(s.id, s.name)}
+                  style={{ flex: 1, justifyContent: 'center', height: 36, borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {showModal && (
