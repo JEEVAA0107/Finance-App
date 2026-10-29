@@ -154,7 +154,7 @@ export default function Dashboard() {
         </div>
         
         {/* Unified Actions Bar */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="dashboard-quick-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Link to="/loans/create" className="btn btn-primary btn-sm" style={{ borderRadius: '100px', padding: '8px 16px', fontWeight: 700 }}>
             <Plus size={15}/> New Loan
           </Link>

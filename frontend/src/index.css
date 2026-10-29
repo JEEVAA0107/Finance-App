@@ -920,16 +920,41 @@ input, select, textarea, button { font-family: inherit; }
   justify-content: center;
   padding: 20px;
   background: linear-gradient(135deg, var(--primary-50) 0%, var(--bg-primary) 100%);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .login-card {
   background: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: 40px;
+  padding: 36px 32px;
   width: 100%;
   max-width: 420px;
   box-shadow: var(--shadow-lg);
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px !important;
+  }
+  .login-card {
+    padding: 24px 18px !important;
+    border-radius: 16px !important;
+    max-width: 100% !important;
+  }
+  .login-logo {
+    margin-bottom: 18px !important;
+  }
+  .login-logo-icon {
+    width: 48px !important;
+    height: 48px !important;
+    margin-bottom: 12px !important;
+  }
+  .login-logo h2 {
+    font-size: 24px !important;
+  }
 }
 
 .login-logo {
@@ -1352,10 +1377,22 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
     white-space: nowrap !important;
   }
 
-  /* Buttons — minimum 44px touch target */
-  .btn { min-height: 44px !important; font-size: 14px !important; justify-content: center !important; }
-  .btn-sm { min-height: 36px !important; font-size: 12px !important; padding: 6px 10px !important; }
-  .btn-lg { min-height: 52px !important; font-size: 16px !important; }
+  /* Buttons — mobile touch targets and proper alignment */
+  .btn {
+    min-height: 40px !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+  }
+  .btn-sm {
+    min-height: 34px !important;
+    height: 34px !important;
+    font-size: 12px !important;
+    padding: 4px 10px !important;
+  }
+  .btn-lg {
+    min-height: 48px !important;
+    font-size: 15px !important;
+  }
 
   /* Forms */
   .form-row { grid-template-columns: 1fr !important; gap: 0 !important; }
@@ -1363,104 +1400,73 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
   .form-label { font-size: 11px !important; margin-bottom: 5px !important; }
   .form-input, .form-select {
     font-size: 16px !important;  /* prevents iOS zoom */
-    padding: 12px 14px !important;
+    padding: 11px 13px !important;
     -webkit-appearance: none !important;
     border-radius: var(--radius-sm) !important;
   }
 
-  /* Modals — slide up from bottom like a sheet */
+  /* Modals — clean mobile dialog sizing */
   .modal-overlay {
-    align-items: flex-end !important;
-    padding: 0 !important;
-    padding-bottom: env(safe-area-inset-bottom) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
   }
   .modal, .modal-lg {
-    max-width: 100% !important;
+    max-width: 95% !important;
     width: 100% !important;
-    border-radius: 20px 20px 0 0 !important;
-    max-height: 90vh !important;
-    margin: 0 !important;
+    border-radius: 16px !important;
+    max-height: 88vh !important;
+    margin: 0 auto !important;
+    overflow-y: auto !important;
   }
   .modal-header {
-    padding: 16px !important;
+    padding: 14px 16px !important;
     position: sticky !important;
     top: 0 !important;
     background: var(--bg-secondary) !important;
-    z-index: 1 !important;
+    z-index: 2 !important;
   }
   .modal-header h3 { font-size: 16px !important; }
-  .modal-body { padding: 16px !important; }
+  .modal-body { padding: 14px 16px !important; }
   .modal-footer {
-    flex-direction: column-reverse !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
     padding: 12px 16px !important;
     gap: 8px !important;
     position: sticky !important;
     bottom: 0 !important;
     background: var(--bg-secondary) !important;
+    z-index: 2 !important;
   }
   .modal-footer .btn {
-    width: 100% !important;
-    height: 48px !important;
+    flex: 1 !important;
+    height: 40px !important;
     justify-content: center !important;
   }
 
-  /* Tables → card list on mobile */
+  /* Tables — modern smooth horizontal touch scroll */
   .table-container {
-    border: none !important;
-    background: transparent !important;
-    overflow: visible !important;
-    border-radius: 0 !important;
-  }
-  .data-table, .data-table thead, .data-table tbody,
-  .data-table th, .data-table td, .data-table tr {
-    display: block !important;
     width: 100% !important;
-  }
-  .data-table thead { display: none !important; }
-  .data-table tbody { display: flex !important; flex-direction: column !important; gap: 10px !important; }
-  .data-table tr {
-    background: var(--bg-card) !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 16px !important;
     border: 1px solid var(--border-subtle) !important;
     border-radius: var(--radius-md) !important;
-    padding: 12px !important;
+    background: var(--bg-card) !important;
   }
-  .data-table td {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 6px 0 !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
-    font-size: 13px !important;
-    gap: 8px !important;
-    min-height: 32px !important;
+  .data-table {
+    width: 100% !important;
+    min-width: 620px !important;
+    border-collapse: collapse !important;
   }
-  .data-table td::before {
-    content: attr(data-label) !important;
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    color: var(--text-muted) !important;
-    flex-shrink: 0 !important;
-    min-width: 90px !important;
+  .data-table th, .data-table td {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
   }
-  .data-table td:first-child {
-    display: block !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    color: var(--primary-600) !important;
-    padding-bottom: 8px !important;
-    margin-bottom: 4px !important;
-    border-bottom: 1px solid var(--border-default) !important;
-  }
-  .data-table td:first-child::before { display: none !important; }
-  .data-table td:last-child {
-    display: flex !important;
-    justify-content: center !important;
-    border-bottom: none !important;
-    padding-top: 8px !important;
-    gap: 8px !important;
-  }
-  .data-table td:last-child::before { display: none !important; }
 
   /* Collection cards */
   .collection-card { padding: 12px !important; margin-bottom: 8px !important; }
@@ -1953,25 +1959,186 @@ div[data-sonner-toaster] { font-family: var(--font-sans) !important; }
 }
 
 .superadmin-company-card .card-actions-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 2px;
+  display: grid !important;
+  grid-template-columns: 1fr 1.3fr auto !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin-top: 6px !important;
+}
+
+.superadmin-company-card .edit-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 0 10px !important;
+  white-space: nowrap !important;
 }
 
 .superadmin-company-card .password-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 9px;
-  border-radius: 8px;
-  font-weight: 600;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 0 10px !important;
+  white-space: nowrap !important;
 }
 
 .superadmin-company-card .delete-btn {
-  color: var(--danger-500);
-  padding: 9px 12px;
-  border-radius: 8px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  color: var(--danger-500) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border-subtle) !important;
+  background: var(--bg-primary) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  transition: all 0.15s ease;
 }
+
+.superadmin-company-card .delete-btn:hover {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+/* ─── SuperAdmin Header Actions (Mobile) ─── */
+@media (max-width: 640px) {
+  .superadmin-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  .superadmin-header-actions .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ─── Settings Header & Receipt Preview (Mobile) ─── */
+.settings-receipt-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(280px, 360px);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 850px) {
+  .settings-receipt-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+  .settings-header-section {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .settings-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  .settings-header-actions .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ─── Dashboard Quick Actions (Mobile) ─── */
+@media (max-width: 600px) {
+  .dashboard-quick-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .dashboard-quick-actions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ─── Collection Card Amount & Action Row (Mobile) ─── */
+@media (max-width: 520px) {
+  .collection-amount-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .collection-card-actions {
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+  }
+  .collection-card-actions .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    height: 38px !important;
+    min-height: 38px !important;
+  }
+  .collection-lock-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ─── Universal Modal Form Grids (Stack on small screens) ─── */
+@media (max-width: 480px) {
+  .modal-form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+}
+
+/* ─── Create Loan Form Responsiveness ─── */
+.create-loan-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .create-loan-preview-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .create-loan-actions {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Ensure no floating buttons or footers are clipped by the 58px bottom navigation */
+@media (max-width: 1024px) {
+  .main-content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px) !important;
+  }
+}
+
+

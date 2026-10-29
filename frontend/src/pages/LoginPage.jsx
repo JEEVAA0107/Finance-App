@@ -70,34 +70,38 @@ export default function LoginPage() {
         )}
 
         {/* Login Type Tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-secondary)', padding: '6px', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '22px', background: 'var(--bg-secondary)', padding: '5px', borderRadius: '12px' }}>
           <button
             type="button"
             onClick={() => setLoginMode('admin')}
             style={{
-              flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px',
-              background: loginMode === 'admin' ? 'var(--bg-glass)' : 'transparent',
-              color: loginMode === 'admin' ? 'var(--text-primary)' : 'var(--text-muted)',
+              flex: 1, padding: '9px 4px', border: 'none', borderRadius: '8px',
+              background: loginMode === 'admin' ? 'var(--bg-card)' : 'transparent',
+              color: loginMode === 'admin' ? 'var(--primary-600)' : 'var(--text-muted)',
               fontWeight: loginMode === 'admin' ? 700 : 600,
-              boxShadow: loginMode === 'admin' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
-              cursor: 'pointer', transition: 'all 0.2s'
+              fontSize: '13px',
+              boxShadow: loginMode === 'admin' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+              cursor: 'pointer', transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
             }}
           >
-            Admin Login
+            Admin Portal
           </button>
           <button
             type="button"
             onClick={() => setLoginMode('agent')}
             style={{
-              flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px',
-              background: loginMode === 'agent' ? 'var(--bg-glass)' : 'transparent',
-              color: loginMode === 'agent' ? 'var(--text-primary)' : 'var(--text-muted)',
+              flex: 1, padding: '9px 4px', border: 'none', borderRadius: '8px',
+              background: loginMode === 'agent' ? 'var(--bg-card)' : 'transparent',
+              color: loginMode === 'agent' ? 'var(--primary-600)' : 'var(--text-muted)',
               fontWeight: loginMode === 'agent' ? 700 : 600,
-              boxShadow: loginMode === 'agent' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
-              cursor: 'pointer', transition: 'all 0.2s'
+              fontSize: '13px',
+              boxShadow: loginMode === 'agent' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+              cursor: 'pointer', transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
             }}
           >
-            Field Executive Login
+            Field Executive
           </button>
         </div>
 

@@ -237,7 +237,7 @@ export default function CollectionPage() {
               </div>
 
               {/* Amount row */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="collection-amount-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Due {fmtDate(r.dueDate)}</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: r.status === 'PAID' ? 'var(--accent-400)' : 'var(--text-primary)' }}>
@@ -269,7 +269,7 @@ export default function CollectionPage() {
                   isBlocked ? (
                     // Locked button — cannot collect out of order
                     <button
-                      className="btn btn-ghost"
+                      className="btn btn-ghost collection-lock-btn"
                       style={{ minWidth: 90, cursor: 'not-allowed', opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}
                       disabled
                       title={`முதலில் Installment #${blockingInstNo} collect செய்யுங்கள்`}
@@ -277,7 +277,7 @@ export default function CollectionPage() {
                       <Lock size={14} /> Locked
                     </button>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div className="collection-card-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <button className="btn btn-success btn-sm" style={{ minWidth: 80 }} onClick={() => openPay(r)}>
                         <HandCoins size={14} /> Collect
                       </button>

@@ -262,7 +262,7 @@ export default function LoanSchemesPage() {
                 </div>
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="modal-form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div className="form-group">
                   <label className="form-label">Default Interest Rate (%)</label>
                   <input 
@@ -289,7 +289,7 @@ export default function LoanSchemesPage() {
                 </div>
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="modal-form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div className="form-group">
                   <label className="form-label">Overdue Term Label</label>
                   <input 

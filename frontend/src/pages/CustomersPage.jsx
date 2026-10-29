@@ -412,7 +412,7 @@ export default function CustomersPage() {
         </div>
       ) : (
         /* GRID / CARDS VIEW */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: 14 }}>
           {filteredCustomers.map(c => {
             const hasActive = (c.loans && c.loans.length > 0) || (c.activeLoans && c.activeLoans > 0);
             const loansCount = c.loans?.length || c.activeLoans || 0;

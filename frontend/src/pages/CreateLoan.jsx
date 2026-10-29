@@ -523,7 +523,7 @@ export default function CreateLoan() {
         {preview && (
           preview.isWithoutInterest ? (
             <div className="card" style={{ marginTop: 12, background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.2)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
+              <div className="create-loan-preview-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>LOAN AMOUNT</div>
                   <div style={{ fontSize: 16, fontWeight: 800 }}>₹{preview.totalRepayable.toLocaleString('en-IN')}</div>
@@ -573,7 +573,7 @@ export default function CreateLoan() {
           )
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginTop: 16 }}>
+        <div className="create-loan-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginTop: 16 }}>
           <button type="button" className="btn btn-ghost" onClick={() => navigate('/loans')}>Cancel</button>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             <Landmark size={16} /> {loading ? 'Creating...' : 'Create Loan'}

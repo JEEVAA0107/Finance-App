@@ -444,7 +444,7 @@ export default function SettingsPage() {
   return (
     <div className="animate-in" style={{ maxWidth: 1160, margin: '0 auto', paddingBottom: 80 }}>
       {/* ─── Top Header Section ─── */}
-      <div style={{
+      <div className="settings-header-section" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -481,7 +481,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Global Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="settings-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {(isAdmin || isSuperAdmin) && (
             <button
               type="button"
@@ -1201,7 +1201,7 @@ export default function SettingsPage() {
           TAB 3: RECEIPT & THERMAL PRINT (ரசீது & அச்சு வடிவமைப்பு)
           ═══════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'receiptPolicy' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(280px, 360px)', gap: 20, alignItems: 'start' }}>
+        <div className="settings-receipt-grid">
           {/* Left: Receipt Settings Configuration */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card" style={{ padding: 22, borderRadius: 14 }}>

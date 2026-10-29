@@ -271,7 +271,7 @@ export default function SuperAdminDashboard() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', width: 'auto' }}>
+        <div className="superadmin-header-actions" style={{ display: 'flex', gap: '8px' }}>
           <button
             className="btn btn-secondary"
             onClick={loadCompanies}
@@ -537,8 +537,8 @@ export default function SuperAdminDashboard() {
                 <button
                   type="button"
                   onClick={() => handleOpenEditModal(comp)}
-                  className="btn btn-secondary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '6px 12px', borderRadius: '8px' }}
+                  className="btn btn-secondary edit-btn"
+                  title="Edit Company Details"
                 >
                   <Edit2 size={14} />
                   <span>Edit</span>
@@ -547,20 +547,19 @@ export default function SuperAdminDashboard() {
                   type="button"
                   onClick={() => handleOpenPasswordModal(comp)}
                   className="btn btn-secondary password-btn"
+                  title="Reset Admin Password"
                 >
                   <KeyRound size={14} />
-                  <span>Reset Password</span>
+                  <span>Password</span>
                 </button>
-                {comp.stats?.loans === 0 && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteCompany(comp)}
-                    className="btn btn-ghost delete-btn"
-                    title="Delete Company"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCompany(comp)}
+                  className="delete-btn"
+                  title="Delete Company"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             </div>
           ))}
@@ -616,7 +615,7 @@ export default function SuperAdminDashboard() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div className="modal-form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Owner Name</label>
                   <input
@@ -749,7 +748,7 @@ export default function SuperAdminDashboard() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div className="modal-form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Company Login Code *</label>
                   <input
