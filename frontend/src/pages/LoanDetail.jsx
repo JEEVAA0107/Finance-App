@@ -20,9 +20,8 @@ export default function LoanDetail() {
   const [penaltyForm, setPenaltyForm] = useState({ amount: '', paymentMode: 'CASH', reference: '', notes: '' });
   const [payingPenalty, setPayingPenalty] = useState(false);
   const [principalModal, setPrincipalModal] = useState(false);
-  const [principalForm, setPrincipalForm] = useState({ amount: '', accruedInterest: '', penaltyAmount: '', paymentMode: 'CASH', reference: '', notes: '' });
+  const [principalForm, setPrincipalForm] = useState({ amount: '', penaltyAmount: '', paymentMode: 'CASH', reference: '', notes: '' });
   const [payingPrincipal, setPayingPrincipal] = useState(false);
-  const [preclosure, setPreclosure] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   
@@ -45,17 +44,16 @@ export default function LoanDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleOpenPrincipalModal = async () => {
-    setPrincipalForm({ amount: String(loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0), accruedInterest: '0', penaltyAmount: '0', paymentMode: 'CASH', reference: '', notes: '' });
-    setPreclosure(null);
+  const handleOpenPrincipalModal = () => {
+    const defaultPrincipal = loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0;
+    setPrincipalForm({ 
+      amount: String(defaultPrincipal), 
+      penaltyAmount: '0', 
+      paymentMode: 'CASH', 
+      reference: '', 
+      notes: '' 
+    });
     setPrincipalModal(true);
-    try {
-      const res = await loansAPI.getPreclosure(id);
-      setPreclosure(res);
-      setPrincipalForm(prev => ({ ...prev, accruedInterest: String(res.accruedInterest || 0) }));
-    } catch (e) {
-      toast.error('Failed to get preclosure details');
-    }
   };
 
   const load = () => {
@@ -125,14 +123,17 @@ export default function LoanDetail() {
   const handlePrincipalPay = async (e) => {
     e.preventDefault();
     const pAmt = parseFloat(principalForm.amount);
-    const intAmt = parseFloat(principalForm.accruedInterest || 0);
     const penAmt = parseFloat(principalForm.penaltyAmount || 0);
+    const maxPrincipal = loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0;
 
     if (!pAmt || isNaN(pAmt) || pAmt <= 0) {
       return toast.error('Principal amount must be greater than 0');
     }
-    if (intAmt < 0 || penAmt < 0) {
-      return toast.error('Interest or penalty cannot be negative');
+    if (pAmt > maxPrincipal) {
+      return toast.error(`Principal amount cannot exceed ₹${maxPrincipal.toLocaleString('en-IN')}`);
+    }
+    if (penAmt < 0) {
+      return toast.error('Penalty cannot be negative');
     }
 
     setPayingPrincipal(true);
@@ -140,7 +141,7 @@ export default function LoanDetail() {
       const res = await paymentsAPI.close({ 
         loanId: id, 
         principalAmount: pAmt,
-        accruedInterestAmount: intAmt,
+        accruedInterestAmount: 0,
         penaltyAmount: penAmt,
         paymentMode: principalForm.paymentMode,
         reference: principalForm.reference,
@@ -171,7 +172,7 @@ export default function LoanDetail() {
 
   const isWithoutInt = loan.interestType === 'WITHOUT_INTEREST';
   const currentInstallmentAmount = (loan.interestType === 'FLAT' && loan.outstandingPrincipal !== null && loan.outstandingPrincipal !== undefined)
-    ? (loan.repayments?.find(r => r.status === 'PENDING')?.dueAmount ?? Math.round(loan.outstandingPrincipal * (loan.interestRate / 100)))
+    ? Math.round(loan.outstandingPrincipal * (loan.interestRate / 100))
     : (loan.installmentAmount ?? 0);
   const isMonthly = loan.tenureUnit === 'MONTHS';
   const isDaily = loan.tenureUnit === 'DAYS' || loan.repayments?.some(r => r.dayNo != null && r.dayNo > 1);
@@ -764,50 +765,33 @@ export default function LoanDetail() {
             <div className="modal-header">
               <div>
                 <div style={{ fontWeight: 700 }}>Loan Closure / Principal Payment</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Outstanding: ₹{outstanding?.toLocaleString('en-IN')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Current Outstanding Principal: ₹{(loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0).toLocaleString('en-IN')}
+                </div>
               </div>
               <button className="modal-close" onClick={() => setPrincipalModal(false)}><X size={18} /></button>
             </div>
             <form onSubmit={handlePrincipalPay}>
               <div className="modal-body">
                 <div style={{ padding: '10px 14px', background: 'var(--warning-50)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.2)', marginBottom: 14, fontSize: 12, color: 'var(--warning-600)' }}>
-                  ⚠️ Paying the full outstanding principal will <b>CLOSE</b> the loan automatically.
+                  💡 Paying the full outstanding principal will <b>CLOSE</b> the loan. If paying partially (e.g. ₹5,000 of ₹10,000), future interest installments will automatically recalculate.
                 </div>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div className="form-group">
-                    <label className="form-label">Principal Amount (₹) *</label>
-                    <input
-                      className="form-input"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max={outstanding}
-                      onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
-                      value={principalForm.amount}
-                      onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Accrued Interest (₹) 
-                      {preclosure?.unpaidPeriods > 0 && 
-                        <span style={{color: 'var(--danger-500)', marginLeft: 6, fontSize: 11}}>
-                          ({preclosure.unpaidPeriods} {preclosure.tenureUnitStr} Unpaid)
-                        </span>
-                      }
-                    </label>
-                    <input
-                      className="form-input"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
-                      value={principalForm.accruedInterest}
-                      onChange={e => setPrincipalForm({ ...principalForm, accruedInterest: e.target.value })}
-                      disabled={!preclosure}
-                    />
+                <div className="form-group">
+                  <label className="form-label">Principal Amount (₹) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0}
+                    onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                    value={principalForm.amount}
+                    onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })}
+                    required
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Max payable: ₹{(loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0).toLocaleString('en-IN')}
                   </div>
                 </div>
 
@@ -842,12 +826,12 @@ export default function LoanDetail() {
               </div>
               <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: 800, fontSize: 16 }}>
-                  Total: ₹{((parseFloat(principalForm.amount || 0) + parseFloat(principalForm.accruedInterest || 0) + parseFloat(principalForm.penaltyAmount || 0)).toLocaleString('en-IN'))}
+                  Total: ₹{((parseFloat(principalForm.amount || 0) + parseFloat(principalForm.penaltyAmount || 0)).toLocaleString('en-IN'))}
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setPrincipalModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" style={{ background: 'linear-gradient(135deg,var(--warning-500),var(--warning-600))' }} disabled={payingPrincipal || !preclosure}>
-                    {payingPrincipal ? 'Processing...' : 'Confirm Closure'}
+                  <button type="submit" className="btn btn-primary" style={{ background: 'linear-gradient(135deg,var(--warning-500),var(--warning-600))' }} disabled={payingPrincipal}>
+                    {payingPrincipal ? 'Processing...' : (parseFloat(principalForm.amount || 0) >= (loan?.outstandingPrincipal ?? loan?.principalAmount ?? 0) ? 'Confirm Loan Closure' : 'Confirm Principal Payment')}
                   </button>
                 </div>
               </div>

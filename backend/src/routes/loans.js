@@ -105,7 +105,8 @@ async function autoExtendIfNeeded(loanId) {
 
   if (!lastInstallment) return;
 
-  const interestPerPeriod = loan.principalAmount * (loan.interestRate / 100);
+  const currentPrincipal = loan.outstandingPrincipal ?? loan.principalAmount;
+  const interestPerPeriod = round2(currentPrincipal * (loan.interestRate / 100));
   const batchSize = getBatchSize(loan.tenureUnit);
   const startNo = lastInstallment.installmentNo + 1;
   const startFrom = new Date(lastInstallment.dueDate);
@@ -124,7 +125,7 @@ async function autoExtendIfNeeded(loanId) {
       tenure: startNo + batchSize - 1,
       endDate: newEndDate,
       totalInterest: round2(interestPerPeriod * (startNo + batchSize - 1)),
-      totalPayable: round2(loan.principalAmount + interestPerPeriod * (startNo + batchSize - 1)),
+      totalPayable: round2(currentPrincipal + interestPerPeriod * (startNo + batchSize - 1)),
     },
   });
 }

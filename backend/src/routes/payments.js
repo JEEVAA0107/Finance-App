@@ -140,7 +140,8 @@ router.post('/', authenticate, async (req, res) => {
             orderBy: { installmentNo: 'desc' },
           });
           if (lastInst) {
-            const interestPerPeriod = round2(loan.principalAmount * (loan.interestRate / 100));
+            const currentPrincipal = loan.outstandingPrincipal ?? loan.principalAmount;
+            const interestPerPeriod = round2(currentPrincipal * (loan.interestRate / 100));
             const batchSize = loan.tenureUnit === 'WEEKS' ? 52 : loan.tenureUnit === 'MONTHS' ? 12 : 365;
             const startNo = lastInst.installmentNo + 1;
             const startFrom = new Date(lastInst.dueDate);
@@ -433,19 +434,24 @@ router.post('/principal', authenticate, async (req, res) => {
       }
     } else {
       if (loan.interestType === 'FLAT') {
-        const newInterestPerPeriod = newOutstanding * (loan.interestRate / 100);
-        updateData.installmentAmount = round2(newInterestPerPeriod);
+        const newInterestPerPeriod = round2(newOutstanding * (loan.interestRate / 100));
+        updateData.installmentAmount = newInterestPerPeriod;
         const pendingRepayments = await prisma.repayment.findMany({
-          where: { loanId, status: 'PENDING', paidAmount: 0 }
+          where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } }
         });
         for (const rep of pendingRepayments) {
-          const newDue = (rep.principal || 0) + newInterestPerPeriod;
+          const newDue = round2((rep.principal || 0) + newInterestPerPeriod);
+          const repUpdate = { 
+            interest: newInterestPerPeriod,
+            dueAmount: newDue
+          };
+          if (rep.paidAmount >= newDue && newDue > 0) {
+            repUpdate.status = 'PAID';
+            repUpdate.paidAt = new Date();
+          }
           await prisma.repayment.update({
             where: { id: rep.id },
-            data: { 
-              interest: newInterestPerPeriod,
-              dueAmount: newDue
-            }
+            data: repUpdate
           });
         }
       }
@@ -461,6 +467,10 @@ router.post('/principal', authenticate, async (req, res) => {
     await prisma.loan.update({ where: { id: loanId }, data: updateData });
 
     await auditLog(req.user.id, 'COLLECT_PRINCIPAL', 'Payment', payment.id, { amount: payAmount, paymentMode, type: 'PRINCIPAL', newOutstanding }, req);
+
+    if (typeof invalidateDashboardCache === 'function') {
+      invalidateDashboardCache(loan.companyId || req.user.companyId);
+    }
 
     try {
       let message = newOutstanding <= 0
@@ -584,19 +594,24 @@ router.post('/close', authenticate, async (req, res) => {
       }
     } else {
       if (loan.interestType === 'FLAT') {
-        const newInterestPerPeriod = newOutstanding * (loan.interestRate / 100);
-        updateData.installmentAmount = round2(newInterestPerPeriod);
+        const newInterestPerPeriod = round2(newOutstanding * (loan.interestRate / 100));
+        updateData.installmentAmount = newInterestPerPeriod;
         const pendingRepayments = await prisma.repayment.findMany({
-          where: { loanId, status: 'PENDING', paidAmount: 0 }
+          where: { loanId, status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] } }
         });
         for (const rep of pendingRepayments) {
-          const newDue = (rep.principal || 0) + newInterestPerPeriod;
+          const newDue = round2((rep.principal || 0) + newInterestPerPeriod);
+          const repUpdate = { 
+            interest: newInterestPerPeriod,
+            dueAmount: newDue
+          };
+          if (rep.paidAmount >= newDue && newDue > 0) {
+            repUpdate.status = 'PAID';
+            repUpdate.paidAt = new Date();
+          }
           await prisma.repayment.update({
             where: { id: rep.id },
-            data: { 
-              interest: newInterestPerPeriod,
-              dueAmount: newDue
-            }
+            data: repUpdate
           });
         }
       }

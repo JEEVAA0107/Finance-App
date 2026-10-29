@@ -21,7 +21,7 @@ async function autoExtendActiveLoans() {
   // Find active loans where unpaid installments are running low
   const activeLoans = await prisma.loan.findMany({
     where: { status: 'ACTIVE' },
-    select: { id: true, principalAmount: true, interestRate: true, tenureUnit: true },
+    select: { id: true, principalAmount: true, outstandingPrincipal: true, interestRate: true, tenureUnit: true },
   });
 
   for (const loan of activeLoans) {
@@ -38,7 +38,8 @@ async function autoExtendActiveLoans() {
 
     if (!lastInstallment) continue;
 
-    const interestPerPeriod = round2(loan.principalAmount * (loan.interestRate / 100));
+    const currentPrincipal = loan.outstandingPrincipal ?? loan.principalAmount;
+    const interestPerPeriod = round2(currentPrincipal * (loan.interestRate / 100));
     const batchSize = getBatchSize(loan.tenureUnit);
     const startNo = lastInstallment.installmentNo + 1;
     const startFrom = new Date(lastInstallment.dueDate);
