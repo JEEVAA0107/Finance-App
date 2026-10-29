@@ -46,8 +46,12 @@ export default function DayBookPage() {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
+    const amt = parseFloat(expenseForm.amount);
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return toast.error('Expense amount must be greater than 0');
+    }
     try {
-      await api.post('/daybook/expense', { ...expenseForm, date });
+      await api.post('/daybook/expense', { ...expenseForm, amount: amt, date });
       toast.success('Expense added');
       setShowModal(false);
       setExpenseForm({ amount: '', category: 'OFFICE', description: '' });
@@ -70,18 +74,18 @@ export default function DayBookPage() {
 
   return (
     <div className="page-container animate-in">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 className="page-title">Day Book</h1>
           <p className="page-subtitle">Daily cash flow, collections & profit breakdown</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input 
             type="date" 
             className="form-input" 
             value={date} 
             onChange={(e) => setDate(e.target.value)} 
-            style={{ width: 'auto' }}
+            style={{ width: 'auto', minWidth: 140 }}
           />
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={18} /> Add Expense
@@ -280,6 +284,7 @@ export default function DayBookPage() {
                   className="form-input" 
                   placeholder="e.g. 50" 
                   value={expenseForm.amount} 
+                  onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
                   onChange={e => setExpenseForm({ ...expenseForm, amount: e.target.value })} 
                   required 
                   min="1"

@@ -66,9 +66,19 @@ export default function LoanDetail() {
 
   const handlePay = async (e) => {
     e.preventDefault();
+    const amt = parseFloat(payForm.amount);
+    const pen = parseFloat(payForm.penaltyAmount || 0);
+
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return toast.error('Payment amount must be greater than 0');
+    }
+    if (pen < 0) {
+      return toast.error('Overdue penalty amount cannot be negative');
+    }
+
     setPaying(true);
     try {
-      await paymentsAPI.collect({ repaymentId: payModal.id, ...payForm, amount: parseFloat(payForm.amount), penaltyAmount: parseFloat(payForm.penaltyAmount) || 0 });
+      await paymentsAPI.collect({ repaymentId: payModal.id, ...payForm, amount: amt, penaltyAmount: pen });
       toast.success('✓ Payment collected!');
       setPayModal(null);
       load();
@@ -88,11 +98,16 @@ export default function LoanDetail() {
 
   const handlePayPenalty = async (e) => {
     e.preventDefault();
+    const amt = parseFloat(penaltyForm.amount);
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return toast.error('Late fee amount must be greater than 0');
+    }
+
     setPayingPenalty(true);
     try {
       const res = await paymentsAPI.collectPenalty({
         repaymentId: penaltyModal.id,
-        amount: parseFloat(penaltyForm.amount),
+        amount: amt,
         paymentMode: penaltyForm.paymentMode,
         reference: penaltyForm.reference,
         notes: penaltyForm.notes,
@@ -109,13 +124,24 @@ export default function LoanDetail() {
 
   const handlePrincipalPay = async (e) => {
     e.preventDefault();
+    const pAmt = parseFloat(principalForm.amount);
+    const intAmt = parseFloat(principalForm.accruedInterest || 0);
+    const penAmt = parseFloat(principalForm.penaltyAmount || 0);
+
+    if (!pAmt || isNaN(pAmt) || pAmt <= 0) {
+      return toast.error('Principal amount must be greater than 0');
+    }
+    if (intAmt < 0 || penAmt < 0) {
+      return toast.error('Interest or penalty cannot be negative');
+    }
+
     setPayingPrincipal(true);
     try {
       const res = await paymentsAPI.close({ 
         loanId: id, 
-        principalAmount: parseFloat(principalForm.amount),
-        accruedInterestAmount: parseFloat(principalForm.accruedInterest || 0),
-        penaltyAmount: parseFloat(principalForm.penaltyAmount || 0),
+        principalAmount: pAmt,
+        accruedInterestAmount: intAmt,
+        penaltyAmount: penAmt,
         paymentMode: principalForm.paymentMode,
         reference: principalForm.reference,
         notes: principalForm.notes
@@ -577,14 +603,32 @@ export default function LoanDetail() {
                   <div style={{ textAlign: 'center' }}><div style={{ fontSize: 10, color: 'var(--text-muted)' }}>BALANCE</div><div style={{ fontWeight: 700, color: 'var(--warning-400)' }}>₹{(payModal.dueAmount - payModal.paidAmount)?.toLocaleString('en-IN')}</div></div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Amount *</label>
-                  <input className="form-input" type="number" step="0.01" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} required />
+                  <label className="form-label">Amount (₹) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                    value={payForm.amount}
+                    onChange={e => setPayForm({ ...payForm, amount: e.target.value })}
+                    required
+                  />
                 </div>
                 {payModal.status === 'OVERDUE' && (
                   <div className="form-group">
                     <label className="form-label">Interest for Overdue (₹) - optional</label>
-                    <input className="form-input" type="number" min="0" placeholder="e.g. 100" value={payForm.penaltyAmount}
-                      onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })} />
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="e.g. 100"
+                      onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                      value={payForm.penaltyAmount}
+                      onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })}
+                    />
                   </div>
                 )}
                 <div className="form-group">
@@ -665,6 +709,8 @@ export default function LoanDetail() {
                     type="number"
                     min="1"
                     step="1"
+                    placeholder="e.g. 100"
+                    onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
                     value={penaltyForm.amount}
                     onChange={e => setPenaltyForm({ ...penaltyForm, amount: e.target.value })}
                     required
@@ -730,8 +776,18 @@ export default function LoanDetail() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div className="form-group">
-                    <label className="form-label">Principal Amount *</label>
-                    <input className="form-input" type="number" step="0.01" max={outstanding} value={principalForm.amount} onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })} required />
+                    <label className="form-label">Principal Amount (₹) *</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={outstanding}
+                      onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                      value={principalForm.amount}
+                      onChange={e => setPrincipalForm({ ...principalForm, amount: e.target.value })}
+                      required
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">
@@ -742,13 +798,31 @@ export default function LoanDetail() {
                         </span>
                       }
                     </label>
-                    <input className="form-input" type="number" step="0.01" value={principalForm.accruedInterest} onChange={e => setPrincipalForm({ ...principalForm, accruedInterest: e.target.value })} disabled={!preclosure} />
+                    <input
+                      className="form-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                      value={principalForm.accruedInterest}
+                      onChange={e => setPrincipalForm({ ...principalForm, accruedInterest: e.target.value })}
+                      disabled={!preclosure}
+                    />
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Late Fee / Overdue Charges (₹) - optional</label>
-                  <input className="form-input" type="number" step="0.01" min="0" value={principalForm.penaltyAmount} onChange={e => setPrincipalForm({ ...principalForm, penaltyAmount: e.target.value })} />
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g. 0"
+                    onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                    value={principalForm.penaltyAmount}
+                    onChange={e => setPrincipalForm({ ...principalForm, penaltyAmount: e.target.value })}
+                  />
                 </div>
 
                 <div className="form-group">

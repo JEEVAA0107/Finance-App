@@ -14,6 +14,7 @@
     "@capacitor/core": "^6.2.2",
     "axios": "^1.15.2",
     "date-fns": "^4.1.0",
+    "finance-app": "file:..",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",

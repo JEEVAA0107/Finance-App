@@ -219,12 +219,21 @@ export default function SuperAdminDashboard() {
   };
 
   const handleDeleteCompany = async (company) => {
-    if (!window.confirm(`Are you sure you want to delete '${company.name}'? This cannot be undone.`)) {
+    const loanCount = company.stats?.loans || 0;
+    const custCount = company.stats?.customers || 0;
+    const staffCount = company.stats?.users || 0;
+
+    let confirmMsg = `Are you sure you want to permanently delete '${company.name}'?`;
+    if (loanCount > 0 || custCount > 0) {
+      confirmMsg = `⚠️ WARNING: '${company.name}' currently has ${loanCount} loans, ${custCount} customers, and ${staffCount} staff.\n\nDeleting this finance business will permanently wipe all its associated records, loans, repayments, and payments.\n\nAre you sure you want to proceed with permanent deletion?`;
+    }
+
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     try {
       await companiesAPI.delete(company.id);
-      toast.success(`Company '${company.name}' deleted.`);
+      toast.success(`Company '${company.name}' deleted successfully.`);
       loadCompanies();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to delete company');
@@ -441,17 +450,15 @@ export default function SuperAdminDashboard() {
                         Password
                       </button>
 
-                      {comp.stats?.loans === 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCompany(comp)}
-                          className="btn btn-ghost"
-                          style={{ color: 'var(--danger-500)', padding: '5px' }}
-                          title="Delete Company"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCompany(comp)}
+                        className="btn btn-ghost"
+                        style={{ color: 'var(--danger-500)', padding: '5px' }}
+                        title={`Delete ${comp.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -622,13 +629,20 @@ export default function SuperAdminDashboard() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Mobile Number *</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Mobile Number *</label>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: (regForm.phone?.length === 10) ? '#10b981' : '#f59e0b' }}>
+                      {regForm.phone?.length || 0}/10 digits
+                    </span>
+                  </div>
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
                     className="form-input"
-                    placeholder="e.g. 9876543210"
+                    placeholder="10-digit mobile number"
                     value={regForm.phone}
-                    onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })}
+                    onChange={(e) => setRegForm({ ...regForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                     required
                   />
                 </div>
@@ -761,21 +775,22 @@ export default function SuperAdminDashboard() {
               </div>
 
               <div className="form-group" style={{ marginBottom: '12px' }}>
-                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Login Phone Number *</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'normal' }}>+91 & spaces optional</span>
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Login Phone Number *</label>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: (editForm.phone?.length === 10) ? '#10b981' : '#f59e0b' }}>
+                    {editForm.phone?.length || 0}/10 digits
+                  </span>
+                </div>
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
                   className="form-input"
-                  placeholder="e.g. 9876543210 or +91 98765 43210"
+                  placeholder="10-digit mobile number"
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                   required
                 />
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Must be a 10-digit number. Any formatting (+91, spaces) will be accepted automatically.
-                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '12px' }}>

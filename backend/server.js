@@ -1,4 +1,6 @@
-require('dotenv').config(); // trigger restart
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -29,7 +31,10 @@ const localIp = getLocalIpAddress();
 // Trust reverse proxy (Render, Vercel, Railway, Nginx) for accurate client IP rate limiting
 app.set('trust proxy', 1);
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 
 // Allow specific origins for production security
 app.use(cors({
@@ -100,7 +105,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404
+// ─── Serve Frontend Static Files in Production / Standalone ──────────────────
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api') || req.path.startsWith('/health')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
+// 404 handler for API routes
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
@@ -161,7 +178,27 @@ async function syncDatabaseSchema() {
         } catch (_) {}
       }
     }
-    console.log('✅ Customer & User schema columns verified');
+
+    // Company table columns
+    const companyCols = [
+      { col: 'settingsJson', type: 'TEXT' }
+    ];
+    for (const item of companyCols) {
+      const attempts = [
+        `ALTER TABLE "Company" ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE "Company" ADD COLUMN "${item.col}" ${item.type};`,
+        `ALTER TABLE company ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`,
+        `ALTER TABLE companies ADD COLUMN IF NOT EXISTS "${item.col}" ${item.type};`
+      ];
+      for (const sql of attempts) {
+        try {
+          await prisma.$executeRawUnsafe(sql);
+          break;
+        } catch (_) {}
+      }
+    }
+
+    console.log('✅ Customer, User & Company schema columns verified');
 
     // Repayment table schema updates for Weekly & Daily Carry-Forward
     const repaymentCols = [

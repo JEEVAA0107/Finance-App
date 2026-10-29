@@ -12,10 +12,25 @@ export default function CreateLoan() {
   const [loading, setLoading] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [form, setForm] = useState({
-    customerId: '', schemeId: '', principalAmount: '', interestRate: '',
-    interestType: 'WITHOUT_INTEREST', tenure: '0', advanceDeduction: '', alreadyCollectedAmount: '',
-    tenureUnit: 'DAYS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
+  const [form, setForm] = useState(() => {
+    let initial = {
+      customerId: '', schemeId: '', principalAmount: '', interestRate: '',
+      interestType: 'WITHOUT_INTEREST', tenure: '100', advanceDeduction: '', alreadyCollectedAmount: '',
+      tenureUnit: 'DAYS', repaymentFrequency: 'DAILY', startDate: new Date().toISOString().split('T')[0],
+    };
+    try {
+      const saved = localStorage.getItem('finova_financial_settings');
+      if (saved) {
+        const s = JSON.parse(saved);
+        if (s.loanPolicy) {
+          if (s.loanPolicy.defaultLoanModel) initial.interestType = s.loanPolicy.defaultLoanModel;
+          if (s.loanPolicy.defaultFrequency) initial.repaymentFrequency = s.loanPolicy.defaultFrequency;
+          if (s.loanPolicy.defaultDailyTenure) initial.tenure = String(s.loanPolicy.defaultDailyTenure);
+          if (s.loanPolicy.defaultInterestRate) initial.interestRate = String(s.loanPolicy.defaultInterestRate);
+        }
+      }
+    } catch (_) {}
+    return initial;
   });
 
   const loadCustomers = () => {
@@ -129,20 +144,40 @@ export default function CreateLoan() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const isWithoutInterest = form.interestType === 'WITHOUT_INTEREST';
+    const isEMI = form.interestType === 'EMI';
+    const principal = parseFloat(form.principalAmount);
+    const fee = isWithoutInterest ? parseFloat(form.advanceDeduction || 0) : 0;
+    const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate || 0);
+    const tenureVal = (isWithoutInterest || isEMI) ? parseInt(form.tenure || 0) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
+    const alreadyCollected = parseFloat(form.alreadyCollectedAmount || 0);
+
+    if (!principal || isNaN(principal) || principal <= 0) {
+      return toast.error('Loan amount must be greater than 0');
+    }
+
+    if (fee < 0) {
+      return toast.error('Advance deduction cannot be negative');
+    }
+
+    if (isWithoutInterest && fee >= principal) {
+      return toast.error('Advance deduction cannot be greater than or equal to loan amount');
+    }
+
+    if ((isWithoutInterest || isEMI) && (!tenureVal || tenureVal <= 0)) {
+      return toast.error('Please enter a valid repayment period (greater than 0)');
+    }
+
+    if (alreadyCollected < 0) {
+      return toast.error('Already collected amount cannot be negative');
+    }
+
+    if (alreadyCollected > principal) {
+      return toast.error('Already collected amount cannot exceed loan amount');
+    }
+
     setLoading(true);
     try {
-      const isWithoutInterest = form.interestType === 'WITHOUT_INTEREST';
-      const isEMI = form.interestType === 'EMI';
-      const principal = parseFloat(form.principalAmount);
-      const fee = isWithoutInterest ? parseFloat(form.advanceDeduction || 0) : 0;
-      const rate = isWithoutInterest ? 0 : parseFloat(form.interestRate || 0);
-      const tenureVal = (isWithoutInterest || isEMI) ? parseInt(form.tenure || 0) : (form.tenureUnit === 'WEEKS' ? 52 : form.tenureUnit === 'MONTHS' ? 12 : 365);
-
-      if ((isWithoutInterest || isEMI) && (!tenureVal || tenureVal <= 0)) {
-        setLoading(false);
-        return toast.error('Please enter a valid repayment period (greater than 0)');
-      }
-
       const res = await loansAPI.create({
         ...form,
         principalAmount: principal,
@@ -152,7 +187,7 @@ export default function CreateLoan() {
         repaymentFrequency: form.repaymentFrequency || (isWithoutInterest ? 'DAILY' : (form.tenureUnit === 'DAYS' ? 'DAILY' : form.tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY')),
         tenure: tenureVal,
         tenureUnit: form.tenureUnit,
-        alreadyCollectedAmount: parseFloat(form.alreadyCollectedAmount || 0),
+        alreadyCollectedAmount: alreadyCollected,
       });
       toast.success(`Loan ${res.loanNumber} created!`);
       navigate(`/loans/${res.id}`);
@@ -302,19 +337,58 @@ export default function CreateLoan() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Loan Amount (₹) *</label>
-            <input className="form-input" type="number" min="1" max="9999999" placeholder="e.g. 50000" value={form.principalAmount} onChange={e => set('principalAmount', e.target.value)} required />
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Loan Amount (₹) *</label>
+              <input
+                className="form-input"
+                type="number"
+                min="1"
+                max="9999999"
+                placeholder="e.g. 50000"
+                onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                value={form.principalAmount}
+                onChange={e => set('principalAmount', e.target.value)}
+                required
+              />
+            </div>
+
+            {form.interestType === 'WITHOUT_INTEREST' ? (
+              <div className="form-group">
+                <label className="form-label">Initial Advance Deduction (₹) *</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 2000"
+                  onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                  value={form.advanceDeduction}
+                  onChange={e => set('advanceDeduction', e.target.value)}
+                  required
+                />
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Upfront deduction (முன்பணம் பிடித்தம்)</span>
+              </div>
+            ) : (
+              <div className="form-group">
+                <label className="form-label">Interest Rate (% per period) *</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  placeholder="e.g. 3"
+                  onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                  value={form.interestRate}
+                  onChange={e => set('interestRate', e.target.value)}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {form.interestType === 'WITHOUT_INTEREST' ? (
-            <>
-              <div className="form-group">
-                <label className="form-label">Initial Advance Deduction (₹) *</label>
-                <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.advanceDeduction} onChange={e => set('advanceDeduction', e.target.value)} required />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Amount subtracted upfront before disbursing to the borrower (முன்பணம் பிடித்தம்)</span>
-              </div>
-
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Repayment Frequency (தவணை முறை) *</label>
                 <select
@@ -344,6 +418,7 @@ export default function CreateLoan() {
                     type="number"
                     min="1"
                     placeholder="0"
+                    onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
@@ -360,12 +435,13 @@ export default function CreateLoan() {
                     type="number"
                     min="1"
                     placeholder="0"
+                    onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
                   />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    Total schedule length in weeks (1 collection per week)
+                    Total schedule in weeks (1 per week)
                   </span>
                 </div>
               ) : (
@@ -376,23 +452,19 @@ export default function CreateLoan() {
                     type="number"
                     min="1"
                     placeholder="0"
+                    onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
                     value={form.tenure}
                     onChange={e => set('tenure', e.target.value)}
                     required
                   />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    Total schedule length in months (1 collection per month)
+                    Total schedule in months (1 per month)
                   </span>
                 </div>
               )}
-            </>
-          ) : form.interestType === 'EMI' ? (
-            <>
-              <div className="form-group">
-                <label className="form-label">Interest Rate (% per period) *</label>
-                <input className="form-input" type="number" step="0.1" min="0" max="100" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
-              </div>
-
+            </div>
+          ) : (
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Collection Frequency *</label>
                 <select 
@@ -404,51 +476,46 @@ export default function CreateLoan() {
                     setForm(f => ({ ...f, tenureUnit: unit, repaymentFrequency: freq }));
                   }}
                 >
-                  <option value="MONTHS">Monthly</option>
-                  <option value="WEEKS">Weekly</option>
                   <option value="DAYS">Daily</option>
+                  <option value="WEEKS">Weekly</option>
+                  <option value="MONTHS">Monthly</option>
                 </select>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Number of {form.tenureUnit.charAt(0) + form.tenureUnit.slice(1).toLowerCase()} *</label>
-                <input className="form-input" type="number" min="1" placeholder="0" value={form.tenure} onChange={e => set('tenure', e.target.value)} required />
+                <input
+                  className="form-input"
+                  type="number"
+                  min="1"
+                  placeholder="0"
+                  onKeyDown={e => ['-', '+', 'e', 'E', '.'].includes(e.key) && e.preventDefault()}
+                  value={form.tenure}
+                  onChange={e => set('tenure', e.target.value)}
+                  required
+                />
               </div>
-            </>
-          ) : (
-            <>
-              <div className="form-group">
-                <label className="form-label">Interest Rate (% per period) *</label>
-                <input className="form-input" type="number" step="0.1" min="0" max="100" placeholder="e.g. 3" value={form.interestRate} onChange={e => set('interestRate', e.target.value)} required />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Collection Frequency *</label>
-                <select 
-                  className="form-select" 
-                  value={form.tenureUnit} 
-                  onChange={e => {
-                    const unit = e.target.value;
-                    const freq = unit === 'DAYS' ? 'DAILY' : unit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY';
-                    setForm(f => ({ ...f, tenureUnit: unit, repaymentFrequency: freq }));
-                  }}
-                >
-                  <option value="DAYS">Daily</option>
-                  <option value="WEEKS">Weekly</option>
-                  <option value="MONTHS">Monthly</option>
-                </select>
-              </div>
-            </>
+            </div>
           )}
 
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Start Date *</label>
-            <input className="form-input" type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} required />
-          </div>
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Start Date *</label>
+              <input className="form-input" type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} required />
+            </div>
 
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Already Collected Amount (₹) [Optional]</label>
-            <input className="form-input" type="number" min="0" placeholder="e.g. 2000" value={form.alreadyCollectedAmount} onChange={e => set('alreadyCollectedAmount', e.target.value)} />
+            <div className="form-group">
+              <label className="form-label">Already Collected (₹) [Optional]</label>
+              <input
+                className="form-input"
+                type="number"
+                min="0"
+                placeholder="e.g. 2000"
+                onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                value={form.alreadyCollectedAmount}
+                onChange={e => set('alreadyCollectedAmount', e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

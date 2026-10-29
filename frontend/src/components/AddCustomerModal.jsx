@@ -183,20 +183,35 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
     e.preventDefault();
     const cleanPhone = form.phone.replace(/\D/g, '');
     const cleanJaminPhone = form.jaminPhone ? form.jaminPhone.replace(/\D/g, '') : '';
+    const cleanCustAadhar = form.idNumber ? form.idNumber.replace(/\D/g, '') : '';
     const cleanJaminAadhar = form.jaminIdNumber ? form.jaminIdNumber.replace(/\D/g, '') : '';
 
     if (!form.name.trim()) return toast.error('Customer name is required');
     if (!cleanPhone || cleanPhone.length !== 10) {
-      return toast.error('Customer phone number must be a valid 10-digit mobile number');
+      return toast.error('Customer phone number must be exactly 10 digits (e.g. 9876543210)');
+    }
+
+    if (form.idType === 'AADHAR' && form.idNumber && form.idNumber.trim()) {
+      if (cleanCustAadhar.length !== 12) {
+        return toast.error('Customer Aadhaar number must be exactly 12 digits');
+      }
+    } else if (form.idType === 'PAN' && form.idNumber && form.idNumber.trim()) {
+      if (form.idNumber.trim().length !== 10) {
+        return toast.error('Customer PAN card number must be exactly 10 characters (e.g. ABCDE1234F)');
+      }
     }
 
     if (cleanJaminPhone && cleanJaminPhone.length !== 10) {
-      return toast.error('Guarantor (Jamin) phone number must be a valid 10-digit mobile number');
+      return toast.error('Guarantor (Jamin) phone number must be exactly 10 digits');
     }
     
     if (form.jaminIdType === 'AADHAR' && cleanJaminAadhar) {
       if (cleanJaminAadhar.length !== 12) {
-        return toast.error('Jamin Aadhar number must be exactly 12 digits');
+        return toast.error('Jamin Aadhaar number must be exactly 12 digits');
+      }
+    } else if (form.jaminIdType === 'PAN' && form.jaminIdNumber && form.jaminIdNumber.trim()) {
+      if (form.jaminIdNumber.trim().length !== 10) {
+        return toast.error('Jamin PAN card number must be exactly 10 characters (e.g. ABCDE1234F)');
       }
     }
 
@@ -209,7 +224,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
         address: form.address.trim() || 'Address Not Provided',
         city: form.city.trim() || 'N/A',
         idType: form.idType || 'AADHAR',
-        idNumber: (form.idNumber && form.idNumber.trim()) ? form.idNumber.trim() : 'N/A',
+        idNumber: form.idType === 'AADHAR' ? (cleanCustAadhar || 'N/A') : ((form.idNumber && form.idNumber.trim()) ? form.idNumber.trim().toUpperCase() : 'N/A'),
         idProofUrl: form.idProofUrl || null,
         photoUrl: form.photoUrl || null,
         notificationPref: form.notificationPref || 'WHATSAPP',
@@ -580,12 +595,68 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700 }}>Mobile Phone Number *</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>Mobile Phone Number *</label>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: form.phone.length === 10 ? '#10b981' : '#f59e0b' }}>
+                        {form.phone.length}/10 digits
+                      </span>
+                    </div>
                     <input
-                      type="tel" className="form-input" placeholder="10-digit mobile" maxLength="10"
+                      type="tel"
+                      inputMode="numeric"
+                      className="form-input"
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
                       value={form.phone}
-                      onChange={e => update('phone', e.target.value.replace(/\\D/g, '').slice(0, 10))}
+                      onChange={e => update('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                       required
+                    />
+                  </div>
+                </div>
+
+                {/* Customer ID Proof Details */}
+                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700 }}>ID Type</label>
+                    <select
+                      className="form-select"
+                      value={form.idType}
+                      onChange={e => {
+                        update('idType', e.target.value);
+                        update('idNumber', '');
+                      }}
+                    >
+                      <option value="AADHAR">Aadhar</option>
+                      <option value="PAN">PAN</option>
+                      <option value="VOTER">Voter ID</option>
+                      <option value="DRIVING">License</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
+                        {form.idType === 'AADHAR' ? 'Aadhaar Card Number' : form.idType === 'PAN' ? 'PAN Card Number' : 'ID Card Number'}
+                      </label>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: (form.idType === 'AADHAR' && form.idNumber.length === 12) || (form.idType === 'PAN' && form.idNumber.length === 10) ? '#10b981' : '#94a3b8' }}>
+                        {form.idType === 'AADHAR' ? `${form.idNumber.length}/12 digits` : form.idType === 'PAN' ? `${form.idNumber.length}/10 chars` : ''}
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      inputMode={form.idType === 'AADHAR' ? 'numeric' : 'text'}
+                      className="form-input"
+                      placeholder={form.idType === 'AADHAR' ? '12-digit Aadhaar number' : form.idType === 'PAN' ? '10-character PAN (ABCDE1234F)' : 'ID Number'}
+                      maxLength={form.idType === 'AADHAR' ? 12 : form.idType === 'PAN' ? 10 : 20}
+                      value={form.idNumber}
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (form.idType === 'AADHAR') {
+                          val = val.replace(/\D/g, '').slice(0, 12);
+                        } else if (form.idType === 'PAN') {
+                          val = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 10);
+                        }
+                        update('idNumber', val);
+                      }}
                     />
                   </div>
                 </div>
@@ -690,11 +761,20 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700 }}>Jamin Mobile Phone</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>Jamin Mobile Phone</label>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: form.jaminPhone.length === 10 ? '#10b981' : '#f59e0b' }}>
+                        {form.jaminPhone ? `${form.jaminPhone.length}/10 digits` : 'Optional'}
+                      </span>
+                    </div>
                     <input
-                      type="tel" className="form-input" placeholder="Jamin Phone Number" maxLength="10"
+                      type="tel"
+                      inputMode="numeric"
+                      className="form-input"
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
                       value={form.jaminPhone}
-                      onChange={e => update('jaminPhone', e.target.value.replace(/\\D/g, '').slice(0, 10))}
+                      onChange={e => update('jaminPhone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                     />
                   </div>
                 </div>
@@ -719,7 +799,10 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                       <select
                         className="form-select"
                         value={form.jaminIdType}
-                        onChange={e => update('jaminIdType', e.target.value)}
+                        onChange={e => {
+                          update('jaminIdType', e.target.value);
+                          update('jaminIdNumber', '');
+                        }}
                       >
                         <option value="AADHAR">Aadhar</option>
                         <option value="PAN">PAN</option>
@@ -728,16 +811,25 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, editCusto
                       </select>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">ID Number</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <label className="form-label" style={{ margin: 0 }}>ID Number</label>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: (form.jaminIdType === 'AADHAR' && form.jaminIdNumber.length === 12) || (form.jaminIdType === 'PAN' && form.jaminIdNumber.length === 10) ? '#10b981' : '#94a3b8' }}>
+                          {form.jaminIdType === 'AADHAR' ? `${form.jaminIdNumber.length}/12 digits` : form.jaminIdType === 'PAN' ? `${form.jaminIdNumber.length}/10 chars` : ''}
+                        </span>
+                      </div>
                       <input
                         type="text"
+                        inputMode={form.jaminIdType === 'AADHAR' ? 'numeric' : 'text'}
                         className="form-input"
-                        placeholder="Card Number"
+                        placeholder={form.jaminIdType === 'AADHAR' ? '12-digit Aadhaar' : form.jaminIdType === 'PAN' ? '10-char PAN' : 'Card Number'}
+                        maxLength={form.jaminIdType === 'AADHAR' ? 12 : form.jaminIdType === 'PAN' ? 10 : 20}
                         value={form.jaminIdNumber}
                         onChange={e => {
                           let val = e.target.value;
                           if (form.jaminIdType === 'AADHAR') {
                             val = val.replace(/\D/g, '').slice(0, 12);
+                          } else if (form.jaminIdType === 'PAN') {
+                            val = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 10);
                           }
                           update('jaminIdNumber', val);
                         }}

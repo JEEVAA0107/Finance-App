@@ -27,6 +27,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.2",
     "express-validator": "^7.3.2",
+    "finance-app": "file:..",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",

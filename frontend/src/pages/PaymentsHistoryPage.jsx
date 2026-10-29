@@ -279,8 +279,8 @@ export default function PaymentsHistoryPage() {
       <div 
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: 14,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 12,
           marginBottom: 20
         }}
       >

@@ -223,8 +223,22 @@ export default function UsersPage() {
                     <input className="form-input" type="email" placeholder="agent@loanflow.local" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">10-Digit Mobile Phone *</label>
-                    <input className="form-input" maxLength={10} placeholder="e.g. 9876543210" value={form.phone} onChange={e => setForm({...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})} required />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <label className="form-label" style={{ margin: 0 }}>10-Digit Mobile Phone *</label>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: form.phone.length === 10 ? '#10b981' : '#f59e0b' }}>
+                        {form.phone.length}/10 digits
+                      </span>
+                    </div>
+                    <input
+                      className="form-input"
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="e.g. 9876543210"
+                      value={form.phone}
+                      onChange={e => setForm({...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})}
+                      required
+                    />
                   </div>
                 </div>
                 <div className="form-row">

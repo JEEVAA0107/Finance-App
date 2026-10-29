@@ -74,13 +74,23 @@ export default function CollectionPage() {
 
   const handlePay = async (e) => {
     e.preventDefault();
+    const amt = parseFloat(payForm.amount);
+    const pen = parseFloat(payForm.penaltyAmount || 0);
+
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return toast.error('Collection payment amount must be greater than 0');
+    }
+    if (pen < 0) {
+      return toast.error('Overdue penalty amount cannot be negative');
+    }
+
     setPaying(true);
     try {
       await paymentsAPI.collect({ 
         repaymentId: payModal.id, 
         ...payForm, 
-        amount: parseFloat(payForm.amount),
-        penaltyAmount: parseFloat(payForm.penaltyAmount) || 0
+        amount: amt,
+        penaltyAmount: pen
       });
       toast.success('✓ Payment collected!');
       setPayModal(null);
@@ -101,11 +111,16 @@ export default function CollectionPage() {
 
   const handlePayPenalty = async (e) => {
     e.preventDefault();
+    const amt = parseFloat(penaltyForm.amount);
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return toast.error('Penalty late fee amount must be greater than 0');
+    }
+
     setPayingPenalty(true);
     try {
       const res = await paymentsAPI.collectPenalty({
         repaymentId: penaltyModal.id,
-        amount: parseFloat(penaltyForm.amount),
+        amount: amt,
         paymentMode: penaltyForm.paymentMode,
         reference: penaltyForm.reference,
         notes: penaltyForm.notes,
@@ -150,18 +165,18 @@ export default function CollectionPage() {
         ))}
       </div>
 
-      <div style={{ marginBottom: 16, display: 'flex', gap: 10 }}>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <input 
           type="text" 
           placeholder="Search by name or loan number..." 
           className="form-input" 
-          style={{ flex: 1 }}
+          style={{ flex: 1, minWidth: 200 }}
           value={search} 
           onChange={e => setSearch(e.target.value)} 
         />
         <select 
           className="form-select" 
-          style={{ width: 'auto' }}
+          style={{ width: 'auto', minWidth: 140 }}
           value={loanType} 
           onChange={e => setLoanType(e.target.value)}
         >
@@ -330,15 +345,32 @@ export default function CollectionPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Amount *</label>
-                  <input className="form-input" type="number" step="0.01" value={payForm.amount}
-                    onChange={e => setPayForm({ ...payForm, amount: e.target.value })} required />
+                  <label className="form-label">Amount (₹) *</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                    value={payForm.amount}
+                    onChange={e => setPayForm({ ...payForm, amount: e.target.value })}
+                    required
+                  />
                 </div>
                 {payModal.status === 'OVERDUE' && (
                   <div className="form-group">
                     <label className="form-label">Interest for Overdue (₹) - optional</label>
-                    <input className="form-input" type="number" min="0" placeholder="e.g. 100" value={payForm.penaltyAmount}
-                      onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })} />
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="e.g. 100"
+                      onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                      value={payForm.penaltyAmount}
+                      onChange={e => setPayForm({ ...payForm, penaltyAmount: e.target.value })}
+                    />
                   </div>
                 )}
                 <div className="form-group">
@@ -407,6 +439,8 @@ export default function CollectionPage() {
                     className="form-input"
                     type="number"
                     min="1"
+                    placeholder="e.g. 100"
+                    onKeyDown={e => ['-', '+', 'e', 'E'].includes(e.key) && e.preventDefault()}
                     value={penaltyForm.amount}
                     onChange={e => setPenaltyForm({ ...penaltyForm, amount: e.target.value })}
                     required

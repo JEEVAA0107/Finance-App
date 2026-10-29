@@ -344,7 +344,17 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
     const effectiveCompanyId = req.user.companyId || customer.companyId || null;
 
     const start = new Date(startDate);
+    const p = parseFloat(principalAmount);
+    if (isNaN(p) || p <= 0) {
+      return res.status(400).json({ success: false, message: 'Loan principal amount must be greater than 0' });
+    }
     const fee = parseFloat(advanceDeduction || processingFee || 0);
+    if (isNaN(fee) || fee < 0) {
+      return res.status(400).json({ success: false, message: 'Advance deduction cannot be negative' });
+    }
+    if (fee >= p) {
+      return res.status(400).json({ success: false, message: 'Advance deduction cannot be greater than or equal to loan principal amount' });
+    }
     
     let batchSize, interestPerPeriod, principalPerPeriod, installmentAmount, totalPayable, totalInterest;
     let frequency = repaymentFrequency || (tenureUnit === 'DAYS' ? 'DAILY' : tenureUnit === 'WEEKS' ? 'WEEKLY' : 'MONTHLY');

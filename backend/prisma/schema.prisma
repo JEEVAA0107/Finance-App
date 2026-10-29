@@ -18,6 +18,7 @@ model Company {
   ownerName    String?
   phone        String?
   address      String?
+  settingsJson String?
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

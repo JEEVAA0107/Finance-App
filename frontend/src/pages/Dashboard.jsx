@@ -146,34 +146,30 @@ export default function Dashboard() {
 
   return (
     <div className="animate-in" style={{ paddingBottom: '40px' }}>
-      {/* Greeting & Quick Actions */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
+      {/* Greeting & Unified Quick Actions */}
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ minWidth: 200 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>Hi, {user?.name?.split(' ')[0]} 👋</div>
           <div className="color-muted" style={{ fontSize: 12, marginTop: 2 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
         
-        {/* Top Right Actions */}
-        <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Link to="/customers?new=true" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
-            <Plus size={13} style={{ marginRight: 2 }}/> Customer
+        {/* Unified Actions Bar */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Link to="/loans/create" className="btn btn-primary btn-sm" style={{ borderRadius: '100px', padding: '8px 16px', fontWeight: 700 }}>
+            <Plus size={15}/> New Loan
+          </Link>
+          <Link to="/collections" className="btn btn-success btn-sm" style={{ borderRadius: '100px', padding: '8px 16px', fontWeight: 700 }}>
+            <HandCoins size={15}/> Collect
+          </Link>
+          <Link to="/customers?new=true" className="btn btn-ghost btn-sm" style={{ borderRadius: '100px', padding: '8px 14px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: 12 }}>
+            <Plus size={14}/> Customer
           </Link>
           {isAdmin && (
-            <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ padding: '5px 10px', borderRadius: '100px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)', fontSize: 11 }}>
-               <FileText size={13} style={{ marginRight: 2 }}/> History
+            <Link to="/payment-history" className="btn btn-ghost btn-sm" style={{ borderRadius: '100px', padding: '8px 14px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: 12 }}>
+               <FileText size={14}/> History
             </Link>
           )}
         </div>
-      </div>
-
-      {/* Main Quick Actions below */}
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 16, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-        <Link to="/loans/create" className="btn btn-primary btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px' }}>
-          <Plus size={16}/> New Loan
-        </Link>
-        <Link to="/collections" className="btn btn-success btn-sm" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: '100px' }}>
-          <HandCoins size={16}/> Collect
-        </Link>
       </div>
 
       {isAdmin ? (
@@ -191,18 +187,15 @@ export default function Dashboard() {
             </Link>
           )}
 
-          {/* Section 1: Overall Financials */}
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 24, color: 'var(--text-primary)' }}>Overall Financials</div>
-          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
+          {/* Section 1: Overall Financials (Clean 6-Card Balanced Grid) */}
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, marginTop: 16, color: 'var(--text-primary)' }}>Overall Financials</div>
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
             <StatCard onClick={() => openBreakdownModal('DISBURSED')} icon={IndianRupee} label="Total Disbursed (வழங்கியது)" value={fmt(s?.totalDisbursed)} color="green" />
             <StatCard to="/loans" icon={Landmark} label="Principal Outstanding (அசல் நிலுவை)" value={fmt(s?.outstandingPrincipal)} color="purple" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={TrendingUp} label="Interest Outstanding (வட்டி நிலுவை)" value={fmt(s?.outstandingInterest)} color="yellow" />
             <StatCard onClick={() => openBreakdownModal('OUTSTANDING')} icon={Landmark} label="Total Outstanding (மொத்த நிலுவை)" value={fmt(s?.outstandingAmount)} color="blue" />
             <StatCard to="/payment-history" icon={HandCoins} label="Total Collected (மொத்த வசூல்)" value={fmt(s?.totalCollected)} color="purple" />
             <StatCard to="/payment-history" icon={HandCoins} label="Principal Collected (அசல் வசூல்)" value={fmt(s?.totalPrincipalCollected)} color="green" />
-            <StatCard to="/profit" icon={TrendingUp} label="Interest Profit (வட்டி லாபம்)" value={fmt(s?.totalInterestCollected)} color="yellow" />
-            <StatCard to="/payment-history" icon={AlertTriangle} label="Late Fee Collected (அபராதம்)" value={fmt(s?.totalPenaltyCollected)} color="red" />
-            <StatCard to="/profit" icon={TrendingUp} label="Total Profit (மொத்த லாபம்)" value={fmt(s?.totalCombinedProfit)} color="green" />
           </div>
 
           {/* Section: Dedicated Profit & Penalty Breakdown Section */}
@@ -213,8 +206,8 @@ export default function Dashboard() {
                   <TrendingUp size={22} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#d97706' }}>Profit Breakdown Section (லாப விவரம்)</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pure Interest Profit + Late Late Fee Collected = Total Profit</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#d97706' }}>Profit Breakdown (லாப விவரம்)</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pure Interest Profit + Late Fee Collected = Total Profit</div>
                 </div>
               </div>
               <Link to="/profit" className="btn btn-ghost btn-sm" style={{ borderColor: 'rgba(245, 158, 11, 0.35)', color: '#d97706', fontSize: 12, fontWeight: 700 }}>
@@ -234,7 +227,7 @@ export default function Dashboard() {
 
               {/* Late Fee Collected */}
               <div style={{ background: 'var(--bg-glass)', padding: '14px 16px', borderRadius: 12, border: '1px solid rgba(220, 38, 38, 0.2)' }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Late Fee Collected</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Late Fee Collected (அபராதம்)</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 4 }}>{fmt(s?.totalPenaltyCollected)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                   Today: <b style={{ color: '#dc2626' }}>{fmt(s?.todayPenaltyCollected || 0)}</b> ({s?.totalPenaltyCount || 0} payments)

@@ -178,7 +178,9 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 
     // 2. Validate Customer Aadhar (12 digits & scoped duplicate check)
     if (idType === 'AADHAR' && cleanAadhar && cleanAadhar !== 'N/A') {
-      
+      if (cleanAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Customer Aadhaar number must be exactly 12 digits.' });
+      }
       const existC = await prisma.customer.findFirst({
         where: {
           idType: 'AADHAR',
@@ -197,7 +199,9 @@ router.post('/', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) => 
 
     // 3. Validate Jamin Aadhar
     if (jaminIdType === 'AADHAR' && cleanJaminAadhar && cleanJaminAadhar !== 'N/A') {
-      
+      if (cleanJaminAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhaar number must be exactly 12 digits.' });
+      }
       if (idType === 'AADHAR' && cleanAadhar === cleanJaminAadhar) {
         return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
       }
@@ -367,7 +371,9 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
 
     // 2. Validate Customer Aadhar
     if (idType === 'AADHAR' && cleanAadhar && cleanAadhar !== 'N/A') {
-      
+      if (cleanAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Customer Aadhaar number must be exactly 12 digits.' });
+      }
       const existC = await prisma.customer.findFirst({
         where: {
           idType: 'AADHAR',
@@ -387,7 +393,9 @@ router.put('/:id', authenticate, authorize('ADMIN', 'AGENT'), async (req, res) =
 
     // 3. Validate Jamin Aadhar
     if (jaminIdType === 'AADHAR' && cleanJaminAadhar && cleanJaminAadhar !== 'N/A') {
-      
+      if (cleanJaminAadhar.length !== 12) {
+        return res.status(400).json({ success: false, message: 'Guarantor (Jamin) Aadhaar number must be exactly 12 digits.' });
+      }
       if (idType === 'AADHAR' && cleanAadhar === cleanJaminAadhar) {
         return res.status(400).json({ success: false, message: 'Customer and Guarantor Aadhar numbers cannot be the same.' });
       }

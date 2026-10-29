@@ -1,9 +1,14 @@
 import axios from 'axios';
 
-// Hardcoding the production URL directly to avoid any environment variable issues
-const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+// Dynamic API URL resolution:
+// - VITE_API_URL if set in environment
+// - finova_api_url from localStorage if set
+// - http://localhost:5000/api during Vite dev (port 5173)
+// - Current origin (${window.location.origin}/api) for live production and unified server
 const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('finova_api_url') : null;
-const defaultUrl = isLocal ? 'http://localhost:5000/api' : 'https://finance-app-5k5p.onrender.com/api';
+const isViteDev = typeof window !== 'undefined' && window.location.port === '5173';
+const sameOriginApi = typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api';
+const defaultUrl = isViteDev ? 'http://localhost:5000/api' : sameOriginApi;
 const API_URL = import.meta.env?.VITE_API_URL || storedUrl || defaultUrl;
 
 const api = axios.create({
@@ -100,6 +105,9 @@ export const companiesAPI = {
   toggleStatus: (id, isActive) => api.patch('/companies/' + id + '/status', { isActive }).then(extractData),
   resetAdminPassword: (id, newPassword) => api.post('/companies/' + id + '/reset-password', { newPassword }).then(extractData),
   delete: (id) => api.delete('/companies/' + id).then(extractData),
+  getMySettings: () => api.get('/companies/my-settings').then(extractData),
+  updateMySettings: (data) => api.put('/companies/my-settings', data).then(extractData),
+  exportBackup: () => api.get('/companies/backup-export').then(extractData),
 };
 
 export const usersAPI = {

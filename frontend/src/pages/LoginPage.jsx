@@ -14,15 +14,37 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const cleanInput = userId.trim();
+    if (loginMode === 'agent') {
+      if (cleanInput.replace(/\D/g, '').length !== 10) {
+        setError('Please enter a valid 10-digit mobile number');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
-      await login(userId.trim(), password.trim());
+      await login(cleanInput, password.trim());
     } catch (err) {
       const msg = err.message || err.response?.data?.message || 'Invalid credentials. Please try again.';
       setError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUserIdChange = (e) => {
+    const val = e.target.value;
+    if (loginMode === 'agent') {
+      setUserId(val.replace(/\D/g, '').slice(0, 10));
+    } else {
+      if (/^\d+$/.test(val)) {
+        setUserId(val.slice(0, 10));
+      } else {
+        setUserId(val);
+      }
     }
   };
 
@@ -84,9 +106,16 @@ export default function LoginPage() {
           
           {/* Mobile / User ID */}
           <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label className="form-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-              {loginMode === 'agent' ? 'Field Executive Mobile Number' : 'Admin Email or Mobile'}
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>
+                {loginMode === 'agent' ? 'Field Executive Mobile Number' : 'Admin Email or Mobile'}
+              </label>
+              {loginMode === 'agent' && (
+                <span style={{ fontSize: '11px', fontWeight: 700, color: userId.length === 10 ? '#10b981' : '#f59e0b' }}>
+                  {userId.length}/10 digits
+                </span>
+              )}
+            </div>
             <div style={{ position: 'relative', width: '100%' }}>
               <Phone
                 size={18}
@@ -102,10 +131,12 @@ export default function LoginPage() {
               />
               <input
                 className="form-input input-with-icon-left"
-                type="text"
-                placeholder="e.g. 9876543210"
+                type={loginMode === 'agent' ? 'tel' : 'text'}
+                inputMode={loginMode === 'agent' ? 'numeric' : 'text'}
+                maxLength={loginMode === 'agent' ? 10 : 80}
+                placeholder={loginMode === 'agent' ? '10-digit mobile number' : 'e.g. 9876543210 or admin@loanflow.com'}
                 value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                onChange={handleUserIdChange}
                 autoComplete="username"
                 required
                 style={{ width: '100%', boxSizing: 'border-box' }}

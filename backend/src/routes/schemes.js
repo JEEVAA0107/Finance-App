@@ -36,32 +36,46 @@ const DEFAULT_SCHEMES = [
 // GET /api/schemes
 router.get('/', authenticate, async (req, res) => {
   try {
-    const where = {};
-    if (req.user.companyId) {
-      where.companyId = req.user.companyId;
+    let companyId = req.user.companyId || req.query.companyId;
+    if (!companyId) {
+      const firstCompany = await prisma.company.findFirst();
+      if (firstCompany) companyId = firstCompany.id;
     }
+
+    const where = companyId ? { companyId } : {};
     let schemes = await prisma.loanScheme.findMany({
       where,
       orderBy: { createdAt: 'desc' }
     });
 
     // Auto-seed starter templates if company has 0 schemes
-    if (schemes.length === 0) {
+    if (schemes.length === 0 && companyId) {
       for (const ds of DEFAULT_SCHEMES) {
         await prisma.loanScheme.create({
           data: {
             ...ds,
-            companyId: req.user.companyId || null,
+            companyId,
           }
         });
       }
       schemes = await prisma.loanScheme.findMany({
-        where,
+        where: { companyId },
         orderBy: { createdAt: 'desc' }
       });
     }
 
-    res.json({ success: true, data: schemes });
+    // Safety deduplication: ensure no duplicate scheme names are shown
+    const uniqueSchemes = [];
+    const seenNames = new Set();
+    for (const s of schemes) {
+      const key = `${s.name.trim().toLowerCase()}_${s.calculationMethod}`;
+      if (!seenNames.has(key)) {
+        seenNames.add(key);
+        uniqueSchemes.push(s);
+      }
+    }
+
+    res.json({ success: true, data: uniqueSchemes });
   } catch (error) {
     console.error('Error fetching schemes:', error);
     res.status(500).json({ success: false, message: error.message });
